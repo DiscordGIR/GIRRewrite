@@ -1,8 +1,8 @@
 import os
 import mongoengine
-from data.model.guild import Guild
-from utils.config import cfg
-from utils.logger import logger
+from data.model import Guild
+from .config import cfg
+from .logging import logger
 
 class Database:
     def __init__(self):

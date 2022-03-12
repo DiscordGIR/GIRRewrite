@@ -1,6 +1,6 @@
 import os
 from dotenv.main import load_dotenv
-from utils.logger import logger
+from .logging import logger
 
 
 class Config:

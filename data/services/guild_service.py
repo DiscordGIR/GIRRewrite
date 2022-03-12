@@ -1,9 +1,5 @@
-from discord import channel
-from data.model.filterword import FilterWord
-from data.model.guild import Guild
-from data.model.tag import Tag
-from utils.config import cfg
-from data.model.giveaway import Giveaway
+from data.model import FilterWord, Guild, Tag, Giveaway
+from utils import cfg
 
 class GuildService:
     def get_guild(self) -> Guild:

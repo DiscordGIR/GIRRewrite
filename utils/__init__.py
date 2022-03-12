@@ -1,4 +1,4 @@
 from .config import *
 from .database import *
-from .logger import *
+from .logging import *
 # from .tasks import *

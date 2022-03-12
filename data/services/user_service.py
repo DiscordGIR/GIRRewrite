@@ -1,7 +1,5 @@
 from typing import Counter
-from data.model.case import Case
-from data.model.cases import Cases
-from data.model.user import User
+from data.model import Case, Cases, User
 
 class UserService:
     def get_user(self, id: int) -> User:

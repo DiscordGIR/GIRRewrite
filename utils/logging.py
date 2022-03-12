@@ -1,11 +1,12 @@
-import os
 import argparse
-import logging
-import sys
-import aiohttp
-from dotenv.main import load_dotenv
-import discord
 import asyncio
+import logging
+import os
+import sys
+
+import aiohttp
+import discord
+from dotenv.main import load_dotenv
 
 load_dotenv()
 
