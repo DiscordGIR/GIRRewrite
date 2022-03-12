@@ -1,0 +1,14 @@
+aiohttp==3.8.1
+aiosignal==1.2.0
+async-timeout==4.0.2
+attrs==21.4.0
+autopep8==1.6.0
+charset-normalizer==2.0.12
+git+https://github.com/Rapptz/discord.py@6def5c9
+frozenlist==1.3.0
+idna==3.3
+multidict==6.0.2
+pycodestyle==2.8.0
+python-dotenv==0.19.2
+toml==0.10.2
+yarl==1.7.2
