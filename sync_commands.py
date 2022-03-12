@@ -14,10 +14,6 @@ intents.message_content = True
 intents.presences = True
 mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
 
-logging.basicConfig(level=logging.INFO)
-discord_logger = logging.getLogger('discord')
-discord_logger.setLevel(logging.INFO)
-
 bot = commands.Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import os
 import discord
 from discord.ext import commands
-from utils.config import cfg
+from utils import cfg
 from utils.database import db
 from utils.logger import logger
 
