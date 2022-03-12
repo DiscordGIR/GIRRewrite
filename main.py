@@ -2,6 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from utils.config import cfg
+from utils.database import db
 from utils.logger import logger
 
 # Remove warning from songs cog
@@ -17,7 +18,19 @@ intents.message_content = True
 intents.presences = True
 mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
 
-bot = commands.Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
+class Bot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # TODO: tasks
+        # self.tasks = Tasks(self)
+
+        # force the config object and database connection to be loaded
+        # TODO: permissions
+        # if cfg and db and permissions:
+        if cfg and db:
+            logger.info("Presetup phase completed! Connecting to Discord...")
+
+bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
 if __name__ == '__main__':
     for extension in initial_extensions:
