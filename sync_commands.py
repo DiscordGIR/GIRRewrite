@@ -1,11 +1,10 @@
-import logging
 import os
+
 import discord
 from discord.ext import commands
-from utils.config import cfg
-from utils.logger import logger
 
-initial_extensions = ['test_cog']
+from utils import cfg, logger
+from extensions import initial_extensions
 
 intents = discord.Intents.default()
 intents.members = True
@@ -15,7 +14,6 @@ intents.presences = True
 mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
 
 bot = commands.Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
-
 if __name__ == '__main__':
     for extension in initial_extensions:
         bot.load_extension(extension)

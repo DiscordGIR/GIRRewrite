@@ -1,13 +1,13 @@
 import os
 import discord
 from discord.ext import commands
+from extensions import initial_extensions
 from utils import cfg, db, logger
 
 # Remove warning from songs cog
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-initial_extensions = ['examples.cog']
 
 intents = discord.Intents.default()
 intents.members = True
