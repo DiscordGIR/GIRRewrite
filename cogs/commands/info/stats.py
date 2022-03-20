@@ -42,26 +42,17 @@ class Stats(commands.Cog):
 
     # # @whisper()
     # # @slash_command(guild_ids=[cfg.guild_id], description="Get number of users of a role")
-    # @app_commands.guilds(cfg.guild_id)
-    # @app_commands.command(description="Get number of users of a role")
-    # async def roleinfo(self, interaction: discord.Interaction, role: Option(discord.Role, description="Role to view info of")) -> None:
-    #     """Displays information about a specific role.
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Get number of users of a role")
+    @app_commands.describe(role="The role's ID")
+    @transform_context
+    @whisper
+    async def roleinfo(self, ctx: BlooContext, role: discord.Role) -> None:
+        embed = discord.Embed(title="Role Statistics")
+        embed.description = f"{len(role.members)} members have role {role.mention}"
+        embed.color = role.color
 
-    #     Example usage
-    #     -------------
-    #     /roleinfo role:<role>
-
-    #     Parameters
-    #     ----------
-    #     role : role
-    #         "role to get information about"
-
-    #     """
-    #     embed = discord.Embed(title="Role Statistics")
-    #     embed.description = f"{len(role.members)} members have role {role.mention}"
-    #     embed.color = role.color
-
-    #     await ctx.respond(embed=embed, ephemeral=ctx.whisper)
+        await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
     # @whisper()
     # @slash_command(guild_ids=[cfg.guild_id], description="Statistics about the bot")

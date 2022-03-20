@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import discord
@@ -13,10 +14,15 @@ intents.message_content = True
 intents.presences = True
 mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
 
-bot = commands.Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
-if __name__ == '__main__':
-    for extension in initial_extensions:
-        bot.load_extension(extension)
+class Bot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def setup_hook(self):
+        for extension in initial_extensions:
+            await self.load_extension(extension)
+
+bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
 @bot.event
 async def on_ready():
@@ -31,4 +37,9 @@ async def on_ready():
     os._exit(0)
 
 
-bot.run(os.environ.get("BLOO_TOKEN"), reconnect=True)
+async def main():
+    async with bot:
+        await bot.start(os.environ.get("BLOO_TOKEN"), reconnect=True)
+
+asyncio.run(main())
+

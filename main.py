@@ -31,7 +31,7 @@ class Bot(commands.Bot):
         
     async def setup_hook(self):
         for extension in initial_extensions:
-            await bot.load_extension(extension)
+            await self.load_extension(extension)
 
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
