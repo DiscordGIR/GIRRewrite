@@ -3,7 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from utils import cfg
 
-from utils.permissions.checks import whisper
+from utils import whisper
 
 
 class Greetings(commands.Cog):

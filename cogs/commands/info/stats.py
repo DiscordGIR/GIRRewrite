@@ -10,11 +10,7 @@ from data.services.user_service import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
-from utils.config import cfg
-from utils import BlooContext
-from utils.context import transform_context
-from utils.logging import logger
-from utils.permissions.checks import whisper
+from utils import BlooContext, transform_context, cfg, logger, whisper
 
 
 class Stats(commands.Cog):
@@ -26,7 +22,6 @@ class Stats(commands.Cog):
     @transform_context
     @whisper
     async def ping(self, ctx: BlooContext) -> None:
-        print(ctx.whisper)
         embed = discord.Embed(
             title="Pong!", color=discord.Color.blurple())
         embed.set_thumbnail(url=self.bot.user.display_avatar)
@@ -35,9 +30,7 @@ class Stats(commands.Cog):
         # measure time between sending a message and time it is posted
         b = datetime.utcnow()
 
-        # TODO: fix whisper
-        # await interaction.response.send_message(embed=embed, ephemeral=ctx.whisper)
-        await ctx.respond(embed=embed)
+        await ctx.respond_or_edit(embed=embed, ephemeral=ctx.whisper)
 
         ping = floor((datetime.utcnow() - b).total_seconds() * 1000)
         embed.description = ""
@@ -45,7 +38,7 @@ class Stats(commands.Cog):
         embed.add_field(name="API Latency",
                         value=f"`{floor(self.bot.latency*1000)}ms`")
 
-        await ctx.edit(embed=embed)
+        await ctx.respond_or_edit(embed=embed)
 
     # # @whisper()
     # # @slash_command(guild_ids=[cfg.guild_id], description="Get number of users of a role")

@@ -16,7 +16,19 @@ class BlooContext:
     def __init__(self, interaction: discord.Interaction):
         self.interaction: discord.Interaction = interaction
         self.whisper = False
-    
+
+    @property
+    def guild(self):
+        return self.interaction.guild
+
+    @property
+    def channel(self):
+        return self.interaction.channel
+
+    @property
+    def author(self):
+        return self.interaction.user
+
     @property
     def respond(self):
         if self.interaction.response.is_done():
