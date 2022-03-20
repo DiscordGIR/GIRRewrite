@@ -18,5 +18,5 @@ class Greetings(commands.Cog):
     async def say(self, interaction: discord.Interaction, message: str):
             await interaction.response.send_message(message)
 
-def setup(bot: commands.Bot):
-    bot.add_cog(Greetings(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Greetings(bot))

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import discord
 from discord.ext import commands
@@ -27,12 +28,13 @@ class Bot(commands.Bot):
         # if cfg and db and permissions:
         if cfg and db:
             logger.info("Presetup phase completed! Connecting to Discord...")
+        
+    async def setup_hook(self):
+        for extension in initial_extensions:
+            await bot.load_extension(extension)
+
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
-
-if __name__ == '__main__':
-    for extension in initial_extensions:
-        bot.load_extension(extension)
 
 @bot.event
 async def on_ready():
@@ -42,4 +44,8 @@ async def on_ready():
     logger.info(f'Successfully logged in and booted...!')
 
 
-bot.run(os.environ.get("BLOO_TOKEN"), reconnect=True)
+async def main():
+    async with bot:
+        await bot.start(os.environ.get("BLOO_TOKEN"), reconnect=True)
+
+asyncio.run(main())

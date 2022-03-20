@@ -1,10 +1,21 @@
+import functools
 from typing import Optional
 import discord
+
+
+def transform_context(func: discord.app_commands.Command):
+    @functools.wraps(func)
+    async def decorator(self, interaction, *args, **kwargs):
+        ctx = BlooContext(interaction)
+        return await func(self, ctx, *args, **kwargs)
+
+    return decorator
 
 
 class BlooContext:
     def __init__(self, interaction: discord.Interaction):
         self.interaction: discord.Interaction = interaction
+        self.whisper = False
     
     @property
     def respond(self):
@@ -12,6 +23,10 @@ class BlooContext:
             return self.interaction.followup.send
         else:
             return self.interaction.response.send_message
+
+    @property
+    def edit(self):
+        return self.interaction.edit_original_message
 
     async def respond_or_edit(self, *args, **kwargs):
         """Respond to an interaction if not already responded, otherwise edit the original response.
