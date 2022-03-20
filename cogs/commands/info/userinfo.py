@@ -3,18 +3,14 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
 
-import traceback
 from datetime import datetime
 from math import floor
 from typing import Union
 from data.services import user_service
-from utils import cfg, BlooContext
-from utils.context import transform_context
+from utils import cfg, BlooContext, transform_context
 
 from utils.framework import PermissionsFailure, whisper, gatekeeper
-# from utils.permissions.converters import user_resolver
-# from utils.views.menu import Menu
-
+from utils.views import Menu
 
 def format_xptop_page(ctx, entries, current_page, all_pages):
     """Formats the page for the xptop embed.
@@ -261,70 +257,63 @@ class UserInfo(commands.Cog):
 
         await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
-    # TODO: need to implement menus back
-    # @whisper()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Show the XP leaderboard.")
-    # async def xptop(self, ctx: BlooContext):
-    #     """Show XP leaderboard for top 100, ranked highest to lowest.
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Show the XP leaderboard.")
+    @transform_context
+    @whisper
+    async def xptop(self, ctx: BlooContext):
+        results = enumerate(user_service.leaderboard())
+        results = [(i, m) for (i, m) in results if ctx.guild.get_member(
+            m._id) is not None][0:100]
 
-    #     Example usage
-    #     --------------
-    #     /xptop
+        menu = Menu(ctx, results, per_page=10,
+                    page_formatter=format_xptop_page, whisper=ctx.whisper)
+        await menu.start()
 
-    #     """
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Show your or another user's cases")
+    @app_commands.describe(user="User to get cases of")
+    @transform_context
+    @whisper
+    async def cases(self, ctx: BlooContext, user: Union[discord.Member, discord.User] = None):
+        """Show list of cases of a user (mod only)
 
-    #     results = enumerate(user_service.leaderboard())
-    #     results = [(i, m) for (i, m) in results if ctx.guild.get_member(
-    #         m._id) is not None][0:100]
+        Example usage
+        --------------
+        /cases user:<@user/ID>
 
-    #     menu = Menu(ctx, results, per_page=10,
-    #                 page_formatter=format_xptop_page, whisper=ctx.whisper)
-    #     await menu.start()
+        Parameters
+        ----------
+        user : discord.Member, optional
+            "User we want to get cases of, doesn't have to be in guild"
 
-    # TODO: need to implement menus back
-    # @whisper()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Show your or another user's cases")
-    # async def cases(self, ctx: BlooContext, user: Option(discord.Member, description="Member to show cases of", required=False)):
-    #     """Show list of cases of a user (mod only)
+        """
 
-    #     Example usage
-    #     --------------
-    #     /cases user:<@user/ID>
+        # if an invokee is not provided in command, call command on the invoker
+        # (get invoker's cases)
+        if user is None:
+            user = ctx.author
 
-    #     Parameters
-    #     ----------
-    #     user : discord.Member, optional
-    #         "User we want to get cases of, doesn't have to be in guild"
+        # users can only invoke on themselves if they aren't mods
+        if not gatekeeper.has(ctx.guild, ctx.author, 5) and user.id != ctx.author.id:
+            raise PermissionsFailure(
+                f"You don't have permissions to check others' warnpoints.")
 
-    #     """
+        # fetch user's cases from our database
+        results = user_service.get_cases(user.id)
+        if len(results.cases) == 0:
+            return await ctx.send_warning(f'{user.mention} has no cases.', delete_after=5)
 
-    #     # if an invokee is not provided in command, call command on the invoker
-    #     # (get invoker's cases)
-    #     if user is None:
-    #         user = ctx.author
-    #     elif isinstance(user, str) or isinstance(user, int):
-    #         user = await user_resolver(ctx, user)
+        # filter out unmute cases because they are irrelevant
+        cases = [case for case in results.cases if case._type != "UNMUTE"]
+        # reverse so newest cases are first
+        cases.reverse()
 
-    #     # users can only invoke on themselves if they aren't mods
-    #     if not permissions.has(ctx.guild, ctx.author, 5) and user.id != ctx.author.id:
-    #         raise PermissionsFailure(
-    #             f"You don't have permissions to check others' warnpoints.")
+        ctx.case_user = user
 
-    #     # fetch user's cases from our database
-    #     results = user_service.get_cases(user.id)
-    #     if len(results.cases) == 0:
-    #         return await ctx.send_warning(f'{user.mention} has no cases.', delete_after=5)
-
-    #     # filter out unmute cases because they are irrelevant
-    #     cases = [case for case in results.cases if case._type != "UNMUTE"]
-    #     # reverse so newest cases are first
-    #     cases.reverse()
-
-    #     ctx.case_user = user
-
-    #     menu = Menu(ctx, cases, per_page=10,
-    #                 page_formatter=format_cases_page, whisper=ctx.whisper)
-    #     await menu.start()
+        menu = Menu(ctx, cases, per_page=10,
+                    page_formatter=format_cases_page, whisper=ctx.whisper)
+        await menu.start()
 
 
 def xp_for_next_level(_next):
