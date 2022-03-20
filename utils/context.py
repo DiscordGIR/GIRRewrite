@@ -38,6 +38,10 @@ class BlooContext:
             return self.interaction.response.send_message
 
     @property
+    def followup(self):
+        return self.interaction.followup
+
+    @property
     def edit(self):
         return self.interaction.edit_original_message
 
@@ -46,7 +50,7 @@ class BlooContext:
         Takes in the same args and kwargs as `respond`.
         """
 
-        if self.interaction.response.is_done():
+        if self.interaction.response.is_done() and self.interaction.message is not None:
             if kwargs.get("followup"):
                 if kwargs.get("view") is None:
                     kwargs["view"] = discord.utils.MISSING
@@ -73,6 +77,15 @@ class BlooContext:
             if not kwargs.get("ephemeral") and delete_after is not None:
                 await asyncio.sleep(delete_after)
                 await self.interaction.delete_original_message()
+
+    async def send_followup(self, *args, **kwargs):
+        delete_after = kwargs.get("delete_after")
+        if "delete_after" in kwargs:
+            del kwargs["delete_after"]
+
+        response = await self.followup.send(*args, **kwargs)
+        if not kwargs.get("ephemeral") and delete_after is not None:
+            await response.delete(delay=delete_after)
 
     async def send_success(self, description: str, title:Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None):
         """Send an embed response with green color to an interaction.
