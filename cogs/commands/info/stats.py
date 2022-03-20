@@ -24,7 +24,7 @@ class Stats(commands.Cog):
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Test server latency by measuring how long it takes to edit a message")
     @transform_context
-    # @whisper TODO: fix
+    @whisper
     async def ping(self, ctx: BlooContext) -> None:
         print(ctx.whisper)
         embed = discord.Embed(

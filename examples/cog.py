@@ -11,7 +11,6 @@ class Greetings(commands.Cog):
         self.bot = bot
         self._last_member = None
 
-    @whisper()
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Says hello to the user")
     @app_commands.describe(message="The message to send back")
