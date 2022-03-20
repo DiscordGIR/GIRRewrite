@@ -1,9 +1,8 @@
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 from utils import cfg
-
-from utils import whisper
+from utils.perms import whisper
 
 
 class Greetings(commands.Cog):
@@ -15,7 +14,8 @@ class Greetings(commands.Cog):
     @app_commands.command(description="Says hello to the user")
     @app_commands.describe(message="The message to send back")
     async def say(self, interaction: discord.Interaction, message: str):
-            await interaction.response.send_message(message)
+        await interaction.response.send_message(message)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Greetings(bot))

@@ -10,7 +10,8 @@ from data.services.user_service import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
-from utils import BlooContext, transform_context, cfg, logger, whisper
+from utils import BlooContext, cfg, logger, transform_context
+from utils.perms import whisper, mod_and_up
 
 
 class Stats(commands.Cog):
@@ -21,6 +22,7 @@ class Stats(commands.Cog):
     @app_commands.command(description="Test server latency by measuring how long it takes to edit a message")
     @transform_context
     @whisper
+    @mod_and_up
     async def ping(self, ctx: BlooContext) -> None:
         embed = discord.Embed(
             title="Pong!", color=discord.Color.blurple())
@@ -95,7 +97,6 @@ class Stats(commands.Cog):
             name="Created", value=f"{format_dt(guild.created_at, style='F')} ({format_dt(guild.created_at, style='R')})", inline=True)
 
         await ctx.respond_or_edit(embed=embed, ephemeral=ctx.whisper)
-
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Present statistics on who has been banned for raids.")

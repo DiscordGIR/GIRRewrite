@@ -14,6 +14,7 @@ from typing import Union
 import warnings
 
 from utils.context import BlooContext
+from utils.perms import PermissionsFailure
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
@@ -44,18 +45,33 @@ class Bot(commands.Bot):
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
 
+#TODO: complete this (send error to webhook, log to cmd line, handle fatal error case)
 @bot.tree.error
-async def app_command_error(interaction: discord.Interaction, command: Union[Command, ContextMenu], error: AppCommandError):
+async def app_command_error(interaction: discord.Interaction, _: Union[Command, ContextMenu], error: AppCommandError):
     ctx = BlooContext(interaction)
     ctx.whisper = True
     if isinstance(error, CommandInvokeError):
+        error = error.original
+
+    if (isinstance(error, commands.MissingRequiredArgument)
+            or isinstance(error, PermissionsFailure)
+            or isinstance(error, commands.BadArgument)
+            or isinstance(error, commands.BadUnionArgument)
+            or isinstance(error, commands.MissingPermissions)
+            or isinstance(error, commands.BotMissingPermissions)
+            or isinstance(error, commands.MaxConcurrencyReached)
+                or isinstance(error, commands.NoPrivateMessage)):
+            await ctx.send_error(error)
+    else:
+        traceback.print_tb(error.original.__traceback__)
         tb = traceback.format_tb(error.original.__traceback__)
         tb = tb[-1]
         if len(tb) > 950:
             tb = "...\n" + tb[-1000:]
         await ctx.send_error(description=f"> {error}\n\n```{tb}```")
-    else:
-        print("else")
+        logger.error(traceback.format_exc())
+
+
 
 @bot.event
 async def on_ready():
