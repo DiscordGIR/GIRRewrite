@@ -124,6 +124,9 @@ class Permissions:
             
         """
 
+        if self._permissions.get(level) is None:
+            raise AttributeError(f"Undefined permission level {level}")
+
         return self._permissions[level](guild, member)
 
     # TODO: fix

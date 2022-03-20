@@ -63,8 +63,8 @@ async def app_command_error(interaction: discord.Interaction, _: Union[Command, 
                 or isinstance(error, commands.NoPrivateMessage)):
             await ctx.send_error(error)
     else:
-        traceback.print_tb(error.original.__traceback__)
-        tb = traceback.format_tb(error.original.__traceback__)
+        traceback.print_tb(error.__traceback__)
+        tb = traceback.format_tb(error.__traceback__)
         tb = tb[-1]
         if len(tb) > 950:
             tb = "...\n" + tb[-1000:]
