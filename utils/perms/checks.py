@@ -2,12 +2,14 @@ import functools
 
 import discord
 from data.services import guild_service
+from discord import app_commands, Interaction
+from discord.errors import NotFound
 from discord.ext.commands.errors import BadArgument
+from utils import BlooContext
 from .permissions import gatekeeper
-from utils.context import BlooContext
 
 
-class PermissionsFailure(BadArgument):
+class PermissionsFailure(discord.app_commands.AppCommandError):
     def __init__(self, message):
         super().__init__(message)
 
@@ -34,154 +36,144 @@ def whisper_in_general(func: discord.app_commands.Command):
         else:
             ctx.whisper = False
         await func(self, ctx, *args, **kwargs)
+
     return decorator
 
 
-def memplus_and_up(func: discord.app_commands.Command):
+def memplus_and_up():
     """If the user is not at least a Member Plus, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 1):
+    async def predicate(interaction: Interaction):
+        if not gatekeeper.has(interaction.guild, interaction.user, 1):
             raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 
-def mempro_and_up(func: discord.app_commands.Command):
+def mempro_and_up():
     """If the user is not at least a Member Pro, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 2):
+    async def predicate(interaction: Interaction):
+        if not gatekeeper.has(interaction.guild, interaction.user, 2):
             raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 
-def memed_and_up(func: discord.app_commands.Command):
+def memed_and_up():
     """If the user is not at least a Member Edition, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 3):
+    async def predicate(interaction: Interaction):
+        if not gatekeeper.has(interaction.guild, interaction.user, 3):
             raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 
-def genius_and_up(func: discord.app_commands.Command):
+def genius_and_up():
     """If the member is not at least a Genius™️, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 4):
+    async def predicate(interaction: Interaction):
+        if not gatekeeper.has(interaction.guild, interaction.user, 4):
             raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 ####################
 # Staff Roles
 ####################
 
 
-def submod_or_admin_and_up(func: discord.app_commands.Command):
+def submod_or_admin_and_up():
     """If the user is not a submod OR is not at least an Administrator, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
+    async def predicate(interaction: Interaction):
         db = guild_service.get_guild()
-        submod = ctx.guild.get_role(db.role_sub_mod)
+        submod = interaction.guild.get_role(db.role_sub_mod)
         if not submod:
             return
 
-        if not (gatekeeper.has(ctx.guild, ctx.author, 6) or submod in ctx.author.roles):
+        if not (gatekeeper.has(interaction.guild, interaction.user, 6) or submod in interaction.user.roles):
             raise BadArgument(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 
-def genius_or_submod_and_up(func: discord.app_commands.Command):
+def genius_or_submod_and_up():
     """If the user is not at least a Genius™️ or a submod, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
+    async def predicate(interaction: Interaction):
         db = guild_service.get_guild()
-        submod = ctx.guild.get_role(db.role_sub_mod)
+        submod = interaction.guild.get_role(db.role_sub_mod)
         if not submod:
             return
 
-        if not (gatekeeper.has(ctx.guild, ctx.author, 4) or submod in ctx.author.roles):
+        if not (gatekeeper.has(interaction.guild, interaction.user, 4) or submod in interaction.user.roles):
             raise BadArgument(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 
-def mod_and_up(func: discord.app_commands.Command):
+def mod_and_up():
     """If the user is not at least a Moderator, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 5):
+    async def predicate(interaction: Interaction):
+        if not gatekeeper.has(interaction.guild, interaction.user, 5):
             raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 
-def admin_and_up(func: discord.app_commands.Command):
+def admin_and_up():
     """If the user is not at least an Administrator, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 6):
+    async def predicate(interaction: Interaction):
+        if not gatekeeper.has(interaction.guild, interaction.user, 6):
             raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 ####################
 # Other
 ####################
 
 
-def guild_owner_and_up(func: discord.app_commands.Command):
+def guild_owner_and_up():
     """If the user is not the guild owner, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 7):
+    async def predicate(interaction: Interaction):
+        if not gatekeeper.has(interaction.guild, interaction.user, 7):
             raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 
-def bot_owner_and_up(func: discord.app_commands.Command):
+def bot_owner_and_up():
     """If the user is not the bot owner, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 9):
+    async def predicate(interaction: Interaction):
+        if not gatekeeper.has(interaction.guild, interaction.user, 9):
             raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)
 
 
-def ensure_invokee_role_lower_than_bot(func: discord.app_commands.Command):
+def ensure_invokee_role_lower_than_bot():
     """If the invokee's role is higher than the bot's, deny command access"""
-    @functools.wraps(func)
-    async def decorator(self, ctx: BlooContext, *args, **kwargs):
-        if ctx.me.top_role < ctx.author.top_role:
+    async def predicate(interaction: Interaction):
+        if interaction.me.top_role < interaction.user.top_role:
             raise PermissionsFailure(
                 f"Your top role is higher than mine. I can't change your nickname :(")
 
-        await func(self, ctx, *args, **kwargs)
-    return decorator
+        return True
+    return app_commands.check(predicate)

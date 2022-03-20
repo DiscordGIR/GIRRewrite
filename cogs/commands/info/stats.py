@@ -20,9 +20,9 @@ class Stats(commands.Cog):
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Test server latency by measuring how long it takes to edit a message")
+    @mod_and_up()
     @transform_context
     @whisper
-    @mod_and_up
     async def ping(self, ctx: BlooContext) -> None:
         embed = discord.Embed(
             title="Pong!", color=discord.Color.blurple())
@@ -140,29 +140,6 @@ class Stats(commands.Cog):
             embed.add_field(name="Top reasons", value=string, inline=False)
 
         await ctx.respond_or_edit(embed=embed)
-
-    # @casestats.error
-    # @raidstats.error
-    # @ping.error
-    # @roleinfo.error
-    # @stats.error
-    # @serverinfo.error
-    # async def info_error(self,  ctx: BlooContext, error):
-    #     if isinstance(error, discord.ApplicationCommandInvokeError):
-    #         error = error.original
-
-    #     if (isinstance(error, commands.MissingRequiredArgument)
-    #         or isinstance(error, PermissionsFailure)
-    #         or isinstance(error, commands.BadArgument)
-    #         or isinstance(error, commands.BadUnionArgument)
-    #         or isinstance(error, commands.MissingPermissions)
-    #         or isinstance(error, commands.BotMissingPermissions)
-    #         or isinstance(error, commands.MaxConcurrencyReached)
-    #             or isinstance(error, commands.NoPrivateMessage)):
-    #         await ctx.send_error(error)
-    #     else:
-    #         await ctx.send_error("A fatal error occured. Tell <@109705860275539968> about this.")
-    #         logger.error(traceback.format_exc())
 
 
 async def setup(bot):
