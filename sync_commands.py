@@ -4,8 +4,8 @@ import os
 import discord
 from discord.ext import commands
 
-from utils import cfg, logger
 from extensions import initial_extensions
+from utils import cfg, logger
 
 intents = discord.Intents.default()
 intents.members = True

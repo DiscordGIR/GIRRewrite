@@ -1,3 +1,4 @@
+import asyncio
 import functools
 from typing import Optional
 import discord
@@ -63,8 +64,15 @@ class BlooContext:
         else:
             if "followup" in kwargs:
                 del kwargs["followup"]
+            
+            delete_after = kwargs.get("delete_after")
+            if "delete_after" in kwargs:
+                del kwargs["delete_after"]
 
-            return await self.respond(*args, **kwargs)
+            await self.respond(*args, **kwargs)
+            if not kwargs.get("ephemeral") and delete_after is not None:
+                await asyncio.sleep(delete_after)
+                await self.interaction.delete_original_message()
 
     async def send_success(self, description: str, title:Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None):
         """Send an embed response with green color to an interaction.
@@ -118,4 +126,4 @@ class BlooContext:
         """
 
         embed = discord.Embed(title=title, description=description,  color=discord.Color.red())
-        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=None, delete_after=delete_after, followup=followup)
+        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)

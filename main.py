@@ -1,12 +1,19 @@
 import asyncio
 import os
+import sys
+import traceback
 import discord
 from discord.ext import commands
+from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError
 from extensions import initial_extensions
 from utils import cfg, db, logger
 
+from typing import Union
+
 # Remove warning from songs cog
 import warnings
+
+from utils.context import BlooContext
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
@@ -35,6 +42,20 @@ class Bot(commands.Bot):
 
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
+
+
+@bot.tree.error
+async def app_command_error(interaction: discord.Interaction, command: Union[Command, ContextMenu], error: AppCommandError):
+    ctx = BlooContext(interaction)
+    ctx.whisper = True
+    if isinstance(error, CommandInvokeError):
+        tb = traceback.format_tb(error.original.__traceback__)
+        tb = tb[-1]
+        if len(tb) > 950:
+            tb = "...\n" + tb[-1000:]
+        await ctx.send_error(description=f"> {error}\n\n```{tb}```")
+    else:
+        print("else")
 
 @bot.event
 async def on_ready():
