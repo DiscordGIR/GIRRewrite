@@ -8,7 +8,7 @@ import traceback
 from setuptools import Command
 from data.services.guild_service import guild_service
 from utils import cfg, BlooContext, command_list_autocomplete, transform_context
-from utils.perms import whisper, PermissionsFailure, permissions
+from utils.framework import whisper, PermissionsFailure, permissions
 
 # TODO: This whole thing needs work
 class Utilities(commands.Cog):

@@ -11,7 +11,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
 from utils import BlooContext, cfg, logger, transform_context
-from utils.perms import whisper, mod_and_up
+from utils.framework import whisper, mod_and_up
 
 
 class Stats(commands.Cog):
