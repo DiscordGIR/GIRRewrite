@@ -4,4 +4,5 @@ initial_extensions = [
     "cogs.commands.info.userinfo",
     "cogs.commands.info.tags",
     "cogs.monitors.logging",
+    "cogs.monitors.xp",
 ]
