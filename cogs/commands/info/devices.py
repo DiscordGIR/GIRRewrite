@@ -1,15 +1,15 @@
-from collections import defaultdict
 import re
+from collections import defaultdict
+
 import discord
 from discord import app_commands
 from discord.ext import commands
+from utils import BlooContext, cfg, transform_context
+from utils.framework import (always_whisper,
+                             ensure_invokee_role_lower_than_bot, whisper)
+from utils.views import (Confirm, device_autocomplete, get_ios_cfw,
+                         ios_on_device_autocomplete, transform_groups)
 
-# from utils.autocompleters import device_autocomplete, get_ios_cfw, ios_on_device_autocomplete, transform_groups
-from utils import cfg, BlooContext
-from utils.context import transform_context
-from utils.framework import (PermissionsFailure, always_whisper, ensure_invokee_role_lower_than_bot, whisper)
-from utils.views import Confirm, device_autocomplete
-from utils.views.autocompleters import ios_on_device_autocomplete, get_ios_cfw, transform_groups
 
 class Devices(commands.Cog):
     def __init__(self, bot):
@@ -17,7 +17,8 @@ class Devices(commands.Cog):
         self.devices_test = re.compile(r'^.+ \[.+\,.+\]$')
         self.devices_remove_re = re.compile(r'\[.+\,.+\]$')
 
-    device = app_commands.Group(name="device", description="Interact with tags", guild_ids=[cfg.guild_id])
+    device = app_commands.Group(
+        name="device", description="Interact with tags", guild_ids=[cfg.guild_id])
 
     # TODO: device transformer?
     # TODO: version transformer?
@@ -77,75 +78,64 @@ class Devices(commands.Cog):
         # change the user's nickname!
         if firmware is not None:
             firmware = re.sub(r' beta (\d+)', r'b\1', firmware)
-            detailed_device = response.get("device").get(matching_device.get("devices")[0])
+            detailed_device = response.get("device").get(
+                matching_device.get("devices")[0])
             name = detailed_device["soc"]
             new_nick = f"{new_nick} [{name}, {firmware}]"
 
             if len(new_nick) > 32:
-                raise commands.BadArgument(f"Discord's nickname character limit is 32. `{discord.utils.escape_markdown(new_nick)}` is too long.")
+                raise commands.BadArgument(
+                    f"Discord's nickname character limit is 32. `{discord.utils.escape_markdown(new_nick)}` is too long.")
 
             await ctx.author.edit(nick=new_nick)
             await ctx.send_success(f"Changed your nickname to `{discord.utils.escape_markdown(new_nick)}`!")
 
-    # @ensure_invokee_role_lower_than_bot()
-    # @always_whisper()
-    # @device.command(description="Remove device from nickname")
-    # async def remove(self, ctx: BlooContext) -> None:
-    #     """Removes device from your nickname
+    @ensure_invokee_role_lower_than_bot()
+    @device.command(description="Remove device from nickname")
+    @transform_context
+    @always_whisper
+    async def remove(self, ctx: BlooContext) -> None:
+        if not re.match(self.devices_test, ctx.author.display_name):
+            raise commands.BadArgument("You don't have a device nickname set!")
 
-    #     Example usage
-    #     -------------
-    #     /device remove
+        new_nick = re.sub(self.devices_remove_re, "",
+                          ctx.author.display_name).strip()
+        if len(new_nick) > 32:
+            raise commands.BadArgument("Nickname too long")
 
-    #     """
+        await ctx.author.edit(nick=new_nick)
+        await ctx.send_success("Removed device from your nickname!")
 
-    #     if not re.match(self.devices_test, ctx.author.display_name):
-    #         raise commands.BadArgument("You don't have a device nickname set!")
+    @device.command(name="list", description="List all devices you can set your nickname to")
+    @transform_context
+    @whisper
+    async def _list(self, ctx: BlooContext) -> None:
+        devices_dict = defaultdict(list)
 
-    #     new_nick = re.sub(self.devices_remove_re, "",
-    #                       ctx.author.display_name).strip()
-    #     if len(new_nick) > 32:
-    #         raise commands.BadArgument("Nickname too long")
+        response = await get_ios_cfw()
+        devices = response.get("group")
+        devices_transformed = transform_groups(devices)
 
-    #     await ctx.author.edit(nick=new_nick)
-    #     await ctx.send_success("Removed device from your nickname!")
+        for device in devices_transformed:
+            device_type = device.get("type")
+            if device_type == "TV":
+                devices_dict['Apple TV'].append(device)
+            elif device_type == "Watch":
+                devices_dict['Apple Watch'].append(device)
+            else:
+                devices_dict[device_type].append(device)
 
-    # @whisper()
-    # @device.command(description="List all devices you can set your nickname to", name="list")
-    # async def _list(self, ctx: BlooContext) -> None:
-    #     """List all possible devices you can set your nickname to.
+        embed = discord.Embed(title="Devices list")
+        embed.color = discord.Color.blurple()
+        for key, devices in devices_dict.items():
+            devices.sort(key=lambda x: x.get('order'))
+            devices = [device.get("name") for device in devices]
+            embed.add_field(name=key, value=', '.join(
+                devices), inline=False)
 
-    #     Example usage
-    #     -------------
-    #     /device list
-        
-    #     """
+        embed.set_footer(text="Powered by https://ios.cfw.guide")
+        await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
-    #     devices_dict = defaultdict(list)
-
-    #     response = await get_ios_cfw()
-    #     devices = response.get("group")
-    #     devices_transformed = transform_groups(devices)
-
-    #     for device in devices_transformed:
-    #         device_type = device.get("type")
-    #         if device_type == "TV":
-    #             devices_dict['Apple TV'].append(device)
-    #         elif device_type == "Watch":
-    #             devices_dict['Apple Watch'].append(device)
-    #         else:
-    #             devices_dict[device_type].append(device)
-
-    #     embed = discord.Embed(title="Devices list")
-    #     embed.color = discord.Color.blurple()
-    #     for key, devices in devices_dict.items():
-    #         devices.sort(key=lambda x: x.get('order'))
-    #         devices = [device.get("name") for device in devices]
-    #         embed.add_field(name=key, value=', '.join(
-    #             devices), inline=False)
-
-    #     embed.set_footer(text="Powered by https://ios.cfw.guide")
-    #     await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
 async def setup(bot):
     await bot.add_cog(Devices(bot))
