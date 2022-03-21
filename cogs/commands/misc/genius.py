@@ -6,9 +6,9 @@ from discord import app_commands
 from data.services import guild_service
 from discord.ext import commands
 from utils import BlooContext, cfg
+from utils.context import transform_context
 from utils.framework import genius_or_submod_and_up, whisper_in_general
-from utils.framework.transformers import ImageAttachment
-from utils.views import issue_autocomplete
+from utils.views import CommonIssueModal
 
 # from utils.views.common_issue_modal import CommonIssueModal, EditCommonIssue
 # from utils.views.prompt import GenericDescriptionModal
@@ -55,43 +55,44 @@ class Genius(commands.Cog):
 
     # commonissue = discord.SlashCommandGroup("commonissue", "Interact with common issues", guild_ids=[
     #     cfg.guild_id], permissions=slash_perms.genius_or_submod_and_up())
-    common_issue = app_commands.Group(name="tags", description="Interact with tags", guild_ids=[cfg.guild_id])
+    common_issue = app_commands.Group(name="commonissue", description="Interact with tags", guild_ids=[cfg.guild_id])
 
     # TODO: image only transformer
-    # @genius_or_submod_and_up()
-    # @common_issue.command(description="Submit a new common issue")
-    # @app_commands.describe(title="Title of the issue")
-    # @app_commands.describe(image="Image to show in issue")
-    # async def new(self, ctx: BlooContext, *, title: str,  image: ImageAttachment = None) -> None:
-    #     # get #common-issues channel
-    #     channel = ctx.guild.get_channel(
-    #         guild_service.get_guild().channel_common_issues)
-    #     if not channel:
-    #         raise commands.BadArgument("common issues channel not found")
+    @genius_or_submod_and_up()
+    @common_issue.command(description="Submit a new common issue")
+    @app_commands.describe(title="Title of the issue")
+    @app_commands.describe(image="Image to show in issue")
+    @transform_context
+    async def new(self, ctx: BlooContext, *, title: str,  image: discord.Attachment = None) -> None:
+        # get #common-issues channel
+        channel = ctx.guild.get_channel(
+            guild_service.get_guild().channel_common_issues)
+        if not channel:
+            raise commands.BadArgument("common issues channel not found")
 
-    #     # ensure the attached file is an image
-    #     if image is not None:
-    #         _type = image.content_type
-    #         if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-    #             raise commands.BadArgument("Attached file was not an image.")
+        # ensure the attached file is an image
+        if image is not None:
+            _type = image.content_type
+            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
+                raise commands.BadArgument("Attached file was not an image.")
 
-    #     # prompt the user for common issue body
-    #     modal = CommonIssueModal(bot=self.bot, author=ctx.author, title=title)
-    #     await ctx.interaction.response.send_modal(modal)
-    #     await modal.wait()
+        # prompt the user for common issue body
+        modal = CommonIssueModal(bot=self.bot, author=ctx.author, title=title)
+        await ctx.interaction.response.send_modal(modal)
+        await modal.wait()
 
-    #     description = modal.description
-    #     buttons = modal.buttons
+        description = modal.description
+        buttons = modal.buttons
 
-    #     if not description:
-    #         await ctx.send_warning("Cancelled adding common issue.")
-    #         return
+        if not description:
+            await ctx.send_warning("Cancelled adding common issue.")
+            return
 
-    #     embed, f, view = await prepare_issue_response(title, description, ctx.author, buttons, image)
+        embed, f, view = await prepare_issue_response(title, description, ctx.author, buttons, image)
 
-    #     await channel.send(embed=embed, file=f, view=view)
-    #     await ctx.send_success("Common issue posted!", delete_after=5, followup=True)
-    #     await self.do_reindex(channel)
+        await channel.send(embed=embed, file=f, view=view)
+        await ctx.send_success("Common issue posted!", delete_after=5, followup=True)
+        await self.do_reindex(channel)
 
     # @genius_or_submod_and_up()
     # @commonissue.command(description="Submit a new common issue")

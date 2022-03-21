@@ -55,7 +55,15 @@ class BlooContext:
                 if kwargs.get("view") is None:
                     kwargs["view"] = discord.utils.MISSING
                 del kwargs["followup"]
-                return await self.followup.send(*args, **kwargs)
+
+                delete_after = kwargs.get("delete_after")
+                if delete_after is not None:
+                    del kwargs["delete_after"]
+
+                test = await self.followup.send(*args, **kwargs)
+                if not kwargs.get("ephemeral") and delete_after is not None:
+                    await test.delete(delay=delete_after)
+                return
 
             if kwargs.get("ephemeral") is not None:
                 del kwargs["ephemeral"]

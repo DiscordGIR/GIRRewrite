@@ -5,4 +5,5 @@ initial_extensions = [
     "cogs.commands.info.tags",
     "cogs.commands.info.userinfo",
     "cogs.commands.misc.admin",
+    "cogs.commands.misc.genius",
 ]
