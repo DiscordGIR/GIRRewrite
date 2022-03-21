@@ -1,4 +1,5 @@
 import asyncio
+from inspect import trace
 import os
 import sys
 import traceback
@@ -63,14 +64,19 @@ async def app_command_error(interaction: discord.Interaction, _: Union[Command, 
                 or isinstance(error, commands.NoPrivateMessage)):
             await ctx.send_error(error)
     else:
-        traceback.print_tb(error.__traceback__)
-        tb = traceback.format_tb(error.__traceback__)
-        tb = tb[-1]
-        if len(tb) > 950:
-            tb = "...\n" + tb[-1000:]
-        await ctx.send_error(description=f"> {error}\n\n```{tb}```")
-        logger.error(traceback.format_exc())
+        try:
+            raise error
+        except:
+            tb = traceback.format_exc()
+            logger.error(tb)
+            if len(tb.split('\n')) > 8:
+                tb = '\n'.join(tb.split('\n')[-8:])
 
+            tb_formatted = tb
+            if len(tb_formatted) > 1000:
+                tb_formatted = "...\n" + tb_formatted[-1000:]
+
+            await ctx.send_error(description=f"`{error}`\n```{tb_formatted}```")
 
 
 @bot.event
