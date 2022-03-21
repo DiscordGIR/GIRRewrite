@@ -1,16 +1,16 @@
 from itertools import groupby
 from typing import List
-import aiohttp
 
+import aiohttp
 import discord
 from aiocache import cached
+from data.services import guild_service
 from discord import app_commands
 from discord.ext.commands import Command
 
-from data.services import guild_service
-
 
 def sort_versions(version):
+    version = f'{version.get("osStr")} {version.get("version")}'
     v = version.split(' ')
     v[0] = list(map(int, v[1].split('.')))
     return v
@@ -53,7 +53,7 @@ async def command_list_autocomplete(interaction: discord.Interaction, current: s
     return [app_commands.Choice(name=command.name, value=command.name) for command in commands if current.lower() in command.name.lower()]
 
 
-async def tags_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+async def tags_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     tags = [tag.name.lower() for tag in guild_service.get_guild().tags]
     tags.sort()
     return [app_commands.Choice(name=tag, value=tag) for tag in tags if current.lower() in tag.lower()][:25]
@@ -79,15 +79,15 @@ async def ios_on_device_autocomplete(interaction: discord.Interaction, current: 
         return []
 
     matching_device = matching_devices[0].get("devices")[0]
-    matching_ios = [f'{version.get("osStr")} {version.get("version")}' for version in ios if matching_device in version.get(
+    matching_ios = [version for version in ios if matching_device in version.get(
         'devices') and current.lower() in version.get('version').lower()]
 
     matching_ios.sort(key=sort_versions, reverse=True)
-    # TODO: use actual value binding
-    return [ app_commands.Choice(name=x, value=x) for x in matching_ios ][:25]
+
+    return [app_commands.Choice(name=f'{version.get("osStr")} {version.get("version")}', value=version.get("uniqueBuild") or version.get("build")) for version in matching_ios][:25]
 
 
-async def device_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+async def device_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     res = await get_ios_cfw()
     if res is None:
         return []
@@ -109,5 +109,4 @@ async def device_autocomplete(interaction: discord.Interaction, current: str) ->
         if len(devices) >= 25:
             break
 
-    # TODO: proper binding for this
-    return [app_commands.Choice(name=device.get('name'), value=device.get('name')) for device in devices][:25]
+    return [app_commands.Choice(name=device.get('name'), value=device.get("devices")[0] if device.get("devices") else device.get("name")) for device in devices][:25]
