@@ -103,7 +103,7 @@ class BlooContext:
         """
 
         embed = discord.Embed(title=title, description=description,  color=discord.Color.dark_green())
-        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=None, delete_after=delete_after, followup=followup)
+        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
     async def send_warning(self, description: str, title:Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None):
         """Send an embed response with orange color to an interaction.
@@ -121,7 +121,7 @@ class BlooContext:
         """
 
         embed = discord.Embed(title=title, description=description,  color=discord.Color.orange())
-        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=None, delete_after=delete_after, followup=followup)
+        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
     async def send_error(self, description: str, title:Optional[str] = ":(\nYour command ran into a problem", delete_after: Optional[float] = None, followup: Optional[bool] = None):
         """Send an embed response with red color to an interaction.

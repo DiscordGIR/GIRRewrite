@@ -8,7 +8,6 @@ from utils.framework import whisper
 class Greetings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self._last_member = None
 
     # up here you can define permission checks 
     # i.e mod_and_up()
@@ -19,6 +18,8 @@ class Greetings(commands.Cog):
     @whisper # make response ephemeral for non mods (ORDER IS IMPORTANT!
     async def say(self, ctx: BlooContext, message: str):
         await ctx.send_success(message)
+
+    # note: we no longer need a command handler in each cog, this is done globally
 
 
 async def setup(bot: commands.Bot):

@@ -40,6 +40,16 @@ def whisper_in_general(func: discord.app_commands.Command):
     return decorator
 
 
+def always_whisper(func: discord.app_commands.Command):
+    """Always respond ephemerally"""
+    @functools.wraps(func)
+    async def decorator(self, ctx: BlooContext, *args, **kwargs):
+        ctx.whisper = True
+        await func(self, ctx, *args, **kwargs)
+
+    return decorator
+
+
 def memplus_and_up():
     """If the user is not at least a Member Plus, deny command access"""
     async def predicate(interaction: Interaction):
@@ -171,7 +181,7 @@ def bot_owner_and_up():
 def ensure_invokee_role_lower_than_bot():
     """If the invokee's role is higher than the bot's, deny command access"""
     async def predicate(interaction: Interaction):
-        if interaction.me.top_role < interaction.user.top_role:
+        if interaction.guild.me.top_role < interaction.user.top_role:
             raise PermissionsFailure(
                 f"Your top role is higher than mine. I can't change your nickname :(")
 
