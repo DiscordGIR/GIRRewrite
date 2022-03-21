@@ -50,12 +50,20 @@ class BlooContext:
         Takes in the same args and kwargs as `respond`.
         """
 
-        if self.interaction.response.is_done() and self.interaction.message is not None:
+        if self.interaction.response.is_done() and self.interaction.message is None:
             if kwargs.get("followup"):
                 if kwargs.get("view") is None:
                     kwargs["view"] = discord.utils.MISSING
                 del kwargs["followup"]
-                return await self.followup.send(*args, **kwargs)
+
+                delete_after = kwargs.get("delete_after")
+                if delete_after is not None:
+                    del kwargs["delete_after"]
+
+                test = await self.followup.send(*args, **kwargs)
+                if not kwargs.get("ephemeral") and delete_after is not None:
+                    await test.delete(delay=delete_after)
+                return
 
             if kwargs.get("ephemeral") is not None:
                 del kwargs["ephemeral"]
@@ -103,7 +111,7 @@ class BlooContext:
         """
 
         embed = discord.Embed(title=title, description=description,  color=discord.Color.dark_green())
-        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=None, delete_after=delete_after, followup=followup)
+        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
     async def send_warning(self, description: str, title:Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None):
         """Send an embed response with orange color to an interaction.
@@ -121,7 +129,7 @@ class BlooContext:
         """
 
         embed = discord.Embed(title=title, description=description,  color=discord.Color.orange())
-        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=None, delete_after=delete_after, followup=followup)
+        return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
     async def send_error(self, description: str, title:Optional[str] = ":(\nYour command ran into a problem", delete_after: Optional[float] = None, followup: Optional[bool] = None):
         """Send an embed response with red color to an interaction.
