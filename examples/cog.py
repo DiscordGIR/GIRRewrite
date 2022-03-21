@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from utils import cfg
+from utils import cfg, BlooContext, transform_context
 from utils.framework import whisper
 
 
@@ -10,11 +10,15 @@ class Greetings(commands.Cog):
         self.bot = bot
         self._last_member = None
 
-    @app_commands.guilds(cfg.guild_id)
-    @app_commands.command(description="Says hello to the user")
-    @app_commands.describe(message="The message to send back")
-    async def say(self, interaction: discord.Interaction, message: str):
-        await interaction.response.send_message(message)
+    # up here you can define permission checks 
+    # i.e mod_and_up()
+    @app_commands.guilds(cfg.guild_id) # declare guilds this command can be used in
+    @app_commands.command(description="Says hello to the user") # add command to the tree
+    @app_commands.describe(message="The message to send back") # add description to arguments
+    @transform_context # this is to turn the interaction object d.py gives into a Context object (ORDER IS IMPORTANT!)
+    @whisper # make response ephemeral for non mods (ORDER IS IMPORTANT!
+    async def say(self, ctx: BlooContext, message: str):
+        await ctx.send_success(message)
 
 
 async def setup(bot: commands.Bot):
