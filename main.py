@@ -81,9 +81,16 @@ async def app_command_error(interaction: discord.Interaction, _: Union[Command, 
 
 @bot.event
 async def on_ready():
-    logger.info("")
-    logger.info("")
-    logger.info(f'Logged in as: {bot.user.name} - {bot.user.id}\nVersion: {discord.__version__}\n')
+    print("""
+            88          88                          
+            88          88                          
+            88          88                          
+            88,dPPYba,  88  ,adPPYba,   ,adPPYba,   
+            88P'    "8a 88 a8"     "8a a8"     "8a  
+            88       d8 88 8b       d8 8b       d8  
+            88b,   ,a8" 88 "8a,   ,a8" "8a,   ,a8"  
+            8Y"Ybbd8"'  88  `"YbbdP"'   `"YbbdP"'   \n""")
+    logger.info(f'Logged in as: {bot.user.name} - {bot.user.id} ({discord.__version__})')
     logger.info(f'Successfully logged in and booted...!')
 
 
