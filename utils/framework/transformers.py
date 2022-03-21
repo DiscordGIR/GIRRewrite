@@ -39,3 +39,16 @@ class VersionOnDeviceTransformer(app_commands.Transformer):
             raise app_commands.TransformerError("No firmware found with that version.")
 
         return firmware[0]
+
+# class ImageAttachment(app_commands.Transformer):
+#     @classmethod
+#     async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+#         if value is None:
+#             return
+        
+#         image = await app_commands.Transformer.transform(interaction, value)
+#         _type = image.content_type
+#         if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
+#             raise app_commands.TransformerError("Attached file was not an image.")
+
+#         return image

@@ -4,4 +4,5 @@ initial_extensions = [
     # "cogs.commands.info.help"
     "cogs.commands.info.tags",
     "cogs.commands.info.userinfo",
+    "cogs.commands.misc.admin",
 ]

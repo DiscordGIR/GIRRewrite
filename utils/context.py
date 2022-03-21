@@ -50,7 +50,7 @@ class BlooContext:
         Takes in the same args and kwargs as `respond`.
         """
 
-        if self.interaction.response.is_done() and self.interaction.message is not None:
+        if self.interaction.response.is_done() and self.interaction.message is None:
             if kwargs.get("followup"):
                 if kwargs.get("view") is None:
                     kwargs["view"] = discord.utils.MISSING
