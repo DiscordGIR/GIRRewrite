@@ -5,8 +5,9 @@ import discord
 from discord.ext import commands
 from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError
 from extensions import initial_extensions
-from utils import cfg, db, logger, BlooContext, IssueCache
-from utils.framework import PermissionsFailure
+from utils import cfg, db, logger, BlooContext, IssueCache, Tasks
+from utils.cache import RuleCache
+from utils.framework import PermissionsFailure, gatekeeper
 
 from typing import Union
 
@@ -27,19 +28,17 @@ class Bot(commands.Bot):
         super().__init__(*args, **kwargs)
 
         self.issue_cache = IssueCache(self)
-
-        # TODO: tasks
-        # self.tasks = Tasks(self)
+        self.rule_cache = RuleCache(self)
 
         # force the config object and database connection to be loaded
-        # TODO: permissions
-        # if cfg and db and permissions:
-        if cfg and db:
+        if cfg and db and gatekeeper:
             logger.info("Presetup phase completed! Connecting to Discord...")
         
     async def setup_hook(self):
         for extension in initial_extensions:
             await self.load_extension(extension)
+
+        self.tasks = Tasks(self)
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
@@ -92,6 +91,7 @@ async def on_ready():
     logger.info(f'Successfully logged in and booted...!')
 
     await bot.issue_cache.fetch_issue_cache()
+    await bot.rule_cache.fetch_rule_cache()
 
 
 async def main():

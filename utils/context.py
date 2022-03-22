@@ -1,7 +1,10 @@
 import asyncio
 import functools
 from typing import Optional
+
 import discord
+
+from .jobs import Tasks
 
 
 def transform_context(func: discord.app_commands.Command):
@@ -61,6 +64,10 @@ class BlooContext:
     def send(self):
         return self.interaction.channel.send
 
+    @property
+    def tasks(self) -> Tasks:
+        return self.bot.tasks
+
     async def respond_or_edit(self, *args, **kwargs):
         """Respond to an interaction if not already responded, otherwise edit the original response.
         Takes in the same args and kwargs as `respond`.
@@ -70,7 +77,9 @@ class BlooContext:
             if kwargs.get("followup") or self.interaction.message is None:
                 if kwargs.get("view") is None:
                     kwargs["view"] = discord.utils.MISSING
-                del kwargs["followup"]
+
+                if "followup" in kwargs:
+                    del kwargs["followup"]
 
                 delete_after = kwargs.get("delete_after")
                 if "delete_after" in kwargs:
@@ -92,7 +101,7 @@ class BlooContext:
         else:
             if "followup" in kwargs:
                 del kwargs["followup"]
-            
+
             delete_after = kwargs.get("delete_after")
             if "delete_after" in kwargs:
                 del kwargs["delete_after"]
@@ -111,7 +120,7 @@ class BlooContext:
         if not kwargs.get("ephemeral") and delete_after is not None:
             await response.delete(delay=delete_after)
 
-    async def send_success(self, description: str, title:Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None):
+    async def send_success(self, description: str, title: Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None):
         """Send an embed response with green color to an interaction.
 
         Parameters
@@ -126,10 +135,11 @@ class BlooContext:
             Whether to send this as a followup to the original response, by default None
         """
 
-        embed = discord.Embed(title=title, description=description,  color=discord.Color.dark_green())
+        embed = discord.Embed(
+            title=title, description=description,  color=discord.Color.dark_green())
         return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
-    async def send_warning(self, description: str, title:Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None):
+    async def send_warning(self, description: str, title: Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None):
         """Send an embed response with orange color to an interaction.
 
         Parameters
@@ -144,10 +154,11 @@ class BlooContext:
             Whether to send this as a followup to the original response, by default None
         """
 
-        embed = discord.Embed(title=title, description=description,  color=discord.Color.orange())
+        embed = discord.Embed(
+            title=title, description=description,  color=discord.Color.orange())
         return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
-    async def send_error(self, description: str, title:Optional[str] = ":(\nYour command ran into a problem", delete_after: Optional[float] = None, followup: Optional[bool] = None, whisper: Optional[bool] = False):
+    async def send_error(self, description: str, title: Optional[str] = ":(\nYour command ran into a problem", delete_after: Optional[float] = None, followup: Optional[bool] = None, whisper: Optional[bool] = False):
         """Send an embed response with red color to an interaction.
 
         Parameters
@@ -162,5 +173,6 @@ class BlooContext:
             Whether to send this as a followup to the original response, by default None
         """
 
-        embed = discord.Embed(title=title, description=description,  color=discord.Color.red())
+        embed = discord.Embed(
+            title=title, description=description,  color=discord.Color.red())
         return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper or whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)

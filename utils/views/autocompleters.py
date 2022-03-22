@@ -1,4 +1,5 @@
 from itertools import groupby
+import re
 from typing import List
 
 import aiohttp
@@ -111,7 +112,16 @@ async def device_autocomplete(_: discord.Interaction, current: str) -> List[app_
 
     return [app_commands.Choice(name=device.get('name'), value=device.get("devices")[0] if device.get("devices") else device.get("name")) for device in devices][:25]
 
+
 async def issue_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     issue_titles = [issue for issue in interaction.client.issue_cache.cache]
     issue_titles.sort(key=lambda issue: issue.lower())
     return [app_commands.Choice(name=issue_title, value=issue_title) for issue_title in issue_titles if current.lower() in issue_title.lower()][:25]
+
+
+async def rule_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    rule_titles = [(issue_title, issue.description) for issue_title, issue in interaction.client.rule_cache.cache.items()]
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key[0])]
+    rule_titles.sort(key=alphanum_key)
+    return [app_commands.Choice(name=f"{title} - {description}"[:100], value=title) for title, description in rule_titles if current.lower() in title.lower() or current.lower() in description.lower()][:25]
