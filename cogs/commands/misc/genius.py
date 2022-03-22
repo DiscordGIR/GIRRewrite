@@ -8,7 +8,7 @@ from discord.ext import commands
 from utils import BlooContext, cfg
 from utils.context import transform_context
 from utils.framework import genius_or_submod_and_up, whisper_in_general
-from utils.views import CommonIssueModal, EditCommonIssue, issue_autocomplete
+from utils.views import CommonIssueModal, EditCommonIssue, issue_autocomplete, GenericDescriptionModal
 
 # from utils.views.prompt import GenericDescriptionModal
 
@@ -76,7 +76,7 @@ class Genius(commands.Cog):
                 raise commands.BadArgument("Attached file was not an image.")
 
         # prompt the user for common issue body
-        modal = CommonIssueModal(bot=self.bot, author=ctx.author, title=title)
+        modal = CommonIssueModal(ctx=ctx, author=ctx.author, title=title)
         await ctx.interaction.response.send_modal(modal)
         await modal.wait()
 
@@ -84,7 +84,8 @@ class Genius(commands.Cog):
         buttons = modal.buttons
 
         if not description:
-            await ctx.send_warning("Cancelled adding common issue.")
+            if not modal.callback_triggered:
+                await ctx.send_warning("Cancelled adding common issue.")
             return
 
         embed, f, view = await prepare_issue_response(title, description, ctx.author, buttons, image)
@@ -124,7 +125,8 @@ class Genius(commands.Cog):
         await modal.wait()
 
         if not modal.edited:
-            await ctx.send_warning("Cancelled adding common issue.")
+            if not modal.callback_triggered:
+                await ctx.send_warning("Cancelled adding common issue.")
             return
 
         description = modal.description
@@ -136,44 +138,38 @@ class Genius(commands.Cog):
         await ctx.send_success("Common issue edited!", delete_after=5, followup=True)
         await self.do_reindex(channel)
 
-    # @genius_or_submod_and_up()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Post an embed", permissions=slash_perms.genius_or_submod_and_up())
-    # async def postembed(self, ctx: BlooContext, *, title: Option(str, description="Title of the embed"), image: Option(discord.Attachment, required=False, description="Image to show in embed")):
-    #     """Post an embed in the current channel (Geniuses only)
+    @genius_or_submod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Post an embed")
+    @app_commands.describe(title="Title of the embed")
+    @app_commands.describe(channel="Channel to post the embed in")
+    @app_commands.describe(image="Image to show in embed")
+    @transform_context
+    async def postembed(self, ctx: BlooContext, *, title: str, channel: discord.TextChannel = None, image: discord.Attachment = None):
+        post_channel = channel or ctx.channel
 
-    #     Example usage
-    #     ------------
-    #     /postembed This is a title (you will be prompted for a description)
+        # ensure the attached file is an image
+        if image is not None:
+            _type = image.content_type
+            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
+                raise commands.BadArgument("Attached file was not an image.")
 
-    #     Parameters
-    #     ----------
-    #     title : str
-    #         "Title for the embed"
+        # prompt the user for common issue body
+        modal = GenericDescriptionModal(ctx=ctx,
+            author=ctx.author, title=f"New embed — {title}")
+        await ctx.interaction.response.send_modal(modal)
+        await modal.wait()
 
-    #     """
+        description = modal.value
+        if not description:
+            await ctx.send_warning("Cancelled new embed.")
+            return
 
-    #     # get #common-issues channel
-    #     channel = ctx.channel
+        embed, f, _ = await prepare_issue_response(title, description, ctx.author, image)
+        await post_channel.send(embed=embed, file=f)
 
-    #     # ensure the attached file is an image
-    #     if image is not None:
-    #         _type = image.content_type
-    #         if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-    #             raise commands.BadArgument("Attached file was not an image.")
-
-    #     # prompt the user for common issue body
-    #     modal = GenericDescriptionModal(
-    #         author=ctx.author, title=f"New embed — {title}")
-    #     await ctx.interaction.response.send_modal(modal)
-    #     await modal.wait()
-
-    #     description = modal.value
-    #     if not description:
-    #         await ctx.send_warning("Cancelled new embed.")
-    #         return
-
-    #     embed, f, _ = await prepare_issue_response(title, description, ctx.author, image)
-    #     await channel.send(embed=embed, file=f)
+        if post_channel != ctx.channel:
+            await ctx.send_success(f"Embed posted in {post_channel.mention}!", delete_after=5)
 
     # @genius_or_submod_and_up()
     # @slash_command(guild_ids=[cfg.guild_id], description="Repost common-issues table of contents", permissions=slash_perms.genius_or_submod_and_up())
@@ -193,46 +189,46 @@ class Genius(commands.Cog):
     #     count, page = res
     #     await ctx.send_success(f"Indexed {count} issues and posted {page} Table of Contents embeds!")
 
-    # async def do_reindex(self, channel):
-    #     contents = {}
-    #     async for message in channel.history(limit=None, oldest_first=True):
-    #         if message.author.id != self.bot.user.id:
-    #             continue
+    async def do_reindex(self, channel):
+        contents = {}
+        async for message in channel.history(limit=None, oldest_first=True):
+            if message.author.id != self.bot.user.id:
+                continue
 
-    #         if not message.embeds:
-    #             continue
+            if not message.embeds:
+                continue
 
-    #         embed = message.embeds[0]
-    #         if not embed.footer.text:
-    #             continue
+            embed = message.embeds[0]
+            if not embed.footer.text:
+                continue
 
-    #         if embed.footer.text.startswith("Submitted by"):
-    #             contents[f"{embed.title}"] = message
-    #         elif embed.footer.text.startswith("Table of Contents"):
-    #             await message.delete()
-    #         else:
-    #             continue
+            if embed.footer.text.startswith("Submitted by"):
+                contents[f"{embed.title}"] = message
+            elif embed.footer.text.startswith("Table of Contents"):
+                await message.delete()
+            else:
+                continue
 
-    #     page = 1
-    #     count = 1
-    #     toc_embed = discord.Embed(
-    #         title="Table of Contents", description="Click on a link to jump to the issue!\n", color=discord.Color.gold())
-    #     toc_embed.set_footer(text=f"Table of Contents • Page {page}")
-    #     for title, message in contents.items():
-    #         this_line = f"\n{count}. [{title}]({message.jump_url})"
-    #         count += 1
-    #         if len(toc_embed.description) + len(this_line) < 4096:
-    #             toc_embed.description += this_line
-    #         else:
-    #             await channel.send(embed=toc_embed)
-    #             page += 1
-    #             toc_embed.description = ""
-    #             toc_embed.title = ""
-    #             toc_embed.set_footer(text=f"Table of Contents • Page {page}")
+        page = 1
+        count = 1
+        toc_embed = discord.Embed(
+            title="Table of Contents", description="Click on a link to jump to the issue!\n", color=discord.Color.gold())
+        toc_embed.set_footer(text=f"Table of Contents • Page {page}")
+        for title, message in contents.items():
+            this_line = f"\n{count}. [{title}]({message.jump_url})"
+            count += 1
+            if len(toc_embed.description) + len(this_line) < 4096:
+                toc_embed.description += this_line
+            else:
+                await channel.send(embed=toc_embed)
+                page += 1
+                toc_embed.description = ""
+                toc_embed.title = ""
+                toc_embed.set_footer(text=f"Table of Contents • Page {page}")
 
-    #     self.bot.issue_cache.cache = contents
-    #     await channel.send(embed=toc_embed)
-    #     return count, page
+        self.bot.issue_cache.cache = contents
+        await channel.send(embed=toc_embed)
+        return count, page
 
     # @genius_or_submod_and_up()
     # @slash_command(guild_ids=[cfg.guild_id], description="Post raw body of an embed", permissions=slash_perms.genius_or_submod_and_up())

@@ -4,13 +4,15 @@ import discord
 from utils.context import BlooContext
 
 class CommonIssueModal(discord.ui.Modal):
-    def __init__(self, bot, title, author: discord.Member) -> None:
-        self.bot = bot
+    def __init__(self, ctx, title, author: discord.Member) -> None:
+        self.ctx = ctx
+        self.bot = ctx.bot
         self.title = title[:20] + "..." if len(title) >= 20 else title
         self.author = author
         self.description = None
         self.buttons = None
-        print(len(f"Add common issue — {self.title}"))
+        self.callback_triggered = False
+
         super().__init__(title=f"Add common issue — {self.title}")
 
         self.add_item(
@@ -45,23 +47,24 @@ class CommonIssueModal(discord.ui.Modal):
             return
 
         self.ctx.interaction = interaction
+        self.callback_triggered = True
 
         button_names = [child.value.strip() for child in self.children[1::2] if child.value is not None and len(child.value.strip()) > 0]
         links = [child.value.strip() for child in self.children[2::2] if child.value is not None and len(child.value.strip()) > 0]
 
         # make sure all links are valid URLs with regex
         if not all(re.match(r'^(https|http)://.*', link) for link in links):
-            await self.send_error(interaction, "The links must be valid URLs!")
+            await self.send_error("The links must be valid URLs!")
             return
 
         if len(button_names) != len(links):
-            await self.send_error(interaction, "All buttons must have labels and links!")
+            await self.send_error("All buttons must have labels and links!")
             return
 
         buttons = list(zip(button_names, links))
         description = self.children[0].value
         if not description:
-            await self.send_error(interaction, "Description is missing!")
+            await self.send_error("Description is missing!")
             return
 
         for label in button_names:
@@ -69,26 +72,21 @@ class CommonIssueModal(discord.ui.Modal):
             if custom_emojis is not None:
                 emoji = custom_emojis.group(0).strip()
                 if not label.startswith(emoji):
-                    await self.send_error(interaction, "Emojis must be at the start of labels!")
+                    await self.send_error("Emojis must be at the start of labels!")
                     return
                 label = label.replace(emoji, '')
                 label = label.strip()
                 if not label:
-                    await self.send_error(interaction, "A button cannot just be an emoji!")
+                    await self.send_error("A button cannot just be an emoji!")
                     return
 
         self.buttons = buttons
         self.description = description
 
         self.stop()
-        try:
-            await interaction.response.send_message()
-        except:
-            pass
 
-    async def send_error(self, interaction: discord.Interaction, error: str):
-        embed = discord.Embed(title=":(\nYour command ran into a problem", description=error, color=discord.Color.red())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+    async def send_error(self, error: str):
+        await self.ctx.send_error(error, whisper=True)
 
 class EditCommonIssue(discord.ui.Modal):
     def __init__(self, ctx: BlooContext, title, issue_message, author: discord.Member) -> None:
@@ -98,6 +96,7 @@ class EditCommonIssue(discord.ui.Modal):
         self.edited = False
         self.title = title[:20] + "..." if len(title) >= 20 else title
         self.description = issue_message.embeds[0].description
+        self.callback_triggered = False
 
         components = issue_message.components
         buttons = []
@@ -144,22 +143,25 @@ class EditCommonIssue(discord.ui.Modal):
         if interaction.user != self.author:
             return
 
+        self.ctx.interaction = interaction
+        self.callback_triggered = True
+
         button_names = [child.value.strip() for child in self.children[1::2] if child.value is not None and len(child.value.strip()) > 0]
         links = [child.value.strip() for child in self.children[2::2] if child.value is not None and len(child.value.strip()) > 0]
 
         # make sure all links are valid URLs with regex
         if not all(re.match(r'^(https|http)://.*', link) for link in links):
-            await self.send_error(interaction, "The links must be valid URLs!")
+            await self.send_error("The links must be valid URLs!")
             return
 
         if len(button_names) != len(links):
-            await self.send_error(interaction, "All buttons must have labels and links!")
+            await self.send_error("All buttons must have labels and links!")
             return
 
         buttons = list(zip(button_names, links))
         description = self.children[0].value
         if not description:
-            await self.send_error(interaction, "Description is missing!")
+            await self.send_error("Description is missing!")
             return
 
         for label in button_names:
@@ -167,12 +169,12 @@ class EditCommonIssue(discord.ui.Modal):
             if custom_emojis is not None:
                 emoji = custom_emojis.group(0).strip()
                 if not label.startswith(emoji):
-                    await self.send_error(interaction, "Emojis must be at the start of labels!")
+                    await self.send_error("Emojis must be at the start of labels!")
                     return
                 label = label.replace(emoji, '')
                 label = label.strip()
                 if not label:
-                    await self.send_error(interaction, "A button cannot just be an emoji!")
+                    await self.send_error("A button cannot just be an emoji!")
                     return
 
         self.buttons = buttons
@@ -180,11 +182,6 @@ class EditCommonIssue(discord.ui.Modal):
         self.edited = True
 
         self.stop()
-        try:
-            await interaction.response.send_message()
-        except:
-            pass
 
-    async def send_error(self, interaction: discord.Interaction, error: str):
-        embed = discord.Embed(title=":(\nYour command ran into a problem", description=error, color=discord.Color.red())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+    async def send_error(self, error: str):
+        await self.ctx.send_error(error, whisper=True)
