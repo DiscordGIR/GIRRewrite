@@ -171,23 +171,24 @@ class Genius(commands.Cog):
         if post_channel != ctx.channel:
             await ctx.send_success(f"Embed posted in {post_channel.mention}!", delete_after=5)
 
-    # @genius_or_submod_and_up()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Repost common-issues table of contents", permissions=slash_perms.genius_or_submod_and_up())
-    # async def reindexissues(self, ctx: BlooContext):
-    #     # get #common-issues channel
-    #     channel: discord.TextChannel = ctx.guild.get_channel(
-    #         guild_service.get_guild().channel_common_issues)
-    #     if not channel:
-    #         raise commands.BadArgument("common issues channel not found")
+    @genius_or_submod_and_up()
+    @common_issue.command(description="Repost common-issues table of contents")
+    @transform_context
+    async def reindex(self, ctx: BlooContext):
+        # get #common-issues channel
+        channel: discord.TextChannel = ctx.guild.get_channel(
+            guild_service.get_guild().channel_common_issues)
+        if not channel:
+            raise commands.BadArgument("common issues channel not found")
 
-    #     await ctx.defer(ephemeral=True)
-    #     res = await self.do_reindex(channel)
+        await ctx.defer(ephemeral=True)
+        res = await self.do_reindex(channel)
 
-    #     if res is None:
-    #         raise commands.BadArgument("Something unexpected occured")
+        if res is None:
+            raise commands.BadArgument("Something unexpected occured")
 
-    #     count, page = res
-    #     await ctx.send_success(f"Indexed {count} issues and posted {page} Table of Contents embeds!")
+        count, page = res
+        await ctx.send_success(f"Indexed {count} issues and posted {page} Table of Contents embeds!")
 
     async def do_reindex(self, channel):
         contents = {}
@@ -230,65 +231,75 @@ class Genius(commands.Cog):
         await channel.send(embed=toc_embed)
         return count, page
 
-    # @genius_or_submod_and_up()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Post raw body of an embed", permissions=slash_perms.genius_or_submod_and_up())
-    # async def rawembed(self, ctx: BlooContext, *, channel: Option(discord.TextChannel, description="Channel the embed is in"), message_id: Option(str, description="ID of the message with the embed"), mobile_friendly: Option(bool, description="Whether to display the tag in a mobile friendly format")):
-    #     try:
-    #         message_id = int(message_id)
-    #     except:
-    #         raise commands.BadArgument("Invalid message ID!")
+    @genius_or_submod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Post raw body of an embed")
+    @app_commands.describe(channel="Channel to post the embed is in")
+    @app_commands.describe(message_id="ID of the message with the embed")
+    @app_commands.describe(mobile_friendly="Whether to display the response in a mobile friendly format")
+    @transform_context
+    async def rawembed(self, ctx: BlooContext, *, channel: discord.TextChannel, message_id: str, mobile_friendly: bool):
+        try:
+            message_id = int(message_id)
+        except:
+            raise commands.BadArgument("Invalid message ID!")
 
-    #     try:
-    #         message: discord.Message = await channel.fetch_message(message_id)
-    #     except Exception:
-    #         raise commands.BadArgument(
-    #             "Could not find a message with that ID!")
+        try:
+            message: discord.Message = await channel.fetch_message(message_id)
+        except Exception:
+            raise commands.BadArgument(
+                "Could not find a message with that ID!")
 
-    #     if message.author != ctx.me:
-    #         raise commands.BadArgument("I didn't post that embed!")
+        if message.author != ctx.me:
+            raise commands.BadArgument("I didn't post that embed!")
 
-    #     if len(message.embeds) == 0:
-    #         raise commands.BadArgument("Message does not have an embed!")
+        if len(message.embeds) == 0:
+            raise commands.BadArgument("Message does not have an embed!")
 
-    #     _file = message.embeds[0].image
-    #     response = discord.utils.escape_markdown(
-    #         message.embeds[0].description) if not mobile_friendly else message.embeds[0].description
-    #     parts = [response[i:i+2000] for i in range(0, len(response), 2000)]
+        _file = message.embeds[0].image
+        response = discord.utils.escape_markdown(
+            message.embeds[0].description) if not mobile_friendly else message.embeds[0].description
+        parts = [response[i:i+2000] for i in range(0, len(response), 2000)]
 
-    #     for i, part in enumerate(parts):
-    #         if i == 0:
-    #             await ctx.respond(part, allowed_mentions=discord.AllowedMentions(users=False, roles=False, everyone=False))
-    #         else:
-    #             await ctx.send(part, allowed_mentions=discord.AllowedMentions(users=False, roles=False, everyone=False))
+        for i, part in enumerate(parts):
+            if i == 0:
+                await ctx.respond(part, allowed_mentions=discord.AllowedMentions(users=False, roles=False, everyone=False))
+            else:
+                await ctx.send(part, allowed_mentions=discord.AllowedMentions(users=False, roles=False, everyone=False))
 
-    #     if _file:
-    #         await ctx.send(_file.url, allowed_mentions=discord.AllowedMentions(users=False, roles=False, everyone=False))
+        if _file:
+            await ctx.send(_file.url, allowed_mentions=discord.AllowedMentions(users=False, roles=False, everyone=False))
 
-    # @whisper_in_general()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Post the embed for one of the common issues")
-    # async def issue(self, ctx: BlooContext, title: Option(str, autocomplete=issue_autocomplete), user_to_mention: Option(discord.Member, description="User to mention in the response", required=False)):
-    #     if title not in self.bot.issue_cache.cache:
-    #         raise commands.BadArgument(
-    #             "Issue not found! Title must match one of the embeds exactly, use autocomplete to help!")
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Post the embed for one of the common issues")
+    @app_commands.describe(title="Issue title")
+    @app_commands.autocomplete(title=issue_autocomplete)
+    @app_commands.describe(user_to_mention="User to mention in the response")
+    @transform_context
+    @whisper_in_general
+    async def issue(self, ctx: BlooContext, title: str, user_to_mention: discord.Member = None):
+        if title not in self.bot.issue_cache:
+            raise commands.BadArgument(
+                "Issue not found! Title must match one of the embeds exactly, use autocomplete to help!")
 
-    #     message: discord.Message = self.bot.issue_cache.cache[title]
-    #     embed = message.embeds[0]
-    #     view = discord.ui.View()
-    #     components = message.components
-    #     if components:
-    #         for component in components:
-    #             if isinstance(component, discord.ActionRow):
-    #                 for child in component.children:
-    #                     b = discord.ui.Button(
-    #                         style=child.style, emoji=child.emoji, label=child.label, url=child.url)
-    #                     view.add_item(b)
+        message: discord.Message = self.bot.issue_cache.cache[title]
+        embed = message.embeds[0]
+        view = discord.ui.View()
+        components = message.components
+        if components:
+            for component in components:
+                if isinstance(component, discord.ActionRow):
+                    for child in component.children:
+                        b = discord.ui.Button(
+                            style=child.style, emoji=child.emoji, label=child.label, url=child.url)
+                        view.add_item(b)
 
-    #     if user_to_mention is not None:
-    #         title = f"Hey {user_to_mention.mention}, have a look at this!"
-    #     else:
-    #         title = None
+        if user_to_mention is not None:
+            title = f"Hey {user_to_mention.mention}, have a look at this!"
+        else:
+            title = None
 
-    #     await ctx.respond_or_edit(content=title, embed=embed, ephemeral=ctx.whisper, view=view)
+        await ctx.respond_or_edit(content=title, embed=embed, ephemeral=ctx.whisper, view=view)
 
 
 async def setup(bot):

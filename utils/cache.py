@@ -10,9 +10,13 @@ from .logging import logger
 class IssueCache():
     def __init__(self, bot):
         self.bot = bot
+        self.cache = {}
+
+    def __contains__(self, item):
+        if item in self.cache:
+            return True
 
     async def fetch_issue_cache(self):
-        self.cache = {}
         guild: discord.TextChannel = self.bot.get_guild(cfg.guild_id)
         if not guild:
             return

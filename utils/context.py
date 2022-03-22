@@ -38,6 +38,10 @@ class BlooContext:
             return self.interaction.response.send_message
 
     @property
+    def defer(self):
+        return self.interaction.response.defer
+
+    @property
     def followup(self):
         return self.interaction.followup
 
@@ -48,6 +52,14 @@ class BlooContext:
     @property
     def bot(self):
         return self.interaction.client
+
+    @property
+    def me(self):
+        return self.interaction.guild.me
+
+    @property
+    def send(self):
+        return self.interaction.channel.send
 
     async def respond_or_edit(self, *args, **kwargs):
         """Respond to an interaction if not already responded, otherwise edit the original response.
