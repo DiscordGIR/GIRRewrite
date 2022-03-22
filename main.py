@@ -1,21 +1,17 @@
 import asyncio
-from inspect import trace
 import os
-import sys
 import traceback
 import discord
 from discord.ext import commands
 from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError
 from extensions import initial_extensions
-from utils import cfg, db, logger
+from utils import cfg, db, logger, BlooContext, IssueCache
+from utils.framework import PermissionsFailure
 
 from typing import Union
 
 # Remove warning from songs cog
 import warnings
-
-from utils.context import BlooContext
-from utils.framework import PermissionsFailure
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
@@ -29,6 +25,9 @@ mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
 class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.issue_cache = IssueCache(self)
+
         # TODO: tasks
         # self.tasks = Tasks(self)
 
@@ -41,7 +40,6 @@ class Bot(commands.Bot):
     async def setup_hook(self):
         for extension in initial_extensions:
             await self.load_extension(extension)
-
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
@@ -92,6 +90,8 @@ async def on_ready():
             8Y"Ybbd8"'  88  `"YbbdP"'   `"YbbdP"'   \n""")
     logger.info(f'Logged in as: {bot.user.name} - {bot.user.id} ({discord.__version__})')
     logger.info(f'Successfully logged in and booted...!')
+
+    await bot.issue_cache.fetch_issue_cache()
 
 
 async def main():

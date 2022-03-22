@@ -341,7 +341,7 @@ class Logging(commands.Cog):
         if before.display_name != after.display_name:
             await self.member_nick_update(before, after)
             return
-        if before.communication_disabled_until != after.communication_disabled_until:
+        if before.timed_out_until != after.timed_out_until:
             await self.member_timeout_update(before, after)
             return
 
@@ -404,10 +404,10 @@ class Logging(commands.Cog):
 
     async def member_timeout_update(self, before: discord.Member, after: discord.Member):
         embed = discord.Embed()
-        if before.communication_disabled_until is not None and after.communication_disabled_until is None:
+        if before.timed_out_until is not None and after.timed_out_until is None:
             embed.title = "Member Timeout Removed"
             embed.color = discord.Color.dark_blue()
-        elif (before.communication_disabled_until is None and after.communication_disabled_until is not None) or (before.communication_disabled_until < after.communication_disabled_until):
+        elif (before.timed_out_until is None and after.timed_out_until is not None) or (before.timed_out_until < after.timed_out_until):
             embed.title = "Member Timed Out"
             embed.color = discord.Color.greyple()
         else:

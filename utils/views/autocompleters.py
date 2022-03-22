@@ -110,3 +110,9 @@ async def device_autocomplete(_: discord.Interaction, current: str) -> List[app_
             break
 
     return [app_commands.Choice(name=device.get('name'), value=device.get("devices")[0] if device.get("devices") else device.get("name")) for device in devices][:25]
+
+async def issue_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    issue_titles = [issue for issue in interaction.client.issue_cache.cache]
+    issue_titles.sort(key=lambda issue: issue.lower())
+    print(issue_titles)
+    return [app_commands.Choice(name=issue_title, value=issue_title) for issue_title in issue_titles if current.lower() in issue_title.lower()][:25]

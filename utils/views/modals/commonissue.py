@@ -1,6 +1,8 @@
 import re
 import discord
 
+from utils.context import BlooContext
+
 class CommonIssueModal(discord.ui.Modal):
     def __init__(self, bot, title, author: discord.Member) -> None:
         self.bot = bot
@@ -41,6 +43,8 @@ class CommonIssueModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         if interaction.user != self.author:
             return
+
+        self.ctx.interaction = interaction
 
         button_names = [child.value.strip() for child in self.children[1::2] if child.value is not None and len(child.value.strip()) > 0]
         links = [child.value.strip() for child in self.children[2::2] if child.value is not None and len(child.value.strip()) > 0]
@@ -87,8 +91,9 @@ class CommonIssueModal(discord.ui.Modal):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 class EditCommonIssue(discord.ui.Modal):
-    def __init__(self, bot, title, issue_message, author: discord.Member) -> None:
-        self.bot = bot
+    def __init__(self, ctx: BlooContext, title, issue_message, author: discord.Member) -> None:
+        self.ctx = ctx
+        self.bot = ctx.bot
         self.author = author
         self.edited = False
         self.title = title[:20] + "..." if len(title) >= 20 else title

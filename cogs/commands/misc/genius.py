@@ -8,9 +8,8 @@ from discord.ext import commands
 from utils import BlooContext, cfg
 from utils.context import transform_context
 from utils.framework import genius_or_submod_and_up, whisper_in_general
-from utils.views import CommonIssueModal
+from utils.views import CommonIssueModal, EditCommonIssue, issue_autocomplete
 
-# from utils.views.common_issue_modal import CommonIssueModal, EditCommonIssue
 # from utils.views.prompt import GenericDescriptionModal
 
 
@@ -94,44 +93,48 @@ class Genius(commands.Cog):
         await ctx.send_success("Common issue posted!", delete_after=5, followup=True)
         await self.do_reindex(channel)
 
-    # @genius_or_submod_and_up()
-    # @commonissue.command(description="Submit a new common issue")
-    # async def edit(self, ctx: BlooContext, *, title: Option(str, description="Title of the issue", autocomplete=issue_autocomplete), image: Option(discord.Attachment, required=False, description="Image to show in issue")) -> None:
-    #     channel = ctx.guild.get_channel(
-    #         guild_service.get_guild().channel_common_issues)
-    #     if not channel:
-    #         raise commands.BadArgument("common issues channel not found")
+    @genius_or_submod_and_up()
+    @common_issue.command(description="Submit a new common issue")
+    @app_commands.describe(title="Title of the issue")
+    @app_commands.autocomplete(title=issue_autocomplete)
+    @app_commands.describe(image="Image to show in issue")
+    @transform_context
+    async def edit(self, ctx: BlooContext, *, title: str, image: discord.Attachment = None) -> None:
+        channel = ctx.guild.get_channel(
+            guild_service.get_guild().channel_common_issues)
+        if not channel:
+            raise commands.BadArgument("common issues channel not found")
 
-    #     if title not in self.bot.issue_cache.cache:
-    #         raise commands.BadArgument(
-    #             "Issue not found! Title must match one of the embeds exactly, use autocomplete to help!")
+        if title not in self.bot.issue_cache.cache:
+            raise commands.BadArgument(
+                "Issue not found! Title must match one of the embeds exactly, use autocomplete to help!")
 
-    #     message: discord.Message = self.bot.issue_cache.cache[title]
+        message: discord.Message = self.bot.issue_cache.cache[title]
 
-    #     # ensure the attached file is an image
-    #     if image is not None:
-    #         _type = image.content_type
-    #         if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-    #             raise commands.BadArgument("Attached file was not an image.")
+        # ensure the attached file is an image
+        if image is not None:
+            _type = image.content_type
+            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
+                raise commands.BadArgument("Attached file was not an image.")
 
-    #     # prompt the user for common issue body
-    #     modal = EditCommonIssue(
-    #         bot=self.bot, author=ctx.author, title=title, issue_message=message)
-    #     await ctx.interaction.response.send_modal(modal)
-    #     await modal.wait()
+        # prompt the user for common issue body
+        modal = EditCommonIssue(
+            author=ctx.author, ctx=ctx, title=title, issue_message=message)
+        await ctx.interaction.response.send_modal(modal)
+        await modal.wait()
 
-    #     if not modal.edited:
-    #         await ctx.send_warning("Cancelled adding common issue.")
-    #         return
+        if not modal.edited:
+            await ctx.send_warning("Cancelled adding common issue.")
+            return
 
-    #     description = modal.description
-    #     buttons = modal.buttons
+        description = modal.description
+        buttons = modal.buttons
 
-    #     embed, f, view = await prepare_issue_response(title, description, ctx.author, buttons, image)
-    #     embed.set_footer(text=message.embeds[0].footer.text)
-    #     await message.edit(embed=embed, file=f or discord.MISSING, attachments=[], view=view)
-    #     await ctx.send_success("Common issue edited!", delete_after=5, followup=True)
-    #     await self.do_reindex(channel)
+        embed, f, view = await prepare_issue_response(title, description, ctx.author, buttons, image)
+        embed.set_footer(text=message.embeds[0].footer.text)
+        await message.edit(embed=embed, attachments=[f] if f is not None else discord.utils.MISSING, view=view)
+        await ctx.send_success("Common issue edited!", delete_after=5, followup=True)
+        await self.do_reindex(channel)
 
     # @genius_or_submod_and_up()
     # @slash_command(guild_ids=[cfg.guild_id], description="Post an embed", permissions=slash_perms.genius_or_submod_and_up())

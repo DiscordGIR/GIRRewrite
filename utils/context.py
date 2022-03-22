@@ -45,19 +45,23 @@ class BlooContext:
     def edit(self):
         return self.interaction.edit_original_message
 
+    @property
+    def bot(self):
+        return self.interaction.client
+
     async def respond_or_edit(self, *args, **kwargs):
         """Respond to an interaction if not already responded, otherwise edit the original response.
         Takes in the same args and kwargs as `respond`.
         """
 
-        if self.interaction.response.is_done() and self.interaction.message is None:
-            if kwargs.get("followup"):
+        if self.interaction.response.is_done():
+            if kwargs.get("followup") or self.interaction.message is None:
                 if kwargs.get("view") is None:
                     kwargs["view"] = discord.utils.MISSING
                 del kwargs["followup"]
 
                 delete_after = kwargs.get("delete_after")
-                if delete_after is not None:
+                if "delete_after" in kwargs:
                     del kwargs["delete_after"]
 
                 test = await self.followup.send(*args, **kwargs)

@@ -92,6 +92,7 @@ class Stats(commands.Cog):
         embed.add_field(name="Channels", value=len(
             guild.channels) + len(guild.voice_channels), inline=True)
         embed.add_field(name="Roles", value=len(guild.roles), inline=True)
+        # TODO: use ban cache
         embed.add_field(name="Bans", value=len(await guild.bans()), inline=True)
         embed.add_field(name="Owner", value=guild.owner.mention, inline=True)
         embed.add_field(
