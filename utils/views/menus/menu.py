@@ -7,7 +7,6 @@ from utils import BlooContext
 
 
 class Menu(ui.View):
-    # def __init__(self, ctx: Union[BlooContext, BlooOldContext], entries: list, per_page: int, page_formatter: Callable[[Union[BlooContext, BlooOldContext], list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, non_interaction_message=None, timeout_function=None):
     def __init__(self, ctx: BlooContext, entries: list, per_page: int, page_formatter: Callable[[BlooContext, list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, non_interaction_message=None, timeout_function=None):
         super().__init__(timeout=60)
 
@@ -72,10 +71,13 @@ class Menu(ui.View):
 
     async def refresh_response_message(self, interaction: discord.Interaction = None):
         embed = await self.generate_next_embed()
+        self.refresh_button_state()
         if self.is_interaction:
             if interaction is not None: # we want to edit, due to button press
                 self.ctx.interaction = interaction
                 await self.ctx.interaction.response.edit_message(embed=embed, view=self)
+            elif self.ctx.interaction.response.is_done():
+                await self.ctx.interaction.edit_original_message(embed=embed, view=self)
             else: # this is the first time we're posting this menu
                 await self.ctx.interaction.response.send_message(embed=embed, view=self, ephemeral=self.whisper)
         else:
@@ -86,6 +88,8 @@ class Menu(ui.View):
 
     async def on_timeout(self):
         self.stopped = True
+        self.refresh_button_state()
+        await self.refresh_response_message()
         self.stop()
 
     @ui.button(emoji='⏮️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
