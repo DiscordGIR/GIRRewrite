@@ -61,8 +61,9 @@ class TweakMenu(Menu):
         # if len(self.pages) > 1:
         #     extra_buttons.append(self.jump_button)
 
-        for button in self.extra_buttons:
-            self.remove_item(button)
+        self.clear_items()
+        for item in [self.previous, self.pause, self.next]:
+            self.add_item(item)
 
         for button in extra_buttons:
             self.add_item(button)
@@ -70,12 +71,6 @@ class TweakMenu(Menu):
         self.extra_buttons = extra_buttons
 
         super().refresh_button_state()
-
-    async def on_timeout(self):
-        # self.jump_button.disabled = True
-        self.stopped = True
-        await self.refresh_response_message()
-        self.stop()
 
     def on_interaction_check(self, interaction: discord.Interaction):
         return interaction.user == self.ctx.author or gatekeeper.has(interaction.guild, interaction.user, 4)
@@ -155,7 +150,7 @@ async def format_tweak_page(ctx, entries, current_page, all_pages):
 async def canister(ctx: BlooContext, interaction: bool, whisper: bool, result):
     # await TweakMenu(ctx, result, per_page=1, page_formatter=format_tweak_page, whisper=whisper, start_page=25, show_skip_buttons=False, non_interaction_message=await ctx.interaction.original_message()).start()
     ctx.interaction.response._responded = True
-    await TweakMenu(ctx, result, per_page=1, page_formatter=format_tweak_page, whisper=whisper, start_page=25, show_skip_buttons=False).start()
+    await TweakMenu(ctx, result, per_page=1, page_formatter=format_tweak_page, whisper=whisper, start_page=25, show_skip_buttons=False).start(ctx.interaction)
 
 
 class TweakDropdown(discord.ui.Select):

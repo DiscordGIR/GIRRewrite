@@ -35,8 +35,8 @@ class Menu(ui.View):
             self.remove_item(self.first)
             self.remove_item(self.last)
 
-    async def start(self):
-        await self.refresh_response_message()
+    async def start(self, interaction: discord.Interaction = None):
+        await self.refresh_response_message(interaction)
 
     async def generate_next_embed(self):
         if self.current_page in self.page_cache:
@@ -53,7 +53,8 @@ class Menu(ui.View):
 
     def refresh_button_state(self):
         built_in_buttons = [self.first, self.previous,
-                            self.pause, self.next, self.last]
+                        self.pause, self.next, self.last]
+
         if len(self.pages) == 1:
             for button in built_in_buttons:
                 self.remove_item(button)
@@ -77,7 +78,6 @@ class Menu(ui.View):
                 self.ctx.interaction = interaction
                 await self.ctx.interaction.response.edit_message(embed=embed, view=self)
             elif self.ctx.interaction.response.is_done():
-                print("?")
                 await self.ctx.interaction.edit_original_message(embed=embed, view=self)
             else: # this is the first time we're posting this menu
                 await self.ctx.interaction.response.send_message(embed=embed, view=self, ephemeral=self.whisper)
