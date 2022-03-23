@@ -5,6 +5,7 @@ initial_extensions = [
     "cogs.commands.info.tags",
     "cogs.commands.info.userinfo",
     "cogs.commands.misc.admin",
+    "cogs.commands.misc.canister",
     "cogs.commands.misc.genius",
     "cogs.commands.misc.giveaway",
     "cogs.commands.misc.ioscfw",

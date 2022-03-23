@@ -1,5 +1,6 @@
 from .autocompleters import *
 from .confirm import *
+from .menus.canister import *
 from .menus.cfwguide import *
 from .menus.menu import *
 from .misc import *

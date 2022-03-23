@@ -1,3 +1,6 @@
+import json
+import urllib
+
 import aiohttp
 from aiocache import cached
 
@@ -53,6 +56,58 @@ async def get_dstatus_incidents():
         if resp.status == 200:
             incidents = await resp.json()
             return incidents
+
+
+async def canister_search_package(query):
+    """Search for a tweak in Canister's catalogue
+
+    Parameters
+    ----------
+    query : str
+        "Query to search for"
+
+    Returns
+    -------
+    list
+        "List of packages that Canister found matching the query"
+
+    """
+
+    async with client_session.get(f'https://api.canister.me/v1/community/packages/search?query={urllib.parse.quote(query)}&searchFields=identifier,name&responseFields=identifier,header,tintColor,name,price,description,packageIcon,repository.uri,repository.name,author,maintainer,latestVersion,nativeDepiction,depiction') as resp:
+        if resp.status == 200:
+            response = json.loads(await resp.text())
+            if response.get('status') == "Successful":
+                return response.get('data')
+            else:
+                return None
+        else:
+            return None
+
+
+async def canister_search_repo(query):
+    """Search for a repo in Canister's catalogue
+
+    Parameters
+    ----------
+    query : str
+        "Query to search for"
+
+    Returns
+    -------
+    list
+        "List of repos that Canister found matching the query"
+
+    """
+
+    async with client_session.get(f'https://api.canister.me/v1/community/repositories/search?query={urllib.parse.quote(query)}') as resp:
+        if resp.status == 200:
+            response = json.loads(await resp.text())
+            if response.get('status') == "Successful":
+                return response.get('data')
+            else:
+                return None
+        else:
+            return None
 
 
 async def init_client_session():
