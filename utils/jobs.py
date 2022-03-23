@@ -336,8 +336,7 @@ async def end_giveaway(channel_id: int, message_id: int, winners: int) -> None:
     embed.color = discord.Color.default()
 
     reaction = message.reactions[0]
-    reacted_users = await reaction.users().flatten()
-    reacted_ids = [user.id for user in reacted_users]
+    reacted_ids = [user.id async for user in reaction.users()]
     reacted_ids.remove(BOT_GLOBAL.user.id)
 
     if len(reacted_ids) < winners:

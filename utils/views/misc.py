@@ -5,7 +5,7 @@ from utils import BlooContext
 
 class PFPView(discord.ui.View):
     def __init__(self, ctx: BlooContext, embed=discord.Embed):
-        super().__init__(timeout=3)
+        super().__init__(timeout=30)
         self.embed = embed
         self.ctx = ctx
 
@@ -46,4 +46,5 @@ class PFPButton(discord.ui.Button):
         else:
             embed.description = f"View As\n {'  '.join([fmt(format_) for format_ in not_animated])}"
 
+        self.view.embed = embed
         await interaction.response.edit_message(embed=embed)

@@ -150,3 +150,8 @@ async def rule_autocomplete(interaction: discord.Interaction, current: str) -> L
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key[0])]
     rule_titles.sort(key=alphanum_key)
     return [app_commands.Choice(name=f"{title} - {description}"[:100], value=title) for title, description in rule_titles if current.lower() in title.lower() or current.lower() in description.lower()][:25]
+
+
+async def time_suggestions(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    vals = ["1m", "15m", "30m", "1h", "6h", "12h", "1d", "1w"]
+    return [ app_commands.Choice(name=val, value=val) for val in vals ]

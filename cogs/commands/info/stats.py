@@ -17,6 +17,7 @@ from utils.framework import whisper, mod_and_up
 class Stats(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.start_time = datetime.now()
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Test server latency by measuring how long it takes to edit a message")

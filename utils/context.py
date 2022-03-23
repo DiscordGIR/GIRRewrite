@@ -74,7 +74,7 @@ class BlooContext:
         """
 
         if self.interaction.response.is_done():
-            if kwargs.get("followup") or self.interaction.message is None:
+            if kwargs.get("followup"):
                 if kwargs.get("view") is None:
                     kwargs["view"] = discord.utils.MISSING
 
@@ -105,9 +105,7 @@ class BlooContext:
             delete_after = kwargs.get("delete_after")
             if "delete_after" in kwargs:
                 del kwargs["delete_after"]
-            print("this?")
             res = await self.respond(*args, **kwargs)
-            print(res)
             if not kwargs.get("ephemeral") and delete_after is not None:
                 await asyncio.sleep(delete_after)
                 await self.interaction.delete_original_message()
