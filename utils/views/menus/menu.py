@@ -71,24 +71,18 @@ class Menu(ui.View):
         self.last.disabled = self.current_page == len(self.pages)
 
     async def refresh_response_message(self, interaction: discord.Interaction = None):
-        if interaction is not None:
-            self.ctx = BlooContext(interaction)
-
         embed = await self.generate_next_embed()
-        self.refresh_button_state()
         if self.is_interaction:
-            msg_send_method = self.ctx.respond_or_edit
-        elif self.non_interaction_message is None:
-            msg_send_method = self.ctx.channel.send
+            if interaction is not None: # we want to edit, due to button press
+                self.ctx.interaction = interaction
+                await self.ctx.interaction.response.edit_message(embed=embed, view=self)
+            else: # this is the first time we're posting this menu
+                await self.ctx.interaction.response.send_message(embed=embed, view=self, ephemeral=self.whisper)
         else:
-            msg_send_method = self.non_interaction_message.edit
-
-        if self.is_interaction:
-            await msg_send_method(embed=embed, view=self, ephemeral=self.whisper)
-        else:
-            response = await msg_send_method(embed=embed, view=self)
             if self.non_interaction_message is None:
-                self.non_interaction_message = response
+                await self.ctx.channel.send(embed=embed, view=self)
+            else:
+                await self.non_interaction_message.edit(embed=embed, view=self)
 
     async def on_timeout(self):
         self.stopped = True
