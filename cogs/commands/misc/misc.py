@@ -15,6 +15,7 @@ from discord.utils import format_dt
 from PIL import Image
 from utils import BlooContext, cfg
 from utils.context import transform_context
+from utils.fetchers import get_dstatus_components, get_dstatus_incidents
 # from utils.menu import BypassMenu
 from utils.framework import (PermissionsFailure, gatekeeper, mod_and_up,
                              whisper, whisper_in_general)
@@ -263,15 +264,11 @@ class Misc(commands.Cog):
     @transform_context
     @whisper
     async def dstatus(self, ctx):
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://discordstatus.com/api/v2/components.json") as resp:
-                if resp.status == 200:
-                    components = await resp.json()
+        components = await get_dstatus_components()
+        incidents = await get_dstatus_incidents()
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://discordstatus.com/api/v2/incidents.json") as resp:
-                if resp.status == 200:
-                    incidents = await resp.json()
+        if not components or not incidents:
+            raise commands.BadArgument("Couldn't get Discord status information!")
 
         api_status = components.get('components')[
             0].get('status').title()  # API
