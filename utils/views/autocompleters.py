@@ -1,13 +1,12 @@
-from itertools import groupby
 import re
+from itertools import groupby
 from typing import List
 
-import aiohttp
 import discord
-from aiocache import cached
 from data.services import guild_service
 from discord import app_commands
 from discord.ext.commands import Command
+from utils import get_ios_cfw
 
 
 def sort_versions(version):
@@ -29,24 +28,6 @@ def transform_groups(groups):
             final_groups.append(group)
 
     return final_groups
-
-
-@cached(ttl=3600)
-async def get_ios_cfw():
-    """Gets all apps on ios.cfw.guide
-
-    Returns
-    -------
-    dict
-        "ios, jailbreaks, devices"
-    """
-
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://api.appledb.dev/main.json") as resp:
-            if resp.status == 200:
-                data = await resp.json()
-
-    return data
 
 
 async def command_list_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:

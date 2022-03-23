@@ -191,43 +191,6 @@ class Misc(commands.Cog):
 
         view.message = await ctx.respond(embed=embed, ephemeral=ctx.whisper, view=view)
 
-    # TODO: move to ios.cfw.guide cog
-#     @whisper_in_general()
-#     @slash_command(guild_ids=[cfg.guild_id], description="Find out how to bypass jailbreak detection for an app")
-#     async def bypass(self, ctx: BlooContext, app: Option(str, description="Name of the app", autocomplete=bypass_autocomplete)):
-#         await ctx.defer(ephemeral=ctx.whisper)
-#         data = await get_ios_cfw()
-#         bypasses = data.get('bypass')
-#         matching_apps = [body for _, body in bypasses.items(
-#         ) if app.lower() in body.get("name").lower()]
-
-#         if not matching_apps:
-#             raise commands.BadArgument(
-#                 "The API does not recognize that app or there are no bypasses available.")
-
-#         # matching_app = bypasses[matching_apps[0]]
-#         # print(matching_app)
-#         if len(matching_apps) > 1:
-#             view = discord.ui.View(timeout=30)
-#             apps = matching_apps[:25]
-#             apps.sort(key=lambda x: x.get("name"))
-#             menu = BypassDropdown(ctx, apps)
-#             view.add_item(menu)
-#             view.on_timeout = menu.on_timeout
-#             embed = discord.Embed(
-#                 description="Which app would you like to view bypasses for?", color=discord.Color.blurple())
-#             await ctx.respond(embed=embed, view=view, ephemeral=ctx.whisper)
-#         else:
-#             ctx.app = matching_apps[0]
-#             bypasses = ctx.app.get("bypasses")
-#             if not bypasses or bypasses is None or bypasses == [None]:
-#                 raise commands.BadArgument(
-#                     f"{ctx.app.get('name')} has no bypasses.")
-
-#             menu = BypassMenu(ctx, ctx.app.get(
-#                 "bypasses"), per_page=1, page_formatter=format_bypass_page, whisper=ctx.whisper)
-#             await menu.start()
-
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Post the embed for one of the rules")
     @app_commands.describe(title="The rule you want to view")
