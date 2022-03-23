@@ -105,8 +105,9 @@ class BlooContext:
             delete_after = kwargs.get("delete_after")
             if "delete_after" in kwargs:
                 del kwargs["delete_after"]
-
-            await self.respond(*args, **kwargs)
+            print("this?")
+            res = await self.respond(*args, **kwargs)
+            print(res)
             if not kwargs.get("ephemeral") and delete_after is not None:
                 await asyncio.sleep(delete_after)
                 await self.interaction.delete_original_message()

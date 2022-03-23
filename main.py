@@ -39,7 +39,7 @@ class Bot(commands.Bot):
             await self.load_extension(extension)
 
         self.tasks = Tasks(self)
-
+        await init_client_session()
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
@@ -94,7 +94,6 @@ async def on_ready():
 
     await bot.issue_cache.fetch_issue_cache()
     await bot.rule_cache.fetch_rule_cache()
-    await init_client_session()
 
 
 async def main():

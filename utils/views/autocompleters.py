@@ -41,6 +41,31 @@ async def tags_autocomplete(_: discord.Interaction, current: str) -> List[app_co
     return [app_commands.Choice(name=tag, value=tag) for tag in tags if current.lower() in tag.lower()][:25]
 
 
+async def ios_version_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    versions = await get_ios_cfw()
+    if versions is None:
+        return []
+
+    versions = versions.get("ios")
+    versions = [v for _, v in versions.items()]
+    versions.sort(key=lambda x: x.get("released")
+                  or "1970-01-01", reverse=True)
+    return [app_commands.Choice(name=f"{v['osStr']} {v['version']} ({v['build']})", value=v["uniqueBuild"]) for v in versions if (current.lower() in v['version'].lower() or current.lower() in v['build'].lower()) and not v['beta']][:25]
+
+
+async def ios_beta_version_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    versions = await get_ios_cfw()
+    if versions is None:
+        return []
+
+    versions = versions.get("ios")
+    versions = [v for _, v in versions.items()]
+    versions.sort(key=lambda x: x.get("released")
+                  or "1970-01-01", reverse=True)
+    return [app_commands.Choice(name=f"{v['osStr']} {v['version']} ({v['build']})", value=v["uniqueBuild"]) for v in versions if (current.lower() in v['version'].lower() or current.lower() in v['build'].lower()) and v['beta']][:25]
+
+
+
 async def ios_on_device_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     cfw = await get_ios_cfw()
     if cfw is None:
@@ -92,6 +117,17 @@ async def device_autocomplete(_: discord.Interaction, current: str) -> List[app_
             break
 
     return [app_commands.Choice(name=device.get('name'), value=device.get("devices")[0] if device.get("devices") else device.get("name")) for device in devices][:25]
+
+
+async def jb_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    apps = await get_ios_cfw()
+    if apps is None:
+        return []
+
+    apps = apps.get("jailbreak")
+    apps = [jb for _, jb in apps.items()]
+    apps.sort(key=lambda x: x["name"].lower())
+    return [app_commands.Choice(name=app["name"], value=app["name"]) for app in apps if app["name"].lower().startswith(current.lower())][:25]
 
 
 async def issue_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:

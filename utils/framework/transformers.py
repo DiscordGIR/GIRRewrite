@@ -32,7 +32,11 @@ class VersionOnDeviceTransformer(app_commands.Transformer):
         ios = response.get("ios")
 
         ios = [i for _, i in ios.items()]
-        version = value.replace("iOS ", "")
+
+        version = value
+        for os_version in ["iOS", "tvOS", "watchOS"]:
+            version = version.replace(os_version + " ", "")
+
         firmware = [v for v in ios if board in v.get(
             'devices') and version == v.get('version') or version.lower() == v.get("uniqueBuild").lower()]
 

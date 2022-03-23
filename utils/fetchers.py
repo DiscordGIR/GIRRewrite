@@ -21,6 +21,24 @@ async def get_ios_cfw():
     return data
 
 
+@cached(ttl=3600)
+async def get_ipsw_firmware_info(version: str):
+    """Gets all apps on ios.cfw.guide
+
+    Returns
+    -------
+    dict
+        "ios, jailbreaks, devices"
+    """
+
+    async with client_session.get(f"https://api.ipsw.me/v4/ipsw/{version}") as resp:
+        if resp.status == 200:
+            data = await resp.json()
+            return data
+
+        return []
+
+
 @cached(ttl=600)
 async def get_dstatus_components():
     async with client_session.get("https://discordstatus.com/api/v2/components.json") as resp:
