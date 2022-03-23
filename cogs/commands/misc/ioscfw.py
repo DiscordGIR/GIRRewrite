@@ -3,17 +3,34 @@ import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands
-# from utils.autocompleters import (device_autocomplete, device_autocomplete_jb,
-#                                   get_ios_cfw, ios_beta_version_autocomplete,
-#                                   ios_on_device_autocomplete,
-#                                   ios_version_autocomplete, jb_autocomplete, transform_groups)
-from utils import cfg, BlooContext, get_ios_cfw, transform_context, get_ipsw_firmware_info
-from utils.framework.transformers import DeviceTransformer, VersionOnDeviceTransformer
-from utils.views import jb_autocomplete, ios_version_autocomplete, ios_beta_version_autocomplete, device_autocomplete
-# from utils.view import CIJMenu, get_signed_status, iterate_apps
+from utils import (BlooContext, cfg, get_ios_cfw, get_ipsw_firmware_info,
+                   transform_context)
 from utils.framework import whisper, whisper_in_general
-from utils.views.autocompleters import ios_on_device_autocomplete, transform_groups
-from utils.views.menus.cij import CIJMenu
+from utils.framework.transformers import (DeviceTransformer,
+                                          VersionOnDeviceTransformer)
+from utils.views import (BypassMenu, CIJMenu, bypass_autocomplete,
+                         device_autocomplete, ios_beta_version_autocomplete,
+                         ios_on_device_autocomplete, ios_version_autocomplete,
+                         jb_autocomplete, transform_groups)
+
+
+def format_bypass_page(ctx, entries, current_page, all_pages):
+    ctx.current_bypass = entries[0]
+    embed = discord.Embed(title=ctx.app.get(
+        "name"), color=discord.Color.blue())
+    embed.set_thumbnail(url=ctx.app.get("icon"))
+
+    embed.description = f"You can use **{ctx.current_bypass.get('name')}**!"
+    if ctx.current_bypass.get("notes") is not None:
+        embed.add_field(name="Note", value=ctx.current_bypass.get('notes'))
+        embed.color = discord.Color.orange()
+    if ctx.current_bypass.get("version") is not None:
+        embed.add_field(name="Supported versions",
+                        value=f"This bypass works on versions {ctx.current_bypass.get('version')} of the app")
+
+    embed.set_footer(
+        text=f"Powered by ios.cfw.guide • Bypass {current_page} of {len(all_pages)}")
+    return embed
 
 
 async def format_jailbreak_page(ctx, entries, current_page, all_pages):
@@ -21,7 +38,6 @@ async def format_jailbreak_page(ctx, entries, current_page, all_pages):
     info = jb.get('info')
     info['name'] = jb.get('name')
     ctx.jb_info = info
-
 
     color = info.get("color")
     if color is not None:
@@ -84,7 +100,8 @@ class iOSCFW(commands.Cog):
 
         jbs = [jb for _, jb in response.get(
             "jailbreak").items()]
-        matching_jbs = [jb for jb in jbs if jb.get("name").lower() == name.lower()]
+        matching_jbs = [jb for jb in jbs if jb.get(
+            "name").lower() == name.lower()]
         if not matching_jbs:
             raise commands.BadArgument("No jailbreak found with that name.")
 
@@ -255,7 +272,6 @@ class iOSCFW(commands.Cog):
 
         return embed, view
 
-
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Get info about an Apple device.")
     @app_commands.describe(device="Name or board identifier")
@@ -296,7 +312,8 @@ class iOSCFW(commands.Cog):
 
         ios = response.get("ios")
         ios = [i for _, i in ios.items()]
-        supported_firmwares = [firmware for firmware in ios if model_number.get("identifier") in firmware.get("devices")]
+        supported_firmwares = [firmware for firmware in ios if model_number.get(
+            "identifier") in firmware.get("devices")]
         supported_firmwares.sort(key=lambda x: x.get("released"))
 
         if supported_firmwares:
@@ -365,48 +382,38 @@ class iOSCFW(commands.Cog):
                         return str(x.get("priority"))
                     else:
                         return str(x.get("name"))
-                    
+
                 found_jbs.sort(key=sort)
 
-            menu = CIJMenu(ctx, found_jbs, per_page=1, page_formatter=format_jailbreak_page, show_skip_buttons=False, whisper=ctx.whisper)
+            menu = CIJMenu(ctx, found_jbs, per_page=1, page_formatter=format_jailbreak_page,
+                           show_skip_buttons=False, whisper=ctx.whisper)
             await menu.start()
 
-    # TODO: move to ios.cfw.guide cog
-#     @whisper_in_general()
-#     @slash_command(guild_ids=[cfg.guild_id], description="Find out how to bypass jailbreak detection for an app")
-#     async def bypass(self, ctx: BlooContext, app: Option(str, description="Name of the app", autocomplete=bypass_autocomplete)):
-#         await ctx.defer(ephemeral=ctx.whisper)
-#         data = await get_ios_cfw()
-#         bypasses = data.get('bypass')
-#         matching_apps = [body for _, body in bypasses.items(
-#         ) if app.lower() in body.get("name").lower()]
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Find out how to bypass jailbreak detection for an app")
+    @app_commands.describe(app="Name of the app")
+    @app_commands.autocomplete(app=bypass_autocomplete)
+    @transform_context
+    @whisper_in_general
+    async def bypass(self, ctx: BlooContext, app: str):
+        data = await get_ios_cfw()
+        bypasses = data.get('bypass')
+        matching_apps = [body for _, body in bypasses.items(
+        ) if app.lower() in body.get("name").lower() or app.lower() in body.get("bundleId").lower()]
 
-#         if not matching_apps:
-#             raise commands.BadArgument(
-#                 "The API does not recognize that app or there are no bypasses available.")
+        if not matching_apps:
+            raise commands.BadArgument(
+                "The API does not recognize that app or there are no bypasses available.")
 
-#         # matching_app = bypasses[matching_apps[0]]
-#         # print(matching_app)
-#         if len(matching_apps) > 1:
-#             view = discord.ui.View(timeout=30)
-#             apps = matching_apps[:25]
-#             apps.sort(key=lambda x: x.get("name"))
-#             menu = BypassDropdown(ctx, apps)
-#             view.add_item(menu)
-#             view.on_timeout = menu.on_timeout
-#             embed = discord.Embed(
-#                 description="Which app would you like to view bypasses for?", color=discord.Color.blurple())
-#             await ctx.respond(embed=embed, view=view, ephemeral=ctx.whisper)
-#         else:
-#             ctx.app = matching_apps[0]
-#             bypasses = ctx.app.get("bypasses")
-#             if not bypasses or bypasses is None or bypasses == [None]:
-#                 raise commands.BadArgument(
-#                     f"{ctx.app.get('name')} has no bypasses.")
+        ctx.app = matching_apps[0]
+        bypasses = ctx.app.get("bypasses")
+        if not bypasses or bypasses is None or bypasses == [None]:
+            raise commands.BadArgument(
+                f"{ctx.app.get('name')} has no bypasses.")
+        menu = BypassMenu(ctx, ctx.app.get(
+            "bypasses"), per_page=1, page_formatter=format_bypass_page, whisper=ctx.whisper)
+        await menu.start()
 
-#             menu = BypassMenu(ctx, ctx.app.get(
-#                 "bypasses"), per_page=1, page_formatter=format_bypass_page, whisper=ctx.whisper)
-#             await menu.start()
 
 async def setup(bot):
     await bot.add_cog(iOSCFW(bot))

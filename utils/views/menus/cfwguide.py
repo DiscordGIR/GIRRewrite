@@ -36,3 +36,38 @@ class CIJMenu(Menu):
 
         self.extra_buttons = extra_buttons
         super().refresh_button_state()
+
+
+class BypassMenu(Menu):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, timeout_function=self.on_timeout)
+        self.extra_buttons = []
+
+    def refresh_button_state(self):
+        app = self.ctx.app
+        bypass = self.ctx.current_bypass
+        extra_buttons = []
+
+        if bypass.get("guide") is not None:
+            extra_buttons.append(
+                discord.ui.Button(label="View Guide", style=discord.ButtonStyle.link, url=bypass.get("guide"))
+            )
+        if bypass.get("repository") is not None:
+            extra_buttons.append(
+                discord.ui.Button(label="View Repository", style=discord.ButtonStyle.link, url=bypass.get("repository").get("uri"))
+            )
+
+        if app.get("uri") is not None:
+            extra_buttons.append(
+                discord.ui.Button(label="View in App Store", emoji="<:appstore:392027597648822281>", style=discord.ButtonStyle.link, url=app.get("uri"))
+            )
+
+        for button in self.extra_buttons:
+            self.remove_item(button)
+
+        for button in extra_buttons:
+            self.add_item(button)
+
+        self.extra_buttons = extra_buttons
+
+        super().refresh_button_state()

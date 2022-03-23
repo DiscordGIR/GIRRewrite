@@ -2,10 +2,8 @@ import base64
 import datetime
 import io
 import json
-from turtle import title
 from typing import Union
 
-import aiohttp
 import discord
 import pytimeparse
 from data.services import guild_service
@@ -16,64 +14,8 @@ from PIL import Image
 from utils import BlooContext, cfg
 from utils.context import transform_context
 from utils.fetchers import get_dstatus_components, get_dstatus_incidents
-# from utils.menu import BypassMenu
-from utils.framework import (PermissionsFailure, gatekeeper, mod_and_up,
-                             whisper, whisper_in_general)
-# from utils.views import bypass_autocomplete, get_ios_cfw, rule_autocomplete
-from yarl import URL
-
+from utils.framework import gatekeeper, mod_and_up, whisper
 from utils.views import PFPButton, PFPView, rule_autocomplete
-
-
-# class BypassDropdown(discord.ui.Select):
-#     def __init__(self, ctx, apps):
-#         self.ctx = ctx
-#         self.apps = {app.get("bundleId"): app for app in apps}
-#         options = [
-#             discord.SelectOption(label=app.get("name"), value=app.get("bundleId"), description="Bypasses found" if app.get("bypasses") else "No bypasses found", emoji='<:appstore:392027597648822281>') for app in apps
-#         ]
-#         super().__init__(placeholder='Pick an app...',
-#                          min_values=1, max_values=1, options=options)
-
-#     async def callback(self, interaction):
-#         if interaction.user != self.ctx.author:
-#             return
-
-#         self.view.stop()
-#         app = self.apps.get(self.values[0])
-#         self.ctx.app = app
-#         if not app.get("bypasses"):
-#             await self.ctx.send_error("No bypasses found for this app!")
-#             return
-
-#         menu = BypassMenu(self.ctx, app.get("bypasses"), per_page=1,
-#                           page_formatter=format_bypass_page, whisper=self.ctx.whisper)
-#         await menu.start()
-
-#     async def on_timeout(self):
-#         self.disabled = True
-#         self.placeholder = "Timed out"
-
-#         await self.ctx.edit(view=self._view)
-
-
-def format_bypass_page(ctx, entries, current_page, all_pages):
-    ctx.current_bypass = entries[0]
-    embed = discord.Embed(title=ctx.app.get(
-        "name"), color=discord.Color.blue())
-    embed.set_thumbnail(url=ctx.app.get("icon"))
-
-    embed.description = f"You can use **{ctx.current_bypass.get('name')}**!"
-    if ctx.current_bypass.get("notes") is not None:
-        embed.add_field(name="Note", value=ctx.current_bypass.get('notes'))
-        embed.color = discord.Color.orange()
-    if ctx.current_bypass.get("version") is not None:
-        embed.add_field(name="Supported versions",
-                        value=f"This bypass works on versions {ctx.current_bypass.get('version')} of the app")
-
-    embed.set_footer(
-        text=f"Powered by ios.cfw.guide • Bypass {current_page} of {len(all_pages)}")
-    return embed
 
 
 class Misc(commands.Cog):

@@ -130,6 +130,14 @@ async def jb_autocomplete(_: discord.Interaction, current: str) -> List[app_comm
     return [app_commands.Choice(name=app["name"], value=app["name"]) for app in apps if app["name"].lower().startswith(current.lower())][:25]
 
 
+async def bypass_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    data = await get_ios_cfw()
+    bypasses = data.get("bypass")
+    apps = [app for _, app in bypasses.items()]
+    apps.sort(key=lambda x: x.get("name").lower())
+    return [app_commands.Choice(name=app.get("name"), value=app.get("bundleId")) for app in apps if current.lower() in app.get("name").lower()][:25]
+
+
 async def issue_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     issue_titles = [issue for issue in interaction.client.issue_cache.cache]
     issue_titles.sort(key=lambda issue: issue.lower())
