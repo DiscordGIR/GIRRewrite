@@ -30,7 +30,7 @@ class TweakMenu(Menu):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, timeout_function=self.on_timeout)
         # TODO: look into JumpButton
-        # self.jump_button = JumpButton(self.ctx.bot, len(self.pages), self)
+        self.jump_button = JumpButton(self.ctx, len(self.pages), self)
         self.extra_buttons = []
 
     def refresh_button_state(self):
@@ -58,8 +58,8 @@ class TweakMenu(Menu):
                                                    url=self.ctx.depiction, style=discord.ButtonStyle.url, row=1),
                                  )
 
-        # if len(self.pages) > 1:
-        #     extra_buttons.append(self.jump_button)
+        if len(self.pages) > 1:
+            extra_buttons.append(self.jump_button)
 
         self.clear_items()
         for item in [self.previous, self.pause, self.next]:
@@ -341,43 +341,47 @@ class BypassMenu(Menu):
         self.stop()
 
 
-# class JumpButton(discord.ui.Button):
-#     def __init__(self, bot, max_page: int, tmb):
-#         super().__init__(style=discord.ButtonStyle.primary, emoji="⤴️")
-#         self.max_page = max_page
-#         self.bot = bot
-#         self.tmb = tmb
-#         self.row = 2
+class JumpButton(discord.ui.Button):
+    def __init__(self, ctx, max_page: int, tmb):
+        super().__init__(style=discord.ButtonStyle.primary, emoji="⤴️")
+        self.max_page = max_page
+        self.ctx = ctx
+        self.tmb = tmb
+        self.row = 2
 
-#     async def callback(self, interaction: discord.Interaction):
-#         if interaction.user != self.tmb.ctx.author:
-#             return
+    async def callback(self, interaction: discord.Interaction):
+        if interaction.user != self.tmb.ctx.author:
+            return
 
-#         # ctx = await self.bot.get_application_context(interaction, cls=BlooContext)
-#         ctx = BlooContext(interaction)
+        self.ctx.interaction = interaction
+        modal = JumpModal(self.ctx, self.max_page)
+        await interaction.response.send_modal(modal)
+        await modal.wait()
 
-#         await interaction.response.defer(ephemeral=True)
-#         prompt = PromptData(
-#             value_name="page",
-#             description="What page do you want to jump to?",
-#             timeout=10,
-#             convertor=None)
+        if modal.page.value is not None:
+            try:
+                res = int(modal.page.value)
+            except ValueError:
+                await self.ctx.send_warning("Invalid page number!", followup=True, ephemeral=True)
+                return
 
-#         res = await ctx.prompt(prompt)
-#         if res is None:
-#             await ctx.send_warning("Cancelled")
-#             return
+            if res < 0 or res > self.max_page:
+                await self.ctx.send_warning("Invalid page number!", followup=True, ephemeral=True)
+                return
 
-#         try:
-#             res = int(res)
-#         except ValueError:
-#             await ctx.send_warning("Invalid page number!")
-#             return
+            self.tmb.current_page = res
+            await self.tmb.refresh_response_message()
+            # await ctx.send_success(f"Jumped to page {res}!")
 
-#         if res < 0 or res > self.max_page:
-#             await ctx.send_warning("Invalid page number!")
-#             return
+class JumpModal(discord.ui.Modal):
+    def __init__(self, ctx, max_page):
+        super().__init__(title="Jump to Page")
+        self.ctx = ctx
+        self.page = discord.ui.TextInput(label="Page", placeholder=f"Between 1 and {max_page}")
+        self.add_item(self.page)
 
-#         self.tmb.current_page = res
-#         await self.tmb.refresh_response_message()
-#         await ctx.send_success(f"Jumped to page {res}!")
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.send_message()
+        except:
+            pass
