@@ -354,7 +354,7 @@ class JumpButton(discord.ui.Button):
             return
 
         self.ctx.interaction = interaction
-        modal = JumpModal(self.ctx, self.max_page)
+        modal = JumpModal(self.tmb.current_page, self.max_page)
         await interaction.response.send_modal(modal)
         await modal.wait()
 
@@ -371,12 +371,11 @@ class JumpButton(discord.ui.Button):
 
             self.tmb.current_page = res
             await self.tmb.refresh_response_message()
-            # await ctx.send_success(f"Jumped to page {res}!")
+            await self.ctx.send_success(f"Jumped to page {res}!", followup=True, ephemeral=True)
 
 class JumpModal(discord.ui.Modal):
-    def __init__(self, ctx, max_page):
-        super().__init__(title="Jump to Page")
-        self.ctx = ctx
+    def __init__(self, current_page, max_page):
+        super().__init__(title=f"Jump to Page (currently {current_page})")
         self.page = discord.ui.TextInput(label="Page", placeholder=f"Between 1 and {max_page}")
         self.add_item(self.page)
 
