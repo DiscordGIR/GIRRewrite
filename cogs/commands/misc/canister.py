@@ -1,15 +1,11 @@
-import json
-import re
-import urllib
 
-import aiohttp
+import re
+
 import discord
 from data.services.guild_service import guild_service
 from discord import app_commands
 from discord.ext import commands
-from utils import cfg, BlooContext
-from utils.context import transform_context
-from utils.fetchers import canister_search_package
+from utils import cfg, BlooContext, transform_context, canister_search_package
 from utils.framework import gatekeeper
 from utils.views import default_repos, TweakMenu, TweakDropdown
 
@@ -50,52 +46,52 @@ class Canister(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-#     @commands.Cog.listener()
-#     async def on_message(self, message):
-#         if message.guild is None:
-#             return
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.guild is None:
+            return
 
-#         author = message.guild.get_member(message.author.id)
-#         if author is None:
-#             return
+        author = message.guild.get_member(message.author.id)
+        if author is None:
+            return
 
-#         if not permissions.has(message.guild, author, 5) and message.channel.id == guild_service.get_guild().channel_general:
-#             return
+        if not gatekeeper.has(message.guild, author, 5) and message.channel.id == guild_service.get_guild().channel_general:
+            return
 
-#         pattern = re.compile(
-#             r".*?(?<!\[)+\[\[((?!\s+)([\w+\ \&\+\-\<\>\#\:\;\%\(\)]){2,})\]\](?!\])+.*")
-#         if not pattern.match(message.content):
-#             return
+        pattern = re.compile(
+            r".*?(?<!\[)+\[\[((?!\s+)([\w+\ \&\+\-\<\>\#\:\;\%\(\)]){2,})\]\](?!\])+.*")
+        if not pattern.match(message.content):
+            return
 
-#         matches = pattern.findall(message.content)
-#         if not matches:
-#             return
+        matches = pattern.findall(message.content)
+        if not matches:
+            return
 
-#         search_term = matches[0][0].replace('[[', '').replace(']]', '')
-#         if not search_term:
-#             return
+        search_term = matches[0][0].replace('[[', '').replace(']]', '')
+        if not search_term:
+            return
 
-#         ctx = await self.bot.get_context(message, cls=BlooOldContext)
+        ctx = await self.bot.get_context(message)
 
-#         async with ctx.typing():
-#             result = list(await search(search_term))
+        async with ctx.typing():
+            result = list(await canister_search_package(search_term))
 
-#         if not result:
-#             embed = discord.Embed(
-#                 title=":(\nI couldn't find that package", color=discord.Color.red())
-#             embed.description = f"Try broadening your search query."
-#             await ctx.send(embed=embed, delete_after=8)
-#             return
+        if not result:
+            embed = discord.Embed(
+                title=":(\nI couldn't find that package", color=discord.Color.red())
+            embed.description = f"Try broadening your search query."
+            await ctx.send(embed=embed, delete_after=8)
+            return
 
-#         view = discord.ui.View(timeout=30)
-#         td = TweakDropdown(author, result, interaction=False,
-#                            should_whisper=False)
-#         view.add_item(td)
-#         td.refresh_view(result[0])
-#         view.on_timeout = td.on_timeout
-#         message = await ctx.send(embed=await td.format_tweak_page(result[0]), view=view)
-#         new_ctx = await self.bot.get_context(message, cls=BlooOldContext)
-#         td.start(new_ctx)
+        view = discord.ui.View(timeout=30)
+        td = TweakDropdown(author, result, interaction=False,
+                           should_whisper=False)
+        view.add_item(td)
+        td.refresh_view(result[0])
+        view.on_timeout = td.on_timeout
+        message = await ctx.send(embed=await td.format_tweak_page(result[0]), view=view)
+        new_ctx = await self.bot.get_context(message)
+        td.start(new_ctx)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Search for a jailbreak tweak or package")

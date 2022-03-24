@@ -8,6 +8,7 @@ from discord.ext import commands
 from utils import BlooContext, cfg
 from utils.context import transform_context
 from utils.framework import genius_or_submod_and_up, whisper_in_general
+from utils.framework.checks import submod_or_admin_and_up
 from utils.views import CommonIssueModal, EditCommonIssue, issue_autocomplete, GenericDescriptionModal
 
 # from utils.views.prompt import GenericDescriptionModal
@@ -300,6 +301,46 @@ class Genius(commands.Cog):
             title = None
 
         await ctx.respond_or_edit(content=title, embed=embed, ephemeral=ctx.whisper, view=view)
+
+    @submod_or_admin_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Post a new subreddit news post")
+    @app_commands.describe(image="Image to show in embed")
+    @transform_context
+    async def subnews(self, ctx: BlooContext, image: discord.Attachment = None):
+        db_guild = guild_service.get_guild()
+
+        channel = ctx.guild.get_channel(db_guild.channel_subnews)
+        if not channel:
+            raise commands.BadArgument("A subreddit news channel was not found. Contact Slim.")
+
+        subnews = ctx.guild.get_role(db_guild.role_sub_news)
+        if not subnews:
+            raise commands.BadArgument("A subbredit news role was not found. Conact Slim")
+
+        modal = GenericDescriptionModal(ctx, author=ctx.author, title=f"New sub news post")
+        await ctx.interaction.response.send_modal(modal)
+        await modal.wait()
+
+        description = modal.value
+        if not description:
+            await ctx.send_warning("Cancelled adding meme.")
+            return
+
+        body = f"{subnews.mention} New Subreddit news post!\n\n{description}"
+
+        if image is not None:
+            # ensure the attached file is an image
+            _type = image.content_type
+            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
+                raise commands.BadArgument("Attached file was not an image.")
+
+            f = await image.to_file()
+        else:
+            f = None
+
+        await channel.send(content=body, file=f)
+        await ctx.send_success("Posted subreddit news post!", delete_after=5, followup=True)
 
 
 async def setup(bot):

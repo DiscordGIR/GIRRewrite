@@ -75,6 +75,12 @@ class TweakMenu(Menu):
     def on_interaction_check(self, interaction: discord.Interaction):
         return interaction.user == self.ctx.author or gatekeeper.has(interaction.guild, interaction.user, 4)
 
+    async def on_timeout(self):
+        self.jump_button.disabled = True
+        self.stopped = True
+        await self.refresh_response_message()
+        self.stop()
+
 
 async def format_tweak_page(ctx, entries, current_page, all_pages):
     """Formats the page for the tweak embed.
@@ -127,13 +133,6 @@ async def format_tweak_page(ctx, entries, current_page, all_pages):
     embed.add_field(name="Bundle ID", value=entry.get(
         "identifier") or "Not found", inline=True)
     if entry.get('tintColor') is None and entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
-        # async with aiohttp.ClientSession() as session:
-        #     async with session.get(entry.get('packageIcon')) as icon:
-        #         if icon.status == 200:
-        #             color = ColorThief(IO.BytesIO(await icon.read())).get_color(quality=1000)
-        #             embed.color = discord.Color.from_rgb(
-        #                 color[0], color[1], color[2])
-        #         else:
         embed.color = discord.Color.blue()
     elif entry.get('tintColor') is not None:
         embed.color = int(entry.get('tintColor').replace('#', '0x'), 0)
@@ -147,8 +146,7 @@ async def format_tweak_page(ctx, entries, current_page, all_pages):
 
 
 
-async def canister(ctx: BlooContext, interaction: bool, whisper: bool, result):
-    # await TweakMenu(ctx, result, per_page=1, page_formatter=format_tweak_page, whisper=whisper, start_page=25, show_skip_buttons=False, non_interaction_message=await ctx.interaction.original_message()).start()
+async def canister(ctx: BlooContext, whisper: bool, result):
     ctx.interaction.response._responded = True
     await TweakMenu(ctx, result, per_page=1, page_formatter=format_tweak_page, whisper=whisper, start_page=25, show_skip_buttons=False).start(ctx.interaction)
 
@@ -181,11 +179,7 @@ class TweakDropdown(discord.ui.Select):
         self.ctx.interaction = interaction
 
         if self.values[0] == "view_more":
-            # self.ctx.author = self.author
-            if self.interaction:
-                await canister(self.ctx, self.interaction, self.should_whisper, self.raw_entries)
-            else:
-                await canister(self.ctx, False, False, self.raw_entries)
+            await canister(self.ctx, self.should_whisper, self.raw_entries)
             self._view.stop()
             return
 
@@ -194,19 +188,13 @@ class TweakDropdown(discord.ui.Select):
             return
 
         self.refresh_view(selected_value)
-        if self.interaction:
-            await self.ctx.interaction.response.edit_message(embed=await self.format_tweak_page(selected_value), view=self._view)
-        else:
-            await self.ctx.message.edit(embed=await self.format_tweak_page(selected_value), view=self._view)
+        await self.ctx.interaction.response.edit_message(embed=await self.format_tweak_page(selected_value), view=self._view)
 
     async def on_timeout(self):
         self.disabled = True
         self.placeholder = "Timed out"
 
-        if self.interaction:
-            await self.ctx.edit(view=self._view)
-        else:
-            await self.ctx.message.edit(view=self._view)
+        await self.ctx.edit(view=self._view)
 
     async def format_tweak_page(self, entry):
         titleKey = entry.get('name')
@@ -234,13 +222,6 @@ class TweakDropdown(discord.ui.Select):
             "identifier") or "Not found", inline=True)
 
         if entry.get('tintColor') is None and entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
-            # async with aiohttp.ClientSession() as session:
-            #     async with session.get(entry.get('packageIcon')) as icon:
-            #         if icon.status == 200:
-            #             color = ColorThief(io.BytesIO(await icon.read())).get_color(quality=1000)
-            #             embed.color = discord.Color.from_rgb(
-            #                 color[0], color[1], color[2])
-            #         else:
             embed.color = discord.Color.blue()
         elif entry.get('tintColor') is not None:
             embed.color = int(entry.get('tintColor').replace('#', '0x'), 0)

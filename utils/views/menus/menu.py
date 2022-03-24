@@ -7,7 +7,7 @@ from utils import BlooContext
 
 
 class Menu(ui.View):
-    def __init__(self, ctx: BlooContext, entries: list, per_page: int, page_formatter: Callable[[BlooContext, list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, non_interaction_message=None, timeout_function=None):
+    def __init__(self, ctx: BlooContext, entries: list, per_page: int, page_formatter: Callable[[BlooContext, list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, timeout_function=None):
         super().__init__(timeout=60)
 
         self.ctx = ctx
@@ -25,7 +25,6 @@ class Menu(ui.View):
         self.whisper = whisper
         self.show_skip_buttons = show_skip_buttons
         self.current_page = start_page
-        self.non_interaction_message = non_interaction_message
         self.on_timeout = timeout_function or self.on_timeout
 
         self.stopped = False
@@ -73,19 +72,14 @@ class Menu(ui.View):
     async def refresh_response_message(self, interaction: discord.Interaction = None):
         embed = await self.generate_next_embed()
         self.refresh_button_state()
-        if self.is_interaction:
-            if interaction is not None: # we want to edit, due to button press
-                self.ctx.interaction = interaction
-                await self.ctx.interaction.response.edit_message(embed=embed, view=self)
-            elif self.ctx.interaction.response.is_done():
-                await self.ctx.interaction.edit_original_message(embed=embed, view=self)
-            else: # this is the first time we're posting this menu
-                await self.ctx.interaction.response.send_message(embed=embed, view=self, ephemeral=self.whisper)
-        else:
-            if self.non_interaction_message is None:
-                await self.ctx.channel.send(embed=embed, view=self)
-            else:
-                await self.non_interaction_message.edit(embed=embed, view=self)
+
+        if interaction is not None: # we want to edit, due to button press
+            self.ctx.interaction = interaction
+            await self.ctx.interaction.response.edit_message(embed=embed, view=self)
+        elif self.ctx.interaction.response.is_done():
+            await self.ctx.interaction.edit_original_message(embed=embed, view=self)
+        else: # this is the first time we're posting this menu
+            await self.ctx.interaction.response.send_message(embed=embed, view=self, ephemeral=self.whisper)
 
     async def on_timeout(self):
         self.stopped = True
@@ -95,30 +89,33 @@ class Menu(ui.View):
 
     @ui.button(emoji='⏮️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
     async def first(self, button: ui.Button, interaction: discord.Interaction):
-        if interaction.user == self.ctx.author:
+        if self.on_interaction_check(interaction):
             self.current_page = 1
             await self.refresh_response_message(interaction)
 
     @ui.button(emoji='⬅️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
     async def previous(self, button: ui.Button, interaction: discord.Interaction):
-        if interaction.user == self.ctx.author:
+        if self.on_interaction_check(interaction):
             self.current_page -= 1
             await self.refresh_response_message(interaction)
 
     @ui.button(emoji='⏹️', style=discord.ButtonStyle.blurple, row=2)
     async def pause(self, button: ui.Button, interaction: discord.Interaction):
-        if interaction.user == self.ctx.author:
+        if self.on_interaction_check(interaction):
             await self.on_timeout()
             await self.refresh_response_message(interaction)
 
     @ui.button(emoji='➡️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
     async def next(self, button: ui.Button, interaction: discord.Interaction):
-        if interaction.user == self.ctx.author:
+        if self.on_interaction_check(interaction):
             self.current_page += 1
             await self.refresh_response_message(interaction)
 
     @ui.button(emoji='⏭️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
     async def last(self, button: ui.Button, interaction: discord.Interaction):
-        if interaction.user == self.ctx.author:
+        if self.on_interaction_check(interaction):
             self.current_page = len(self.pages)
             await self.refresh_response_message(interaction)
+
+    def on_interaction_check(self, interaction: discord.Interaction):
+        return interaction.user == self.ctx.author
