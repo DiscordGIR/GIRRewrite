@@ -6,21 +6,24 @@ from typing import Union
 
 import discord
 import pytimeparse
-from data.services import guild_service
+import pytz
+from data.services import guild_service, user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
 from PIL import Image
-from utils import BlooContext, cfg
-from utils.context import transform_context
-from utils.fetchers import get_dstatus_components, get_dstatus_incidents
-from utils.framework import gatekeeper, mod_and_up, whisper
-from utils.views import PFPButton, PFPView, rule_autocomplete
+from utils import (BlooContext, cfg, get_dstatus_components,
+                   get_dstatus_incidents, transform_context)
+from utils.framework import (MONTH_MAPPING, gatekeeper,
+                             give_user_birthday_role, mod_and_up, whisper)
+from utils.views import (PFPButton, PFPView, date_autocompleter,
+                         rule_autocomplete)
 
 
 class Misc(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.eastern_timezone = pytz.timezone('US/Eastern')
         self.spam_cooldown = commands.CooldownMapping.from_cooldown(
             3, 15.0, commands.BucketType.channel)
 
@@ -86,6 +89,55 @@ class Misc(commands.Cog):
             await ctx.respond(file=_file)
         else:
             await ctx.respond(em.url)
+
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Set your birthday. The birthday role will be given to you on that day.")
+    @app_commands.describe(month="The month you were born in")
+    @app_commands.choices(month=[app_commands.Choice(name=m, value=m) for m in MONTH_MAPPING.keys()])
+    @app_commands.describe(date="The date you were born on")
+    @app_commands.autocomplete(date=date_autocompleter)
+    @transform_context
+    @whisper
+    async def mybirthday(self, ctx: BlooContext, month: str, date: int) -> None:
+        user = ctx.author
+        if not (gatekeeper.has(ctx.guild, ctx.author, 1) or user.premium_since is not None):
+            raise commands.BadArgument(
+                "You need to be at least Member+ or a Nitro booster to use that command.")
+
+        month = MONTH_MAPPING.get(month)
+        if month is None:
+            raise commands.BadArgument("You gave an invalid date")
+
+        month = month["value"]
+
+        # ensure date is real (2020 is a leap year in case the birthday is leap day)
+        try:
+            datetime.datetime(year=2020, month=month, day=date, hour=12)
+        except ValueError:
+            raise commands.BadArgument("You gave an invalid date.")
+
+        # fetch user profile from DB
+        db_user = user_service.get_user(user.id)
+
+        # mods are able to ban users from using birthdays, let's handle that
+        if db_user.birthday_excluded:
+            raise commands.BadArgument("You are banned from birthdays.")
+
+        # if the user already has a birthday set in the database, refuse to change it (if not a mod)
+        if db_user.birthday != [] and not gatekeeper.has(ctx.guild, ctx.author, 5):
+            raise commands.BadArgument(
+                "You already have a birthday set! You need to ask a mod to change it.")
+
+        # passed all the sanity checks, let's save the birthday
+        db_user.birthday = [month, date]
+        db_user.save()
+
+        await ctx.send_success(f"Your birthday was set.")
+        # if it's the user's birthday today let's assign the role right now!
+        today = datetime.datetime.today().astimezone(self.eastern_timezone)
+        if today.month == month and today.day == date:
+            db_guild = guild_service.get_guild()
+            await give_user_birthday_role(self.bot, db_guild, ctx.author, ctx.guild)
 
     # TODO: do this as buttons?
     @app_commands.guilds(cfg.guild_id)
@@ -210,7 +262,8 @@ class Misc(commands.Cog):
         incidents = await get_dstatus_incidents()
 
         if not components or not incidents:
-            raise commands.BadArgument("Couldn't get Discord status information!")
+            raise commands.BadArgument(
+                "Couldn't get Discord status information!")
 
         api_status = components.get('components')[
             0].get('status').title()  # API

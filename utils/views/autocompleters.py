@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext.commands import Command
 from utils import get_ios_cfw
 from utils.fetchers import canister_fetch_repos
+from utils.framework.birthday import MONTH_MAPPING
 
 
 def sort_versions(version):
@@ -70,7 +71,6 @@ async def ios_beta_version_autocomplete(_: discord.Interaction, current: str) ->
     versions.sort(key=lambda x: x.get("released")
                   or "1970-01-01", reverse=True)
     return [app_commands.Choice(name=f"{v['osStr']} {v['version']} ({v['build']})", value=v["uniqueBuild"]) for v in versions if (current.lower() in v['version'].lower() or current.lower() in v['build'].lower()) and v['beta']][:25]
-
 
 
 async def ios_on_device_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
@@ -155,7 +155,6 @@ async def repo_autocomplete(_: discord.Interaction, current: str) -> List[app_co
     return [app_commands.Choice(name=repo, value=repo) for repo in repos if current.lower() in repo.lower()][:25]
 
 
-
 async def issue_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     issue_titles = [issue for issue in interaction.client.issue_cache.cache]
     issue_titles.sort(key=lambda issue: issue.lower())
@@ -163,13 +162,25 @@ async def issue_autocomplete(interaction: discord.Interaction, current: str) -> 
 
 
 async def rule_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-    rule_titles = [(issue_title, issue.description) for issue_title, issue in interaction.client.rule_cache.cache.items()]
-    convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key[0])]
+    rule_titles = [(issue_title, issue.description) for issue_title,
+                   issue in interaction.client.rule_cache.cache.items()]
+
+    def convert(text): return int(text) if text.isdigit() else text.lower()
+    def alphanum_key(key): return [convert(c)
+                                   for c in re.split('([0-9]+)', key[0])]
     rule_titles.sort(key=alphanum_key)
     return [app_commands.Choice(name=f"{title} - {description}"[:100], value=title) for title, description in rule_titles if current.lower() in title.lower() or current.lower() in description.lower()][:25]
 
 
 async def time_suggestions(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     vals = ["1m", "15m", "30m", "1h", "6h", "12h", "1d", "1w"]
-    return [ app_commands.Choice(name=val, value=val) for val in vals ]
+    return [app_commands.Choice(name=val, value=val) for val in vals]
+
+
+async def date_autocompleter(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    """Autocompletes the date parameter for !mybirthday"""
+    month = MONTH_MAPPING.get(interaction.namespace["month"])
+    if month is None:
+        return []
+
+    return [app_commands.Choice(name=i, value=i) for i in range(1, month["max_days"]+1) if str(i).startswith(str(current))][:25]

@@ -11,6 +11,7 @@ initial_extensions = [
     "cogs.commands.misc.ioscfw",
     "cogs.commands.misc.memes",
     "cogs.commands.misc.misc",
-    "cogs.monitors.logging",
-    "cogs.monitors.xp",
+    "cogs.monitors.misc.songs",
+    "cogs.monitors.mod.logging",
+    "cogs.monitors.utils.applenews",
 ]
