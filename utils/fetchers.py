@@ -110,6 +110,17 @@ async def canister_search_repo(query):
             return None
 
 
+@cached(ttl=3600)
+async def canister_fetch_repos():
+    async with client_session.get('https://api.canister.me/v1/community/repositories/search?ranking=1,2,3,4,5') as resp:
+        if resp.status == 200:
+            response = await resp.json(content_type=None)
+            return response.get("data")
+
+        return None
+
+
+
 async def init_client_session():
     global client_session
     client_session = aiohttp.ClientSession()

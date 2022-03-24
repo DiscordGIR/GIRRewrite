@@ -7,6 +7,7 @@ from data.services import guild_service
 from discord import app_commands
 from discord.ext.commands import Command
 from utils import get_ios_cfw
+from utils.fetchers import canister_fetch_repos
 
 
 def sort_versions(version):
@@ -136,6 +137,17 @@ async def bypass_autocomplete(_: discord.Interaction, current: str) -> List[app_
     apps = [app for _, app in bypasses.items()]
     apps.sort(key=lambda x: x.get("name").lower())
     return [app_commands.Choice(name=app.get("name"), value=app.get("bundleId")) for app in apps if current.lower() in app.get("name").lower()][:25]
+
+
+async def repo_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    repos = await canister_fetch_repos()
+    if repos is None:
+        return []
+    repos = [repo['slug'] for repo in repos if repo.get(
+        "slug") and repo.get("slug") is not None]
+    repos.sort()
+    return [app_commands.Choice(name=repo, value=repo) for repo in repos if current.lower() in repo.lower()][:25]
+
 
 
 async def issue_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
