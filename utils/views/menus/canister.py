@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 
 import discord
-from utils.context import BlooContext
+from utils import BlooContext
 from utils.framework import gatekeeper
 
 from .menu import Menu
@@ -26,10 +26,82 @@ default_repos = [
 ]
 
 
+def tweak_embed_format(entry):
+    titleKey = entry.get('name')
+    description = discord.utils.escape_markdown(entry.get('description'))
+
+    if entry.get('name') is None:
+        titleKey = entry.get('identifier')
+    embed = discord.Embed(title=titleKey, color=discord.Color.blue())
+    embed.description = description[:200] + \
+        "..." if len(description) > 200 else description
+
+    if entry.get('author') is not None:
+        embed.add_field(name="Author", value=discord.utils.escape_markdown(
+            entry.get('author').split("<")[0]), inline=True)
+    else:
+        embed.add_field(name="Author", value=discord.utils.escape_markdown(
+            entry.get('maintainer').split("<")[0]), inline=True)
+
+    embed.add_field(name="Version", value=discord.utils.escape_markdown(
+        entry.get('latestVersion') or "No Version"), inline=True)
+    embed.add_field(name="Price", value=entry.get(
+        "price") or "Free", inline=True)
+    embed.add_field(
+        name="Repo", value=f"[{entry.get('repository').get('name')}]({entry.get('repository').get('uri')})" or "No Repo", inline=True)
+    embed.add_field(name="Bundle ID", value=entry.get(
+        "identifier") or "Not found", inline=True)
+
+    if entry.get('tintColor') is None and entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
+        embed.color = discord.Color.blue()
+    elif entry.get('tintColor') is not None:
+        embed.color = int(entry.get('tintColor').replace('#', '0x'), 0)
+
+    if entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
+        embed.set_thumbnail(url=entry.get('packageIcon'))
+    embed.set_footer(icon_url=f"{'https://assets.stkc.win/bigboss-sileo.png' if 'http://apt.thebigboss.org/repofiles/cydia/CydiaIcon.png' in entry.get('repository').get('uri')+'/CydiaIcon.png' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
+                     text=f"Powered by Canister" or "No Package")
+    embed.timestamp = datetime.now()
+
+    return embed
+
+
+async def format_tweak_page(ctx, entries, current_page, all_pages):
+    """Formats the page for the tweak embed.
+
+    Parameters
+    ----------
+    entries : List[dict]
+        "The list of dictionaries for each tweak"
+    all_pages : list
+        "All entries that we will eventually iterate through"
+    current_page : number
+        "The number of the page that we are currently on"
+
+    Returns
+    -------
+    discord.Embed
+        "The embed that we will send"
+
+    """
+    entry = entries[0]
+    ctx.repo = entry.get('repository').get('uri')
+    ctx.depiction = entry.get('depiction')
+
+    for repo in default_repos:
+        if repo in entry.get('repository').get('uri'):
+            ctx.repo = None
+            break
+
+    embed = tweak_embed_format(entry)
+    embed.set_footer(icon_url=f"{'https://assets.stkc.win/bigboss-sileo.png' if 'http://apt.thebigboss.org/repofiles/cydia/CydiaIcon.png' in entry.get('repository').get('uri')+'/CydiaIcon.png' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
+                     text=f"Powered by Canister • Page {current_page}/{len(all_pages)}" or "No Package")
+    return embed
+
+
 class TweakMenu(Menu):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs, timeout_function=self.on_timeout)
-        # TODO: look into JumpButton
         self.jump_button = JumpButton(self.ctx, len(self.pages), self)
         self.extra_buttons = []
 
@@ -80,70 +152,6 @@ class TweakMenu(Menu):
         self.stopped = True
         await self.refresh_response_message()
         self.stop()
-
-
-async def format_tweak_page(ctx, entries, current_page, all_pages):
-    """Formats the page for the tweak embed.
-
-    Parameters
-    ----------
-    entries : List[dict]
-        "The list of dictionaries for each tweak"
-    all_pages : list
-        "All entries that we will eventually iterate through"
-    current_page : number
-        "The number of the page that we are currently on"
-
-    Returns
-    -------
-    discord.Embed
-        "The embed that we will send"
-
-    """
-    entry = entries[0]
-    ctx.repo = entry.get('repository').get('uri')
-    ctx.depiction = entry.get('depiction')
-
-    for repo in default_repos:
-        if repo in entry.get('repository').get('uri'):
-            ctx.repo = None
-            break
-
-    titleKey = entry.get('name')
-
-    if entry.get('name') is None:
-        titleKey = entry.get('identifier')
-    embed = discord.Embed(title=titleKey, color=discord.Color.blue())
-    embed.description = discord.utils.escape_markdown(
-        entry.get('description')) or "No description"
-
-    if entry.get('author') is not None:
-        embed.add_field(name="Author", value=discord.utils.escape_markdown(
-            entry.get('author').split("<")[0]), inline=True)
-    else:
-        embed.add_field(name="Author", value=discord.utils.escape_markdown(
-            entry.get('maintainer').split("<")[0]), inline=True)
-
-    embed.add_field(name="Version", value=discord.utils.escape_markdown(
-        entry.get('latestVersion') or "No Version"), inline=True)
-    embed.add_field(name="Price", value=entry.get(
-        "price") or "Free", inline=True)
-    embed.add_field(
-        name="Repo", value=f"[{entry.get('repository').get('name')}]({entry.get('repository').get('uri')})" or "No Repo", inline=True)
-    embed.add_field(name="Bundle ID", value=entry.get(
-        "identifier") or "Not found", inline=True)
-    if entry.get('tintColor') is None and entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
-        embed.color = discord.Color.blue()
-    elif entry.get('tintColor') is not None:
-        embed.color = int(entry.get('tintColor').replace('#', '0x'), 0)
-
-    if entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
-        embed.set_thumbnail(url=entry.get('packageIcon'))
-    embed.set_footer(icon_url=f"{'https://assets.stkc.win/bigboss-sileo.png' if 'http://apt.thebigboss.org/repofiles/cydia/CydiaIcon.png' in entry.get('repository').get('uri')+'/CydiaIcon.png' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
-                     text=f"Powered by Canister • Page {current_page}/{len(all_pages)}" or "No Package")
-    embed.timestamp = datetime.now()
-    return embed
-
 
 
 async def canister(ctx: BlooContext, whisper: bool, result):
@@ -197,40 +205,7 @@ class TweakDropdown(discord.ui.Select):
         await self.ctx.edit(view=self._view)
 
     async def format_tweak_page(self, entry):
-        titleKey = entry.get('name')
-        description = discord.utils.escape_markdown(entry.get('description'))
-
-        if entry.get('name') is None:
-            titleKey = entry.get('identifier')
-        embed = discord.Embed(title=titleKey, color=discord.Color.blue())
-        embed.description = description[:200]+"..." if len(description) > 200 else description
-
-        if entry.get('author') is not None:
-            embed.add_field(name="Author", value=discord.utils.escape_markdown(
-                entry.get('author').split("<")[0]), inline=True)
-        else:
-            embed.add_field(name="Author", value=discord.utils.escape_markdown(
-                entry.get('maintainer').split("<")[0]), inline=True)
-
-        embed.add_field(name="Version", value=discord.utils.escape_markdown(
-            entry.get('latestVersion') or "No Version"), inline=True)
-        embed.add_field(name="Price", value=entry.get(
-            "price") or "Free", inline=True)
-        embed.add_field(
-            name="Repo", value=f"[{entry.get('repository').get('name')}]({entry.get('repository').get('uri')})" or "No Repo", inline=True)
-        embed.add_field(name="Bundle ID", value=entry.get(
-            "identifier") or "Not found", inline=True)
-
-        if entry.get('tintColor') is None and entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
-            embed.color = discord.Color.blue()
-        elif entry.get('tintColor') is not None:
-            embed.color = int(entry.get('tintColor').replace('#', '0x'), 0)
-
-        if entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
-            embed.set_thumbnail(url=entry.get('packageIcon'))
-        embed.set_footer(icon_url=f"{'https://assets.stkc.win/bigboss-sileo.png' if 'http://apt.thebigboss.org/repofiles/cydia/CydiaIcon.png' in entry.get('repository').get('uri')+'/CydiaIcon.png' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
-                         text=f"Powered by Canister" or "No Package")
-        embed.timestamp = datetime.now()
+        embed = tweak_embed_format(entry)
         return embed
 
     def generate_buttons(self, entry):
@@ -276,7 +251,6 @@ class TweakDropdown(discord.ui.Select):
 
         for button in extra_buttons:
             self._view.add_item(button)
-
 
 
 class BypassMenu(Menu):
@@ -354,10 +328,12 @@ class JumpButton(discord.ui.Button):
             await self.tmb.refresh_response_message()
             await self.ctx.send_success(f"Jumped to page {res}!", followup=True, ephemeral=True)
 
+
 class JumpModal(discord.ui.Modal):
     def __init__(self, current_page, max_page):
         super().__init__(title=f"Jump to Page (currently {current_page})")
-        self.page = discord.ui.TextInput(label="Page", placeholder=f"Between 1 and {max_page}")
+        self.page = discord.ui.TextInput(
+            label="Page", placeholder=f"Between 1 and {max_page}")
         self.add_item(self.page)
 
     async def on_submit(self, interaction: discord.Interaction):

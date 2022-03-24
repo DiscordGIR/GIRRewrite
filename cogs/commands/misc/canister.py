@@ -1,17 +1,14 @@
 
-import queue
 import re
 
 import discord
-from data.services.guild_service import guild_service
+from data.services import guild_service
 from discord import app_commands
 from discord.ext import commands
-from utils import cfg, BlooContext, transform_context, canister_search_package
+from utils import BlooContext, canister_search_package, cfg, transform_context
 from utils.fetchers import canister_fetch_repos
-from utils.framework import gatekeeper
-from utils.framework.checks import whisper_in_general
-from utils.views import default_repos, TweakMenu, TweakDropdown
-from utils.views.autocompleters import repo_autocomplete
+from utils.framework import gatekeeper, whisper_in_general
+from utils.views import TweakDropdown, default_repos, repo_autocomplete
 
 
 class Canister(commands.Cog):
@@ -104,7 +101,8 @@ class Canister(commands.Cog):
     @whisper_in_general
     async def repo(self, ctx: BlooContext, query: str) -> None:
         repos = await canister_fetch_repos()
-        matches = [repo for repo in repos if repo.get("slug") and repo.get("slug") is not None and repo.get("slug").lower() == query.lower()]
+        matches = [repo for repo in repos if repo.get("slug") and repo.get(
+            "slug") is not None and repo.get("slug").lower() == query.lower()]
         if not matches:
             await ctx.send_error("That repository isn't registered with Canister's database.")
             return
@@ -126,6 +124,7 @@ class Canister(commands.Cog):
         embed.set_footer(text="Powered by Canister")
 
         await ctx.respond(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(Canister(bot))
