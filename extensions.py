@@ -9,6 +9,7 @@ initial_extensions = [
     "cogs.commands.misc.genius_submod",
     "cogs.commands.misc.giveaway",
     "cogs.commands.misc.ioscfw",
+    "cogs.commands.misc.memes",
     "cogs.commands.misc.misc",
     "cogs.monitors.logging",
     "cogs.monitors.xp",

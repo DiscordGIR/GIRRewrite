@@ -42,6 +42,12 @@ async def tags_autocomplete(_: discord.Interaction, current: str) -> List[app_co
     return [app_commands.Choice(name=tag, value=tag) for tag in tags if current.lower() in tag.lower()][:25]
 
 
+async def memes_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    meme = [meme.name.lower() for meme in guild_service.get_guild().memes]
+    meme.sort()
+    return [app_commands.Choice(name=meme, value=meme) for meme in meme if current.lower() in meme.lower()][:25]
+
+
 async def ios_version_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     versions = await get_ios_cfw()
     if versions is None:
