@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 
 import discord
@@ -46,3 +47,33 @@ class ReportActions(ui.View):
         else:
             await interaction.delete_original_message()
         self.stop()
+
+    @ui.button(emoji="🆔", label="Post ID", style=discord.ButtonStyle.primary)
+    async def id(self, _: ui.Button, interaction: discord.Interaction):
+        await interaction.response.send_message(self.target_member.id)
+        await asyncio.sleep(10)
+        await interaction.delete_original_message()
+
+    @ui.button(emoji="🧹", label="Clean up", style=discord.ButtonStyle.primary)
+    async def purge(self, button: ui.Button, interaction: discord.Interaction):
+        await interaction.channel.purge(limit=100)
+        self.stop()
+
+    @ui.button(emoji="🔎", label="Claim report", style=discord.ButtonStyle.primary)
+    async def claim(self, button: ui.Button, interaction: discord.Interaction):
+        report_embed = interaction.message.embeds[0]
+        if "(claimed)" in report_embed.title:
+            ctx = BlooContext(interaction)
+            await ctx.send_error(f"{interaction.user.mention}, this report has already been claimed.", whisper=True)
+            return
+
+        embed = discord.Embed(color=discord.Color.blurple())
+        embed.description = f"{interaction.user.mention} is looking into {self.target_member.mention}'s report!"
+        await interaction.response.send_message(embed=embed)
+        report_embed.color = discord.Color.orange()
+        
+        report_embed.title = f"{report_embed.title} (claimed)"
+        await interaction.message.edit(embed=report_embed)
+
+        await asyncio.sleep(10)
+        await interaction.delete_original_message()
