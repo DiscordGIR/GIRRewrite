@@ -9,6 +9,7 @@ from discord import ui
 from utils import BlooContext, cfg
 from utils.framework import gatekeeper
 from utils.mod import ban, mute, unmute, warn
+from utils.views.modals.prompt import GenericDescriptionModal
 
 from .report_action import ModAction, ReportActionReason
 
@@ -360,19 +361,20 @@ class SpamReportActions(ui.View):
             await interaction.message.delete()
             self.stop()
         
-    # @ui.button(emoji="⚠️", label="Temporary mute", style=discord.ButtonStyle.primary)
-    # async def mute(self, button: ui.Button, interaction: discord.Interaction):
-    #     if not self.check(interaction):
-    #         return
-        
-    #     prompt_data = PromptData(value_name="duration", 
-    #                                     description="Please enter a duration for the mute (i.e 15m).",
-    #                                     convertor=pytimeparse.parse,
-    #                                     )
-    #     await interaction.response.defer()
-    #     self.ctx.author = interaction.user
-    #     duration = await self.ctx.prompt(prompt_data)
-    #     await self.target_member.remove_timeout()
-    #     self.ctx.bot.tasks.cancel_unmute(self.target_member.id)
-    #     await mute(self.ctx, self.target_member, duration, reason="A moderator has reviewed your spam report.")
-    #     await self.ctx.guild.message.delete()
+    @ui.button(emoji="⚠️", label="Temporary mute", style=discord.ButtonStyle.primary)
+    async def mute(self, button: ui.Button, interaction: discord.Interaction):
+        ctx = BlooContext(interaction)
+        view = GenericDescriptionModal(ctx, interaction.user, title=f"Mute duration for {self.target_member}", label="How long should they be muted for?", placeholder="i.e 1h, 1d, ...")
+        await interaction.response.send_modal(view)
+        await view.wait()
+        if view.value is not None:
+            try:
+                duration = pytimeparse.parse(view.value)
+            except ValueError:
+                await ctx.send_warning("I couldn't parse that duration.")
+
+            await self.target_member.edit(timed_out_until=None)
+            ctx.bot.tasks.cancel_unmute(self.target_member.id)
+            await mute(ctx, self.target_member, mod=interaction.user, dur_seconds=duration, reason="A moderator has reviewed your spam report.")
+            await interaction.message.delete()
+            self.stop()

@@ -121,7 +121,12 @@ async def notify_user_warn(ctx: BlooContext, target_member: discord.Member, mod:
 
 async def response_log(ctx, log):
     if isinstance(ctx, BlooContext):
-        await ctx.respond(embed=log, delete_after=10)
+        if ctx.interaction.response.is_done():
+            res = await ctx.interaction.followup.send(embed=log)
+            await res.delete(delay=10)
+        else:
+            await ctx.interaction.response.send_message(embed=log)
+            ctx.bot.loop.create_task(delay_delete(ctx.interaction))
     elif isinstance(ctx, discord.Interaction):
         if ctx.response.is_done():
             res = await ctx.followup.send(embed=log)

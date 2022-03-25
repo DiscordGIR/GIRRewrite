@@ -68,7 +68,6 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
 
     log.remove_author()
     log.set_thumbnail(url=target_member.display_avatar)
-
     dmed = await notify_user(target_member, f"You have been muted in {ctx.guild.name}", log)
     await submit_public_log(ctx, db_guild, target_member, log, dmed)
 
