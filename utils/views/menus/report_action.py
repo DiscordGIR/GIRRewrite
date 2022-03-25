@@ -13,10 +13,11 @@ class ModAction(Enum):
 
 class ReportActionReason(ui.View):
     def __init__(self, target_member: discord.Member, mod: discord.Member, mod_action: ModAction):
-        super().__init__(timeout=60)
+        super().__init__(timeout=20)
         self.target_member = target_member
         self.mod = mod
         self.mod_action = mod_action
+        self.success = False
 
     async def interaction_check(self, interaction: discord.Interaction):
         if self.mod != interaction.user:
@@ -62,15 +63,15 @@ class ReportActionReason(ui.View):
                 await warn(interaction, self.target_member, self.mod, points, reason)
         else:
             await ban(interaction, self.target_member, self.mod, reason)
-            await interaction.message.delete()
 
+        self.success = True
+        await interaction.message.delete()
         self.stop()
 
     async def prompt_for_points(self, reason: str, interaction: discord.Interaction):
         view = PointsView(self.mod)
         await interaction.response.edit_message(embed=discord.Embed(description=f"Warning for `{reason}`. How many points, {self.mod.mention}?", color=discord.Color.blurple()), view=view)
         await view.wait()
-        await interaction.message.delete()
 
         return view.value
 

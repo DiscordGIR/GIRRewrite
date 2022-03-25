@@ -23,17 +23,26 @@ class ReportActions(ui.View):
     @ui.button(emoji="✅", label="Dismiss", style=discord.ButtonStyle.primary)
     async def dismiss(self, _: ui.Button, interaction: discord.Interaction):
         await interaction.message.delete()
+        self.stop()
 
     @ui.button(emoji="⚠️", label="Warn", style=discord.ButtonStyle.primary)
-    async def warn(self, button: ui.Button, interaction: discord.Interaction):
+    async def warn(self, _: ui.Button, interaction: discord.Interaction):
         view = ReportActionReason(target_member=self.target_member, mod=interaction.user, mod_action=ModAction.WARN)
         await interaction.response.send_message(embed=discord.Embed(description=f"{interaction.user.mention}, choose a warn reason for {self.target_member.mention}.", color=discord.Color.blurple()), view=view)
         await view.wait()
-        await interaction.message.delete()
+        if view.success:
+            await interaction.message.delete()
+        else:
+            await interaction.delete_original_message()
+        self.stop()
 
     @ui.button(emoji="❌", label="Ban", style=discord.ButtonStyle.primary)
-    async def ban(self, button: ui.Button, interaction: discord.Interaction):
+    async def ban(self, _: ui.Button, interaction: discord.Interaction):
         view = ReportActionReason(target_member=self.target_member, mod=interaction.user, mod_action=ModAction.BAN)
         await interaction.response.send_message(embed=discord.Embed(description=f"{interaction.user.mention}, choose a ban reason for {self.target_member.mention}.", color=discord.Color.blurple()), view=view)
         await view.wait()
-        await interaction.message.delete()
+        if view.success:
+            await interaction.message.delete()
+        else:
+            await interaction.delete_original_message()
+        self.stop()

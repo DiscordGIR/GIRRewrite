@@ -10,7 +10,7 @@ from discord.utils import escape_markdown
 from utils import BlooContext, cfg
 
 from .mod_logs import prepare_mute_log, prepare_unmute_log, prepare_warn_log
-from .modactions_helpers import (add_ban_case, notify_user, notify_user_warn,
+from .modactions_helpers import (add_ban_case, notify_user, notify_user_warn, response_log,
                                  submit_public_log)
 
 
@@ -134,16 +134,7 @@ async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: disc
 
     # TODO: fix
     # ctx.bot.ban_cache.ban(target_member.id)
-    if isinstance(ctx, BlooContext):
-        await ctx.respond(embed=log, delete_after=10)
-    elif isinstance(ctx, discord.Interaction):
-        if ctx.response.is_done():
-            res = await ctx.followup.send(embed=log)
-            await res.delete(delay=10)
-        else:
-            await ctx.message.channel.send(embed=log, delete_after=10)
-    else:
-        await ctx.send(embed=log, delete_after=10)
+    await response_log(ctx, log)
     await submit_public_log(ctx, db_guild, target_member, log)
 
 
@@ -179,16 +170,6 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
 
     # also send response in channel where command was called
     dmed = await notify_user_warn(ctx, target_member, mod, db_user, db_guild, cur_points, log)
-    if isinstance(ctx, BlooContext):
-        await ctx.respond(embed=log, delete_after=10)
-    elif isinstance(ctx, discord.Interaction):
-        if ctx.response.is_done():
-            res = await ctx.followup.send(embed=log)
-            await res.delete(delay=10)
-        else:
-            await ctx.response.send_message(embed=log)
-            await asyncio.sleep(10)
-            await ctx.delete_original_message()
-    else:
-        await ctx.send(embed=log, delete_after=10)
+    await response_log(ctx, log)
     await submit_public_log(ctx, db_guild, target_member, log, dmed)
+

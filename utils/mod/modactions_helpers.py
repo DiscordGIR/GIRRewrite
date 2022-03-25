@@ -1,3 +1,4 @@
+import asyncio
 import discord
 
 from typing import Union
@@ -112,6 +113,21 @@ async def notify_user_warn(ctx: BlooContext, target_member: discord.Member, mod:
         await submit_public_log(ctx, db_guild, target_member, log_kickban)
 
     return dmed
+
+
+async def response_log(ctx, log):
+    if isinstance(ctx, BlooContext):
+        await ctx.respond(embed=log, delete_after=10)
+    elif isinstance(ctx, discord.Interaction):
+        if ctx.response.is_done():
+            res = await ctx.followup.send(embed=log)
+            await res.delete(delay=10)
+        else:
+            await ctx.response.send_message(embed=log)
+            await asyncio.sleep(10)
+            await ctx.delete_original_message()
+    else:
+        await ctx.send(embed=log, delete_after=10)
 
 
 async def submit_public_log(ctx: BlooContext, db_guild: Guild, user: Union[discord.Member, discord.User], log, dmed: bool = None):
