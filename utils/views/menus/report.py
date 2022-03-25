@@ -26,6 +26,14 @@ class ReportActions(ui.View):
 
     @ui.button(emoji="⚠️", label="Warn", style=discord.ButtonStyle.primary)
     async def warn(self, button: ui.Button, interaction: discord.Interaction):
-        view = ReportActionReason(target_member=self.target_member, mod=interaction.user, interaction_message=interaction.message, mod_action=ModAction.WARN)
+        view = ReportActionReason(target_member=self.target_member, mod=interaction.user, mod_action=ModAction.WARN)
         await interaction.response.send_message(embed=discord.Embed(description=f"{interaction.user.mention}, choose a warn reason for {self.target_member.mention}.", color=discord.Color.blurple()), view=view)
+        await view.wait()
+        await interaction.message.delete()
 
+    @ui.button(emoji="❌", label="Ban", style=discord.ButtonStyle.primary)
+    async def ban(self, button: ui.Button, interaction: discord.Interaction):
+        view = ReportActionReason(target_member=self.target_member, mod=interaction.user, mod_action=ModAction.BAN)
+        await interaction.response.send_message(embed=discord.Embed(description=f"{interaction.user.mention}, choose a ban reason for {self.target_member.mention}.", color=discord.Color.blurple()), view=view)
+        await view.wait()
+        await interaction.message.delete()

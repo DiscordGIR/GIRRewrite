@@ -1,4 +1,6 @@
+import asyncio
 from datetime import datetime, timedelta
+from typing import Union
 
 import discord
 import humanize
@@ -113,42 +115,36 @@ async def unmute(ctx, member, reason: str = "No reason.") -> None:
     await submit_public_log(ctx, db_guild, member, log, dmed)
 
 
-async def ban(ctx, user, reason="No reason."):
-    """Bans a user (mod only)
-
-    Example usage
-    --------------
-    /ban user:<user> reason:<reason>
-
-    Parameters
-    ----------
-    user : discord.Member
-        "The user to be banned, doesn't have to be part of the guild"
-    reason : str, optional
-        "Reason for ban, by default 'No reason.'"
-
-    """
-
+async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: discord.Member, reason="No reason."):
     db_guild = guild_service.get_guild()
 
-    member_is_external = isinstance(user, discord.User)
-
-    log = await add_ban_case(ctx, user, reason, db_guild)
+    member_is_external = isinstance(target_member, discord.User)
+    log = await add_ban_case(target_member, mod, reason, db_guild)
 
     if not member_is_external:
         if cfg.ban_appeal_url is None:
-            await notify_user(user, f"You have been banned from {ctx.guild.name}", log)
+            await notify_user(target_member, f"You have been banned from {ctx.guild.name}", log)
         else:
-            await notify_user(user, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
+            await notify_user(target_member, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
 
-        await user.ban(reason=reason)
+        await target_member.ban(reason=reason)
     else:
         # hackban for user not currently in guild
-        await ctx.guild.ban(discord.Object(id=user.id))
+        await ctx.guild.ban(discord.Object(id=target_member.id))
 
-    ctx.bot.ban_cache.ban(user.id)
-    await ctx.send(embed=log, delete_after=10)
-    await submit_public_log(ctx, db_guild, user, log)
+    # TODO: fix
+    # ctx.bot.ban_cache.ban(target_member.id)
+    if isinstance(ctx, BlooContext):
+        await ctx.respond(embed=log, delete_after=10)
+    elif isinstance(ctx, discord.Interaction):
+        if ctx.response.is_done():
+            res = await ctx.followup.send(embed=log)
+            await res.delete(delay=10)
+        else:
+            await ctx.message.channel.send(embed=log, delete_after=10)
+    else:
+        await ctx.send(embed=log, delete_after=10)
+    await submit_public_log(ctx, db_guild, target_member, log)
 
 
 async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, reason):
@@ -186,8 +182,13 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     if isinstance(ctx, BlooContext):
         await ctx.respond(embed=log, delete_after=10)
     elif isinstance(ctx, discord.Interaction):
-        res = await ctx.followup.send(embed=log)
-        await res.delete(delay=10)
+        if ctx.response.is_done():
+            res = await ctx.followup.send(embed=log)
+            await res.delete(delay=10)
+        else:
+            await ctx.response.send_message(embed=log)
+            await asyncio.sleep(10)
+            await ctx.delete_original_message()
     else:
         await ctx.send(embed=log, delete_after=10)
     await submit_public_log(ctx, db_guild, target_member, log, dmed)

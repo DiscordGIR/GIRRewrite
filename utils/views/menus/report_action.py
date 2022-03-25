@@ -12,11 +12,10 @@ class ModAction(Enum):
 
 
 class ReportActionReason(ui.View):
-    def __init__(self, target_member: discord.Member, mod: discord.Member, interaction_message: discord.Message, mod_action: ModAction):
+    def __init__(self, target_member: discord.Member, mod: discord.Member, mod_action: ModAction):
         super().__init__(timeout=60)
         self.target_member = target_member
         self.mod = mod
-        self.interaction_message = interaction_message
         self.mod_action = mod_action
 
     async def interaction_check(self, interaction: discord.Interaction):
@@ -62,9 +61,10 @@ class ReportActionReason(ui.View):
             if points is not None:
                 await warn(interaction, self.target_member, self.mod, points, reason)
         else:
-            await ban(interaction, self.target_member, reason)
+            await ban(interaction, self.target_member, self.mod, reason)
+            await interaction.message.delete()
 
-        await self.post_cleanup()
+        self.stop()
 
     async def prompt_for_points(self, reason: str, interaction: discord.Interaction):
         view = PointsView(self.mod)
@@ -73,15 +73,6 @@ class ReportActionReason(ui.View):
         await interaction.message.delete()
 
         return view.value
-
-
-    async def post_cleanup(self):
-        try:
-            await self.interaction_message.delete()
-        except:
-            pass
-        finally:
-            self.stop()
 
 
 class PointsView(ui.View):

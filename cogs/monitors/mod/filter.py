@@ -75,34 +75,34 @@ async def manual_report(bot: discord.Client, mod: discord.Member, target: Union[
     await view.start(ctx)
 
 
-async def report_raid_phrase(bot: discord.Client, message: discord.Message, domain: str):
-    """Deals with a report
+# async def report_raid_phrase(bot: discord.Client, message: discord.Message, domain: str):
+#     """Deals with a report
 
-    Parameters
-    ----------
-    bot : discord.Client
-        "Bot object"
-    message : discord.Message
-        "Filtered message"
-    word : str
-        "Filtered word"
-    invite : bool
-        "Was the filtered word an invite?"
+#     Parameters
+#     ----------
+#     bot : discord.Client
+#         "Bot object"
+#     message : discord.Message
+#         "Filtered message"
+#     word : str
+#         "Filtered word"
+#     invite : bool
+#         "Was the filtered word an invite?"
 
-    """
-    db_guild = guild_service.get_guild()
-    channel = message.guild.get_channel(db_guild.channel_reports)
+#     """
+#     db_guild = guild_service.get_guild()
+#     channel = message.guild.get_channel(db_guild.channel_reports)
 
-    ping_string = prepare_ping_string(db_guild, message)
-    view = RaidPhraseReportActions(message.author, domain)
+#     ping_string = prepare_ping_string(db_guild, message)
+#     view = RaidPhraseReportActions(message.author, domain)
 
-    embed = prepare_embed(
-        message, domain, title=f"Possible new raid phrase detected\n{domain}")
-    report_msg = await channel.send(ping_string, embed=embed, view=view)
+#     embed = prepare_embed(
+#         message, domain, title=f"Possible new raid phrase detected\n{domain}")
+#     report_msg = await channel.send(ping_string, embed=embed, view=view)
 
-    # ctx = await bot.get_context(report_msg, cls=BlooOldContext)
-    ctx = await bot.get_context(report_msg)
-    await view.start(ctx)
+#     # ctx = await bot.get_context(report_msg, cls=BlooOldContext)
+#     ctx = await bot.get_context(report_msg)
+#     await view.start(ctx)
 
 
 # async def report_spam(bot, msg, user, title):
