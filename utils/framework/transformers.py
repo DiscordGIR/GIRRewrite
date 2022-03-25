@@ -2,8 +2,7 @@ from typing import Dict
 import discord
 from discord import app_commands
 
-from utils import get_ios_cfw
-from utils.views import transform_groups
+from utils import get_ios_cfw, transform_groups
 
 class DeviceTransformer(app_commands.Transformer):
     @classmethod

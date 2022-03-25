@@ -4,14 +4,14 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from utils import (BlooContext, cfg, get_ios_cfw, get_ipsw_firmware_info,
-                   transform_context)
+                   transform_context, transform_groups)
 from utils.framework import whisper, whisper_in_general
 from utils.framework.transformers import (DeviceTransformer,
                                           VersionOnDeviceTransformer)
 from utils.views import (BypassMenu, CIJMenu, bypass_autocomplete,
                          device_autocomplete, ios_beta_version_autocomplete,
                          ios_on_device_autocomplete, ios_version_autocomplete,
-                         jb_autocomplete, transform_groups)
+                         jb_autocomplete)
 
 
 def format_bypass_page(ctx, entries, current_page, all_pages):

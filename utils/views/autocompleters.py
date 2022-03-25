@@ -6,7 +6,7 @@ import discord
 from data.services import guild_service
 from discord import app_commands
 from discord.ext.commands import Command
-from utils import get_ios_cfw
+from utils import get_ios_cfw, transform_groups
 from utils.fetchers import canister_fetch_repos
 from utils.framework.birthday import MONTH_MAPPING
 
@@ -16,20 +16,6 @@ def sort_versions(version):
     v = version.split(' ')
     v[0] = list(map(int, v[1].split('.')))
     return v
-
-
-def transform_groups(groups):
-    final_groups = []
-    groups = [g for _, g in groups.items()]
-    for group in groups:
-        if group.get("subgroup") is not None:
-            for subgroup in group.get("subgroup"):
-                subgroup["order"] = group.get("order")
-                final_groups.append(subgroup)
-        else:
-            final_groups.append(group)
-
-    return final_groups
 
 
 async def command_list_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
