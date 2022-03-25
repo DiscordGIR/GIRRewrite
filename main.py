@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError
 from extensions import initial_extensions
-from utils import cfg, db, logger, BlooContext, IssueCache, Tasks, RuleCache, init_client_session
+from utils import cfg, db, logger, BlooContext, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
 from utils.framework import PermissionsFailure, gatekeeper
 
 from typing import Union
@@ -94,6 +94,7 @@ async def on_ready():
 
     await bot.issue_cache.fetch_issue_cache()
     await bot.rule_cache.fetch_rule_cache()
+    await scam_cache.fetch_scam_cache()
 
 
 async def main():

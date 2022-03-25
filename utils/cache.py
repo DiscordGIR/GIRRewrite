@@ -1,7 +1,9 @@
 import asyncio
+from re import S
 
 import discord
 from data.services import guild_service
+from utils.fetchers import fetch_scam_urls
 
 from .config import cfg 
 from .logging import logger
@@ -65,3 +67,20 @@ class RuleCache():
             
             for embed in message.embeds:
                 self.cache[f"{embed.title}"] = embed
+
+class ScamCache:
+    def __init__(self):
+        self.scam_jb_urls = []
+        self.scam_unlock_urls = []
+
+    async def fetch_scam_cache(self):
+        obj = await fetch_scam_urls()
+        scam_jb_urls = obj.get("scamjburls")
+        if scam_jb_urls is not None:
+            self.scam_jb_urls = scam_jb_urls
+        
+        scam_unlock_urls = obj.get("scamideviceunlockurls")
+        if scam_unlock_urls is not None:
+            self.scam_unlock_urls = scam_unlock_urls
+
+scam_cache = ScamCache()

@@ -120,6 +120,13 @@ async def canister_fetch_repos():
         return None
 
 
+@cached(ttl=3600)
+async def fetch_scam_urls():
+    async with client_session.get("https://raw.githubusercontent.com/SlimShadyIAm/Anti-Scam-Json-List/main/antiscam.json") as resp:
+        if resp.status == 200:
+            obj = json.loads(await resp.text())
+            return obj
+
 
 async def init_client_session():
     global client_session
