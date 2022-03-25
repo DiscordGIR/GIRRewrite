@@ -5,13 +5,11 @@ from datetime import datetime, timezone
 import aiohttp
 import discord
 from aiocache.decorators import cached
-from data.services import guild_service, user_service
+from data.services import guild_service
 from discord.ext import commands
 from utils import cfg, logger, scam_cache
-# from utils.misc import scam_cache
+from utils.framework import gatekeeper
 from utils.mod import find_triggered_filters, mute
-# from utils.mod.report import manual_report, report
-from utils.framework import gatekeeper, always_whisper, mod_and_up
 from utils.views import manual_report, report
 
 
