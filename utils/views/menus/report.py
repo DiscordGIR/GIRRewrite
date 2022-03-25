@@ -68,63 +68,56 @@ async def manual_report(mod: discord.Member, target: Union[discord.Message, disc
     await channel.send(ping_string, embed=embed, view=view)
 
 
-# async def report_raid_phrase(bot: discord.Client, message: discord.Message, domain: str):
-#     """Deals with a report
+async def report_raid_phrase(bot: discord.Client, message: discord.Message, domain: str):
+    """Deals with a report
 
-#     Parameters
-#     ----------
-#     bot : discord.Client
-#         "Bot object"
-#     message : discord.Message
-#         "Filtered message"
-#     word : str
-#         "Filtered word"
-#     invite : bool
-#         "Was the filtered word an invite?"
+    Parameters
+    ----------
+    bot : discord.Client
+        "Bot object"
+    message : discord.Message
+        "Filtered message"
+    word : str
+        "Filtered word"
+    invite : bool
+        "Was the filtered word an invite?"
 
-#     """
-#     db_guild = guild_service.get_guild()
-#     channel = message.guild.get_channel(db_guild.channel_reports)
+    """
+    db_guild = guild_service.get_guild()
+    channel = message.guild.get_channel(db_guild.channel_reports)
 
-#     ping_string = prepare_ping_string(db_guild, message)
-#     view = RaidPhraseReportActions(message.author, domain)
+    ping_string = prepare_ping_string(db_guild, message)
+    view = RaidPhraseReportActions(message.author, domain)
 
-#     embed = prepare_embed(
-#         message, domain, title=f"Possible new raid phrase detected\n{domain}")
-#     report_msg = await channel.send(ping_string, embed=embed, view=view)
-
-#     # ctx = await bot.get_context(report_msg, cls=BlooOldContext)
-#     ctx = await bot.get_context(report_msg)
-#     await view.start(ctx)
+    embed = prepare_embed(
+        message, domain, title=f"Possible new raid phrase detected\n{domain}")
+    await channel.send(ping_string, embed=embed, view=view)
 
 
-# async def report_spam(bot, msg, user, title):
-#     db_guild = guild_service.get_guild()
-#     channel = msg.guild.get_channel(db_guild.channel_reports)
-#     ping_string = prepare_ping_string(db_guild, msg)
+async def report_spam(bot, msg, user, title):
+    db_guild = guild_service.get_guild()
+    channel = msg.guild.get_channel(db_guild.channel_reports)
+    ping_string = prepare_ping_string(db_guild, msg)
 
-#     view = SpamReportActions(user)
-#     embed = prepare_embed(msg, title=title)
+    view = SpamReportActions(user)
+    embed = prepare_embed(msg, title=title)
 
-#     report_msg = await channel.send(ping_string, embed=embed, view=view)
-
-#     ctx = await bot.get_context(report_msg, cls=BlooOldContext)
-#     await view.start(ctx)
+    await channel.send(ping_string, embed=embed, view=view)
 
 
-# async def report_raid(user, msg=None):
-#     embed = discord.Embed()
-#     embed.title = "Possible raid occurring"
-#     embed.description = "The raid filter has been triggered 5 or more times in the past 10 seconds. I am automatically locking all the channels. Use `/unfreeze` when you're done."
-#     embed.color = discord.Color.red()
-#     embed.set_thumbnail(url=user.display_avatar)
-#     embed.add_field(name="Member", value=f"{user} ({user.mention})")
-#     if msg is not None:
-#         embed.add_field(name="Message", value=msg.content, inline=False)
+async def report_raid(user, msg=None):
+    embed = discord.Embed()
+    embed.title = "Possible raid occurring"
+    embed.description = "The raid filter has been triggered 5 or more times in the past 10 seconds. I am automatically locking all the channels. Use `/unfreeze` when you're done."
+    embed.color = discord.Color.red()
+    embed.set_thumbnail(url=user.display_avatar)
+    embed.add_field(name="Member", value=f"{user} ({user.mention})")
+    if msg is not None:
+        embed.add_field(name="Message", value=msg.content, inline=False)
 
-#     db_guild = guild_service.get_guild()
-#     reports_channel = user.guild.get_channel(db_guild.channel_reports)
-#     await reports_channel.send(f"<@&{db_guild.role_moderator}>", embed=embed, allowed_mentions=discord.AllowedMentions(roles=True))
+    db_guild = guild_service.get_guild()
+    reports_channel = user.guild.get_channel(db_guild.channel_reports)
+    await reports_channel.send(f"<@&{db_guild.role_moderator}>", embed=embed, allowed_mentions=discord.AllowedMentions(roles=True))
 
 
 def prepare_ping_string(db_guild, message):
@@ -292,3 +285,96 @@ class ReportActions(ui.View):
 
         await asyncio.sleep(10)
         await interaction.delete_original_message()
+
+
+class RaidPhraseReportActions(ui.View):
+    def __init__(self, author: discord.Member, domain: str):
+        super().__init__(timeout=None)
+        self.target_member = author
+        self.domain = domain
+        
+    async def interaction_check(self, interaction: discord.Interaction):
+        if not gatekeeper.has(self.target_member.guild, interaction.user, 5):
+            return False
+        return True
+
+    @ui.button(emoji="✅", label="Dismiss", style=discord.ButtonStyle.primary)
+    async def dismiss(self, button: ui.Button, interaction: discord.Interaction):
+        try:
+            await unmute(interaction, self.target_member, mod=interaction.user, reason="Reviewed by a moderator.")
+        except Exception:
+            ctx = BlooContext(interaction)
+            await ctx.send_warning("I wasn't able to unmute them.", delete_after=5)
+        finally:
+            await interaction.message.delete()
+            self.stop()
+        
+    @ui.button(emoji="💀", label="Ban and add raidphrase", style=discord.ButtonStyle.primary)
+    async def ban(self, button: ui.Button, interaction: discord.Interaction):
+        ctx = BlooContext(interaction)
+        try:
+            await ban(interaction, self.target_member, mod=interaction.user, reason="Raid phrase detected")
+            # TODO: fix
+            # self.ctx.bot.ban_cache.ban(self.target_member.id)
+        except Exception:
+            await ctx.send_warning("I wasn't able to ban them.", delete_after=5)
+
+        done = guild_service.add_raid_phrase(self.domain)
+        if done:
+            await ctx.send_success(f"{self.domain} was added to the raid phrase list.", delete_after=5)
+        else:
+            await ctx.send_warning(f"{self.domain} was already in the raid phrase list.", delete_after=5)
+
+        await interaction.message.delete()
+        self.stop()
+
+
+class SpamReportActions(ui.View):
+    def __init__(self, author: discord.Member):
+        super().__init__(timeout=None)
+        self.target_member = author
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if not gatekeeper.has(self.target_member.guild, interaction.user, 5):
+            return False
+        return True
+
+    @ui.button(emoji="✅", label="Dismiss", style=discord.ButtonStyle.primary)
+    async def dismiss(self, _: ui.Button, interaction: discord.Interaction):
+        try:
+            await unmute(interaction, self.target_member, interaction.guild.me, reason="Reviewed by a moderator.")
+        except Exception as e:
+            print(e) 
+            ctx = BlooContext(interaction)
+            await ctx.send_warning("I wasn't able to unmute them.", delete_after=5)
+        finally:
+            await interaction.message.delete()
+            self.stop()
+        
+    @ui.button(emoji="💀", label="Ban", style=discord.ButtonStyle.primary)
+    async def ban(self, _: ui.Button, interaction: discord.Interaction):
+        try:
+            await ban(interaction, self.target_member, mod=interaction.user, reason="Spam detected")
+        except Exception:
+            ctx = BlooContext(interaction)
+            await ctx.send_warning("I wasn't able to ban them.")
+        finally:
+            await interaction.message.delete()
+            self.stop()
+        
+    # @ui.button(emoji="⚠️", label="Temporary mute", style=discord.ButtonStyle.primary)
+    # async def mute(self, button: ui.Button, interaction: discord.Interaction):
+    #     if not self.check(interaction):
+    #         return
+        
+    #     prompt_data = PromptData(value_name="duration", 
+    #                                     description="Please enter a duration for the mute (i.e 15m).",
+    #                                     convertor=pytimeparse.parse,
+    #                                     )
+    #     await interaction.response.defer()
+    #     self.ctx.author = interaction.user
+    #     duration = await self.ctx.prompt(prompt_data)
+    #     await self.target_member.remove_timeout()
+    #     self.ctx.bot.tasks.cancel_unmute(self.target_member.id)
+    #     await mute(self.ctx, self.target_member, duration, reason="A moderator has reviewed your spam report.")
+    #     await self.ctx.guild.message.delete()

@@ -1,5 +1,4 @@
-import asyncio
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Union
 
 import discord
@@ -7,14 +6,14 @@ import humanize
 from data.model import Case
 from data.services import guild_service, user_service
 from discord.utils import escape_markdown
-from utils import BlooContext, cfg
+from utils import cfg
 
 from .mod_logs import prepare_mute_log, prepare_unmute_log, prepare_warn_log
 from .modactions_helpers import (add_ban_case, notify_user, notify_user_warn, response_log,
                                  submit_public_log)
 
 
-async def mute(ctx, member, dur_seconds=None, reason="No reason."):
+async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seconds=None, reason="No reason."):
     """Mutes a member
 
     Parameters
@@ -30,7 +29,7 @@ async def mute(ctx, member, dur_seconds=None, reason="No reason."):
 
     """
 
-    now = datetime.now()
+    now = discord.utils.utcnow()
 
     if dur_seconds is not None:
         time = now + timedelta(seconds=dur_seconds)
@@ -44,8 +43,8 @@ async def mute(ctx, member, dur_seconds=None, reason="No reason."):
         _id=db_guild.case_id,
         _type="MUTE",
         date=now,
-        mod_id=ctx.author.id,
-        mod_tag=str(ctx.author),
+        mod_id=mod.id,
+        mod_tag=str(mod),
         reason=reason,
     )
 
@@ -53,26 +52,28 @@ async def mute(ctx, member, dur_seconds=None, reason="No reason."):
     case.punishment = humanize.naturaldelta(
         time - now, minimum_unit="seconds")
     try:
-        await member.timeout(until=time, reason=reason)
-        ctx.bot.tasks.schedule_untimeout(member.id, time)
-
+        await target_member.timeout(time, reason=reason)
+        if isinstance(ctx, discord.Interaction):
+            ctx.client.tasks.schedule_untimeout(target_member.id, time)
+        else:
+            ctx.bot.tasks.schedule_untimeout(target_member.id, time)
     except Exception:
         return
 
     guild_service.inc_caseid()
-    user_service.add_case(member.id, case)
+    user_service.add_case(target_member.id, case)
 
-    log = prepare_mute_log(ctx.author, member, case)
-    await ctx.send(embed=log, delete_after=10)
+    log = prepare_mute_log(mod, target_member, case)
+    await response_log(ctx, log)
 
     log.remove_author()
-    log.set_thumbnail(url=member.display_avatar)
+    log.set_thumbnail(url=target_member.display_avatar)
 
-    dmed = await notify_user(member, f"You have been muted in {ctx.guild.name}", log)
-    await submit_public_log(ctx, db_guild, member, log, dmed)
+    dmed = await notify_user(target_member, f"You have been muted in {ctx.guild.name}", log)
+    await submit_public_log(ctx, db_guild, target_member, log, dmed)
 
 
-async def unmute(ctx, member, reason: str = "No reason.") -> None:
+async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason: str = "No reason.") -> None:
     """Unmutes a user (mod only)
 
     Example usage
@@ -88,31 +89,33 @@ async def unmute(ctx, member, reason: str = "No reason.") -> None:
 
     """
 
+    await target_member.edit(timed_out_until=None)
     db_guild = guild_service.get_guild()
 
     try:
-        await member.remove_timeout()
-        ctx.tasks.cancel_unmute(member.id)
-    except Exception:
+        if isinstance(ctx, discord.Interaction):
+            ctx.client.tasks.cancel_unmute(target_member.id)
+        else:
+            ctx.tasks.cancel_unmute(target_member.id)
+    except Exception as e:
         pass
 
     case = Case(
         _id=db_guild.case_id,
         _type="UNMUTE",
-        mod_id=ctx.author.id,
-        mod_tag=str(ctx.author),
+        mod_id=mod.id,
+        mod_tag=str(mod),
         reason=reason,
     )
 
     guild_service.inc_caseid()
-    user_service.add_case(member.id, case)
+    user_service.add_case(target_member.id, case)
 
-    log = prepare_unmute_log(ctx.author, member, case)
+    log = prepare_unmute_log(mod, target_member, case)
+    await response_log(ctx, log)
 
-    await ctx.send(embed=log, delete_after=10)
-
-    dmed = await notify_user(member, f"You have been unmuted in {ctx.guild.name}", log)
-    await submit_public_log(ctx, db_guild, member, log, dmed)
+    dmed = await notify_user(target_member, f"You have been unmuted in {ctx.guild.name}", log)
+    await submit_public_log(ctx, db_guild, target_member, log, dmed)
 
 
 async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: discord.Member, reason="No reason."):

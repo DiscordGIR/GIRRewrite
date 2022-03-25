@@ -253,8 +253,7 @@ class Filter(commands.Cog):
         if bucket.update_rate_limit(current) and not message.author.timed_out:
             try:
                 ctx = await self.bot.get_context(message)
-                ctx.author = ctx.guild.me
-                await mute(ctx, message.author, dur_seconds=15*60, reason="Filter spam")
+                await mute(ctx, message.author, mod=ctx.guild.me, dur_seconds=15*60, reason="Filter spam")
             except Exception:
                 return
 

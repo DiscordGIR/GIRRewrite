@@ -251,7 +251,7 @@ class Genius(commands.Cog):
             raise commands.BadArgument(
                 "Could not find a message with that ID!")
 
-        if message.author != ctx.me:
+        if message.author != ctx.guild.me:
             raise commands.BadArgument("I didn't post that embed!")
 
         if len(message.embeds) == 0:

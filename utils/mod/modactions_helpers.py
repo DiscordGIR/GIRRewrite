@@ -124,8 +124,8 @@ async def response_log(ctx, log):
             await res.delete(delay=10)
         else:
             await ctx.response.send_message(embed=log)
-            await asyncio.sleep(10)
-            await ctx.delete_original_message()
+            ctx.client.loop.create_task(delay_delete(ctx))
+
     else:
         await ctx.send(embed=log, delete_after=10)
 
@@ -190,3 +190,7 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
     user_service.add_case(target_member.id, case)
     # prepare log embed to send to #public-mod-logs, user and context
     return prepare_ban_log(target_member, mod, case)
+
+async def delay_delete(ctx: discord.Interaction):
+    await asyncio.sleep(10)
+    await ctx.delete_original_message()

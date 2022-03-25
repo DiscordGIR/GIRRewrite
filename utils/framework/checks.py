@@ -3,7 +3,6 @@ import functools
 import discord
 from data.services import guild_service
 from discord import app_commands, Interaction
-from discord.errors import NotFound
 from discord.ext.commands.errors import BadArgument
 from utils import BlooContext
 from .permissions import gatekeeper
@@ -16,6 +15,7 @@ class PermissionsFailure(discord.app_commands.AppCommandError):
 
 def whisper(func: discord.app_commands.Command):
     """If the user is not a moderator and the invoked channel is not #bot-commands, send the response to the command ephemerally"""
+
     @functools.wraps(func)
     async def decorator(self, ctx: BlooContext, *args, **kwargs):
         if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != guild_service.get_guild().channel_botspam:

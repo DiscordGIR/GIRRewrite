@@ -12,6 +12,7 @@ initial_extensions = [
     "cogs.commands.misc.memes",
     "cogs.commands.misc.misc",
     "cogs.monitors.misc.songs",
+    "cogs.monitors.mod.antiraid",
     "cogs.monitors.mod.logging",
     "cogs.monitors.mod.filter",
     "cogs.monitors.mod.sabbath",

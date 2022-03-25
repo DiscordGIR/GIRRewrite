@@ -200,8 +200,10 @@ async def remove_timeout(id: int) -> None:
     if user is None:
         return
 
-    await user.remove_timeout()
+    await user.edit(timed_out_until=None)
 
+    # i know. this sucks.
+    from utils.mod import prepare_unmute_log
     log = prepare_unmute_log(BOT_GLOBAL.user, user, case)
     log.remove_author()
     log.set_thumbnail(url=user.display_avatar)
