@@ -9,6 +9,26 @@ from .config import cfg
 from .logging import logger
 
 
+class BanCache:
+    def __init__(self, bot):
+        self.bot = bot
+        self.cache = set()
+
+    async def fetch_ban_cache(self):
+        guild = self.bot.get_guild(cfg.guild_id)
+        the_list = await guild.bans()
+        self.cache = {entry.user.id for entry in the_list}
+
+    def is_banned(self, user_id):
+        return user_id in self.cache
+
+    def ban(self, user_id):
+        self.cache.add(user_id)
+
+    def unban(self, user_id):
+        self.cache.discard(user_id)
+
+
 class IssueCache():
     def __init__(self, bot):
         self.bot = bot

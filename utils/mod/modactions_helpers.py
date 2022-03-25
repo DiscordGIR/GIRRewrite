@@ -96,8 +96,12 @@ async def notify_user_warn(ctx: BlooContext, target_member: discord.Member, mod:
 
         log_kickban = await add_ban_case(target_member, mod, "600 or more warn points reached.", db_guild)
         await target_member.ban(reason="600 or more warn points reached.")
-        # TODO: fix
-        # ctx.bot.ban_cache.ban(target_member.id)
+
+        if isinstance(ctx, discord.Interaction):
+            ctx.client.ban_cache.ban(target_member.id)
+        else:
+            ctx.bot.ban_cache.ban(target_member.id)
+
     elif cur_points >= 400 and not db_user.was_warn_kicked and isinstance(target_member, discord.Member):
         # kick user if >= 400 points and wasn't previously kicked
         user_service.set_warn_kicked(target_member.id)

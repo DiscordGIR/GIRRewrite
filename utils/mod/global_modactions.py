@@ -135,8 +135,10 @@ async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: disc
         # hackban for user not currently in guild
         await ctx.guild.ban(discord.Object(id=target_member.id))
 
-    # TODO: fix
-    # ctx.bot.ban_cache.ban(target_member.id)
+    if isinstance(ctx, discord.Interaction):
+        ctx.client.ban_cache.ban(target_member.id)
+    else:
+        ctx.bot.ban_cache.ban(target_member.id)
     await response_log(ctx, log)
     await submit_public_log(ctx, db_guild, target_member, log)
 

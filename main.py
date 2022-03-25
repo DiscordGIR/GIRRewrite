@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError
 from extensions import initial_extensions
-from utils import cfg, db, logger, BlooContext, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
+from utils import cfg, db, logger, BlooContext, BanCache, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
 from utils.framework import PermissionsFailure, gatekeeper
 
 from typing import Union
@@ -27,6 +27,7 @@ class Bot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.ban_cache = BanCache(self)
         self.issue_cache = IssueCache(self)
         self.rule_cache = RuleCache(self)
 
@@ -92,6 +93,7 @@ async def on_ready():
         f'Logged in as: {bot.user.name} - {bot.user.id} ({discord.__version__})')
     logger.info(f'Successfully logged in and booted...!')
 
+    await bot.ban_cache.fetch_ban_cache()
     await bot.issue_cache.fetch_issue_cache()
     await bot.rule_cache.fetch_rule_cache()
     await scam_cache.fetch_scam_cache()

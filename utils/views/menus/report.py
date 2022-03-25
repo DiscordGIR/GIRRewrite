@@ -314,8 +314,7 @@ class RaidPhraseReportActions(ui.View):
         ctx = BlooContext(interaction)
         try:
             await ban(interaction, self.target_member, mod=interaction.user, reason="Raid phrase detected")
-            # TODO: fix
-            # self.ctx.bot.ban_cache.ban(self.target_member.id)
+            self.ctx.bot.ban_cache.ban(self.target_member.id)
         except Exception:
             await ctx.send_warning("I wasn't able to ban them.", delete_after=5)
 
@@ -343,8 +342,7 @@ class SpamReportActions(ui.View):
     async def dismiss(self, _: ui.Button, interaction: discord.Interaction):
         try:
             await unmute(interaction, self.target_member, interaction.guild.me, reason="Reviewed by a moderator.")
-        except Exception as e:
-            print(e) 
+        except Exception:
             ctx = BlooContext(interaction)
             await ctx.send_warning("I wasn't able to unmute them.", delete_after=5)
         finally:
