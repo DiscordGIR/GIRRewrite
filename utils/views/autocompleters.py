@@ -170,3 +170,10 @@ async def date_autocompleter(interaction: discord.Interaction, current: str) -> 
         return []
 
     return [app_commands.Choice(name=i, value=i) for i in range(1, month["max_days"]+1) if str(i).startswith(str(current))][:25]
+
+
+async def filterwords_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    words = [word.word for word in guild_service.get_guild().filter_words]
+    words.sort()
+
+    return [app_commands.Choice(name=word, value=word) for word in words if str(word).startswith(str(current))][:25]

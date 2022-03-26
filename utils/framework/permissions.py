@@ -104,6 +104,14 @@ class Permissions:
             10: "Bot owner",
         }
 
+    @property
+    def lowest_level(self) -> int:
+        return list(sorted(self._permission_names.keys()))[0]
+
+    @property
+    def highest_level(self) -> int:
+        return list(sorted(self._permission_names.keys()))[-1]
+
     def has(self, guild: discord.Guild, member: discord.Member, level: int) -> bool:
         """Checks whether a user given by `member` has at least the permission level `level`
         in guild `guild`. Using the `self.permissions` dict-lambda thing.
