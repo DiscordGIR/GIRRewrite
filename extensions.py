@@ -14,6 +14,7 @@ initial_extensions = [
     "cogs.commands.mod.antiraid",
     "cogs.commands.mod.filter",
     "cogs.commands.mod.modactions",
+    "cogs.commands.mod.modutils",
     "cogs.monitors.misc.boosteremojis",
     "cogs.monitors.misc.role_assignment_buttons",
     "cogs.monitors.misc.songs",
