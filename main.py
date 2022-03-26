@@ -7,6 +7,7 @@ from discord.app_commands import AppCommandError, Command, ContextMenu, CommandI
 from extensions import initial_extensions
 from utils import cfg, db, logger, BlooContext, BanCache, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
 from utils.framework import PermissionsFailure, gatekeeper
+from cogs.commands.context_commands import setup_context_commands
 
 from typing import Union
 
@@ -38,6 +39,8 @@ class Bot(commands.Bot):
     async def setup_hook(self):
         for extension in initial_extensions:
             await self.load_extension(extension)
+
+        setup_context_commands(self)
 
         self.tasks = Tasks(self)
         await init_client_session()

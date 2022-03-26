@@ -82,9 +82,6 @@ class Tags(commands.Cog):
         self.tag_cooldown = CooldownMapping.from_cooldown(
             1, 5, MessageTextBucket.custom)
 
-        self.support_tags = [tag.name for tag in guild_service.get_guild(
-        ).tags if "support" in tag.name]
-
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Display a tag")
     @app_commands.describe(name="Name of the tag to display")
@@ -119,42 +116,6 @@ class Tags(commands.Cog):
             title = None
 
         await ctx.respond(content=title, embed=prepare_tag_embed(tag), view=prepare_tag_view(tag), file=_file)
-
-    # TODO: context commands not supported in cogs
-    # @user_command(guild_ids=[cfg.guild_id], name="Support tag")
-    # async def support_tag_rc(self, ctx: BlooContext, user: discord.Member) -> None:
-    #     await self.handle_support_tag(ctx, user)
-
-    # TODO: context commands not supported in cogs
-    # @message_command(guild_ids=[cfg.guild_id], name="Support tag")
-    # async def support_tag_msg(self, ctx: BlooContext, message: discord.Message) -> None:
-    #     await self.handle_support_tag(ctx, message.author)
-
-    # async def handle_support_tag(self, ctx: BlooContext, member: discord.Member) -> None:
-    #     if not self.support_tags:
-    #         raise commands.BadArgument("No support tags found.")
-
-    #     random_tag = random.choice(self.support_tags)
-    #     tag = guild_service.get_tag(random_tag)
-
-    #     if tag is None:
-    #         raise commands.BadArgument("That tag does not exist.")
-
-    #     # run cooldown so tag can't be spammed
-    #     bucket = self.tag_cooldown.get_bucket(tag.name)
-    #     current = datetime.now().timestamp()
-    #     # ratelimit only if the invoker is not a moderator
-    #     if bucket.update_rate_limit(current) and not (permissions.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(guild_service.get_guild().role_sub_mod) in ctx.author.roles):
-    #         raise commands.BadArgument("That tag is on cooldown.")
-
-    #     # if the Tag has an image, add it to the embed
-    #     file = tag.image.read()
-    #     if file is not None:
-    #         file = discord.File(BytesIO(
-    #             file), filename="image.gif" if tag.image.content_type == "image/gif" else "image.png")
-
-    #     title = f"Hey {member.mention}, have a look at this!"
-    #     await ctx.respond(content=title, embed=prepare_tag_embed(tag), file=file)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="List all tags")
@@ -265,33 +226,23 @@ class Tags(commands.Cog):
 
         await ctx.send_followup(f"Edited tag!", file=_file or discord.utils.MISSING, embed=prepare_tag_embed(tag), view=prepare_tag_view(tag) or discord.utils.MISSING, delete_after=5)
 
-    # @genius_or_submod_and_up()
-    # @tags.command(guild_ids=[cfg.guild_id], description="Delete a tag")
-    # async def delete(self, ctx: BlooContext, name: Option(str, description="Name of tag to delete", autocomplete=tags_autocomplete)):
-    #     """Delete tag (geniuses only)
+    @genius_or_submod_and_up()
+    @tags.command(description="Delete a tag")
+    @app_commands.describe(name="Name of the tag")
+    @app_commands.autocomplete(name=tags_autocomplete)
+    @transform_context
+    async def delete(self, ctx: BlooContext, name: str):
+        name = name.lower()
 
-    #     Example usage
-    #     --------------
-    #     /deltag name:<tagname>
+        tag = guild_service.get_tag(name)
+        if tag is None:
+            raise commands.BadArgument("That tag does not exist.")
 
-    #     Parameters
-    #     ----------
-    #     name : str
-    #         "Name of tag to delete"
+        if tag.image is not None:
+            tag.image.delete()
 
-    #     """
-
-    #     name = name.lower()
-
-    #     tag = guild_service.get_tag(name)
-    #     if tag is None:
-    #         raise commands.BadArgument("That tag does not exist.")
-
-    #     if tag.image is not None:
-    #         tag.image.delete()
-
-    #     guild_service.remove_tag(name)
-    #     await ctx.send_warning(f"Deleted tag `{tag.name}`.", delete_after=5)
+        guild_service.remove_tag(name)
+        await ctx.send_warning(f"Deleted tag `{tag.name}`.", delete_after=5)
 
 
 async def setup(bot):

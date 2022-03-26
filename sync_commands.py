@@ -3,6 +3,7 @@ import os
 
 import discord
 from discord.ext import commands
+from cogs.commands.context_commands import setup_context_commands
 
 from extensions import initial_extensions
 from utils import cfg, logger
@@ -21,6 +22,8 @@ class Bot(commands.Bot):
     async def setup_hook(self):
         for extension in initial_extensions:
             await self.load_extension(extension)
+
+        setup_context_commands(self)
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
