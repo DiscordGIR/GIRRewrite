@@ -1,9 +1,12 @@
 from typing import Dict
-import discord
-from discord import AppCommandOptionType, app_commands
 
+import discord
+import pytimeparse
+from discord import AppCommandOptionType, app_commands
+from discord.ext import commands
 from utils import get_ios_cfw, transform_groups
-from utils.framework.checks import PermissionsFailure
+from utils.framework import PermissionsFailure
+
 
 class DeviceTransformer(app_commands.Transformer):
     @classmethod
@@ -16,16 +19,19 @@ class DeviceTransformer(app_commands.Transformer):
             'name').lower() == value.lower() or value.lower() in [x.lower() for x in group.get('devices')]]
 
         if not devices:
-            raise app_commands.TransformerError("No device found with that name.")
+            raise app_commands.TransformerError(
+                "No device found with that name.")
 
         return devices[0]
 
-class VersionOnDeviceTransformer(app_commands.Transformer):
+
+class VersionOnDevice(app_commands.Transformer):
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> Dict:
         device = interaction.namespace["device"]
         if device is None:
-            raise app_commands.TransformerError("No device found with that name.")
+            raise app_commands.TransformerError(
+                "No device found with that name.")
 
         response = await get_ios_cfw()
         board = device.get("devices")[0]
@@ -41,9 +47,22 @@ class VersionOnDeviceTransformer(app_commands.Transformer):
             'devices') and version == v.get('version') or version.lower() == v.get("uniqueBuild").lower()]
 
         if not firmware:
-            raise app_commands.TransformerError("No firmware found with that version.")
+            raise app_commands.TransformerError(
+                "No firmware found with that version.")
 
         return firmware[0]
+
+
+class Duration(app_commands.Transformer):
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+        try:
+            value = pytimeparse.parse(value)
+        except ValueError:
+            raise commands.BadArgument(
+                f"Could not parse {value} as a duration.")
+        return value
+
 
 class ModsAndAboveMember(app_commands.Transformer):
     @classmethod
@@ -74,15 +93,14 @@ async def check_invokee(interaction: discord.Interaction, user: discord.Member):
     if isinstance(user, discord.Member):
         if user.id == interaction.user.id:
             raise PermissionsFailure("You can't call that on yourself.")
-        
+
         if user.id == interaction.client.user.id:
             raise PermissionsFailure("You can't call that on me :(")
-        
+
         if user:
             if user.top_role >= interaction.user.top_role:
                 raise PermissionsFailure(
                     message=f"{user.mention}'s top role is the same or higher than yours!")
-
 
 
 # class ImageAttachment(app_commands.Transformer):
@@ -90,7 +108,7 @@ async def check_invokee(interaction: discord.Interaction, user: discord.Member):
 #     async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
 #         if value is None:
 #             return
-        
+
 #         image = await app_commands.Transformer.transform(interaction, value)
 #         _type = image.content_type
 #         if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
