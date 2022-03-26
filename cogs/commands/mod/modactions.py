@@ -10,7 +10,7 @@ from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
 from utils import BlooContext, cfg, transform_context
 from utils.framework import always_whisper, mod_and_up, ModsAndAboveMemberOrUser
-from utils.framework.transformers import Duration, ModsAndAboveMember
+from utils.framework.transformers import Duration, ModsAndAboveMember, UserOnly
 from utils.mod import (add_ban_case, add_kick_case, notify_user,
                        prepare_editreason_log, prepare_liftwarn_log,
                        prepare_mute_log, prepare_removepoints_log,
@@ -148,155 +148,116 @@ class ModActions(commands.Cog):
         dmed = await notify_user(member, f"You have been muted in {ctx.guild.name}", log)
         await submit_public_log(ctx, db_guild, member, log, dmed)
 
-    # @mod_and_up()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Unmute a user", permissions=slash_perms.mod_and_up())
-    # async def unmute(self, ctx: BlooContext, member: Option(discord.Member, description="User to mute"), reason: Option(str, description="Reason for mute")) -> None:
-    #     """Unmutes a user (mod only)
+    @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Unmute a user")
+    @app_commands.describe(member="User to unmute")
+    @app_commands.describe(reason="Reason for unmuting")
+    @transform_context
+    async def unmute(self, ctx: BlooContext, member: ModsAndAboveMember, reason: str) -> None:
+        db_guild = guild_service.get_guild()
 
-    #     Example usage
-    #     --------------
-    #     /unmute member:<member> reason:<reason>
+        if not member.is_timed_out():
+            raise commands.BadArgument("This user is not muted.")
 
-    #     Parameters
-    #     ----------
-    #     user : discord.Member
-    #         "Member to unmute"
-    #     reason : str, optional
-    #         "Reason for unmute, by default 'No reason.'"
+        await member.edit(timed_out_until=None)
 
-    #     """
+        try:
+            ctx.tasks.cancel_unmute(member.id)
+        except Exception:
+            pass
 
-    #     member = await mods_and_above_member_resolver(ctx, member)
+        case = Case(
+            _id=db_guild.case_id,
+            _type="UNMUTE",
+            mod_id=ctx.author.id,
+            mod_tag=str(ctx.author),
+            reason=reason,
+        )
+        guild_service.inc_caseid()
+        user_service.add_case(member.id, case)
 
-    #     db_guild = guild_service.get_guild()
+        log = prepare_unmute_log(ctx.author, member, case)
 
-    #     if not member.timed_out:
-    #         raise commands.BadArgument("This user is not muted.")
+        await ctx.respond_or_edit(embed=log, delete_after=10)
 
-    #     await member.remove_timeout()
+        dmed = await notify_user(member, f"You have been unmuted in {ctx.guild.name}", log)
+        await submit_public_log(ctx, db_guild, member, log, dmed)
 
-    #     try:
-    #         ctx.tasks.cancel_unmute(member.id)
-    #     except Exception:
-    #         pass
+    @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Ban a user")
+    @app_commands.describe(user="User to ban")
+    @app_commands.describe(reason="Reason for banning")
+    @transform_context
+    async def ban(self, ctx: BlooContext, user: ModsAndAboveMemberOrUser, reason: str):
+        reason = escape_markdown(reason)
+        reason = escape_mentions(reason)
+        db_guild = guild_service.get_guild()
 
-    #     case = Case(
-    #         _id=db_guild.case_id,
-    #         _type="UNMUTE",
-    #         mod_id=ctx.author.id,
-    #         mod_tag=str(ctx.author),
-    #         reason=reason,
-    #     )
-    #     guild_service.inc_caseid()
-    #     user_service.add_case(member.id, case)
+        member_is_external = isinstance(user, discord.User)
 
-    #     log = prepare_unmute_log(ctx.author, member, case)
+        # if the ID given is of a user who isn't in the guild, try to fetch the profile
+        if member_is_external:
+            if self.bot.ban_cache.is_banned(user.id):
+                raise commands.BadArgument("That user is already banned!")
 
-    #     await ctx.respond(embed=log, delete_after=10)
+        self.bot.ban_cache.ban(user.id)
+        log = await add_ban_case(user, ctx.author, reason, db_guild)
 
-    #     dmed = await notify_user(member, f"You have been unmuted in {ctx.guild.name}", log)
-    #     await submit_public_log(ctx, db_guild, member, log, dmed)
+        if not member_is_external:
+            if cfg.ban_appeal_url is None:
+                await notify_user(user, f"You have been banned from {ctx.guild.name}", log)
+            else:
+                await notify_user(user, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
 
-    # @mod_and_up()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Ban a user", permissions=slash_perms.mod_and_up())
-    # async def ban(self, ctx: BlooContext, user: Option(discord.Member, description="User to ban"), reason: Option(str, description="Reason for ban")):
-    #     """Bans a user (mod only)
+            await user.ban(reason=reason)
+        else:
+            # hackban for user not currently in guild
+            await ctx.guild.ban(discord.Object(id=user.id))
 
-    #     Example usage
-    #     --------------
-    #     /ban user:<user> reason:<reason>
+        await ctx.respond_or_edit(embed=log, delete_after=10)
+        await submit_public_log(ctx, db_guild, user, log)
 
-    #     Parameters
-    #     ----------
-    #     user : discord.Member
-    #         "The user to be banned, doesn't have to be part of the guild"
-    #     reason : str, optional
-    #         "Reason for ban, by default 'No reason.'"
+    @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Unban a user")
+    @app_commands.describe(user="User to unban")
+    @app_commands.describe(reason="Reason for unbanning")
+    @transform_context
+    async def unban(self, ctx: BlooContext, user: UserOnly, reason: str) -> None:
+        if ctx.guild.get_member(user.id) is not None:
+            raise commands.BadArgument(
+                "You can't unban someone already in the server!")
 
-    #     """
+        reason = escape_markdown(reason)
+        reason = escape_mentions(reason)
 
-    #     user = await mods_and_above_external_resolver(ctx, user)
+        if not self.bot.ban_cache.is_banned(user.id):
+            raise commands.BadArgument("That user isn't banned!")
 
-    #     reason = escape_markdown(reason)
-    #     reason = escape_mentions(reason)
-    #     db_guild = guild_service.get_guild()
+        try:
+            await ctx.guild.unban(discord.Object(id=user.id), reason=reason)
+        except discord.NotFound:
+            raise commands.BadArgument(f"{user} is not banned.")
 
-    #     await ctx.defer(ephemeral=False)
-    #     member_is_external = isinstance(user, discord.User)
+        self.bot.ban_cache.unban(user.id)
 
-    #     # if the ID given is of a user who isn't in the guild, try to fetch the profile
-    #     if member_is_external:
-    #         if self.bot.ban_cache.is_banned(user.id):
-    #             raise commands.BadArgument("That user is already banned!")
+        db_guild = guild_service.get_guild()
+        case = Case(
+            _id=db_guild.case_id,
+            _type="UNBAN",
+            mod_id=ctx.author.id,
+            mod_tag=str(ctx.author),
+            reason=reason,
+        )
+        guild_service.inc_caseid()
+        user_service.add_case(user.id, case)
 
-    #     self.bot.ban_cache.ban(user.id)
-    #     log = await add_ban_case(ctx, user, reason, db_guild)
+        log = prepare_unban_log(ctx.author, user, case)
+        await ctx.respond_or_edit(embed=log, delete_after=10)
 
-    #     if not member_is_external:
-    #         if cfg.ban_appeal_url is None:
-    #             await notify_user(user, f"You have been banned from {ctx.guild.name}", log)
-    #         else:
-    #             await notify_user(user, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
-
-    #         await user.ban(reason=reason)
-    #     else:
-    #         # hackban for user not currently in guild
-    #         await ctx.guild.ban(discord.Object(id=user.id))
-
-    #     await ctx.respond(embed=log, delete_after=10)
-    #     await submit_public_log(ctx, db_guild, user, log)
-
-    # @mod_and_up()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Unban a user", permissions=slash_perms.mod_and_up())
-    # async def unban(self, ctx: BlooContext, user: Option(discord.Member, description="User to unban"), reason: Option(str, description="Reason for unban")) -> None:
-    #     """Unbans a user (must use ID) (mod only)
-
-    #     Example usage
-    #     --------------
-    #     /unban user:<userid> reason:<reason>
-
-    #     Parameters
-    #     ----------
-    #     user : discord.Member
-    #         "ID of the user to unban"
-    #     reason : str, optional
-    #         "Reason for unban, by default 'No reason.'"
-
-    #     """
-
-    #     user = await user_resolver(ctx, user)
-    #     if ctx.guild.get_member(user.id) is not None:
-    #         raise commands.BadArgument(
-    #             "You can't unban someone already in the server!")
-
-    #     reason = escape_markdown(reason)
-    #     reason = escape_mentions(reason)
-
-    #     if not self.bot.ban_cache.is_banned(user.id):
-    #         raise commands.BadArgument("That user isn't banned!")
-
-    #     try:
-    #         await ctx.guild.unban(discord.Object(id=user.id), reason=reason)
-    #     except discord.NotFound:
-    #         raise commands.BadArgument(f"{user} is not banned.")
-
-    #     self.bot.ban_cache.unban(user.id)
-
-    #     db_guild = guild_service.get_guild()
-    #     case = Case(
-    #         _id=db_guild.case_id,
-    #         _type="UNBAN",
-    #         mod_id=ctx.author.id,
-    #         mod_tag=str(ctx.author),
-    #         reason=reason,
-    #     )
-    #     guild_service.inc_caseid()
-    #     user_service.add_case(user.id, case)
-
-    #     log = prepare_unban_log(ctx.author, user, case)
-    #     await ctx.respond(embed=log, delete_after=10)
-
-    #     await submit_public_log(ctx, db_guild, user, log)
+        await submit_public_log(ctx, db_guild, user, log)
 
     # @mod_and_up()
     # @slash_command(guild_ids=[cfg.guild_id], description="Purge channel messages", permissions=slash_perms.mod_and_up())

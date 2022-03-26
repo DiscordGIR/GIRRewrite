@@ -198,7 +198,7 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
     # add case to db
     user_service.add_case(target_member.id, case)
     # prepare log embed to send to #public-mod-logs, user and context
-    return prepare_ban_log(target_member, mod, case)
+    return prepare_ban_log(mod, target_member, case)
 
 async def delay_delete(ctx: discord.Interaction):
     await asyncio.sleep(10)

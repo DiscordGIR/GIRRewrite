@@ -88,6 +88,18 @@ class ModsAndAboveMemberOrUser(app_commands.Transformer):
 
         return value
 
+class UserOnly(app_commands.Transformer):
+    @classmethod
+    def type(cls) -> AppCommandOptionType:
+        return AppCommandOptionType.user
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+        if isinstance(value, discord.Member):
+            raise commands.BadArgument("You can't call this command on guild members!")
+
+        return value
+
 
 async def check_invokee(interaction: discord.Interaction, user: discord.Member):
     if isinstance(user, discord.Member):
