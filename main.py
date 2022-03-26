@@ -3,7 +3,7 @@ import os
 import traceback
 import discord
 from discord.ext import commands
-from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError
+from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError, TransformerError
 from extensions import initial_extensions
 from utils import cfg, db, logger, BlooContext, BanCache, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
 from utils.framework import PermissionsFailure, gatekeeper
@@ -55,6 +55,7 @@ async def app_command_error(interaction: discord.Interaction, _: Union[Command, 
 
     if (isinstance(error, commands.MissingRequiredArgument)
             or isinstance(error, PermissionsFailure)
+            or isinstance(error, TransformerError)
             or isinstance(error, commands.BadArgument)
             or isinstance(error, commands.BadUnionArgument)
             or isinstance(error, commands.MissingPermissions)

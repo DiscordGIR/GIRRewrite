@@ -12,7 +12,7 @@ from utils.mod.mod_logs import prepare_ban_log, prepare_kick_log
 from utils.config import cfg
 
 
-async def add_kick_case(target_member: discord.Member, mod: discord.Member, reason: str, db_guild):
+def add_kick_case(target_member: discord.Member, mod: discord.Member, reason: str, db_guild):
     """Adds kick case to user
 
     Parameters
@@ -107,7 +107,7 @@ async def notify_user_warn(ctx: BlooContext, target_member: discord.Member, mod:
         user_service.set_warn_kicked(target_member.id)
 
         dmed = await notify_user(target_member, f"You were kicked from {ctx.guild.name} for reaching 400 or more points. Please note that you will be banned at 600 points.", log)
-        log_kickban = await add_kick_case(target_member, mod, "400 or more warn points reached.", db_guild)
+        log_kickban = add_kick_case(target_member, mod, "400 or more warn points reached.", db_guild)
         await target_member.kick(reason="400 or more warn points reached.")
     else:
         if isinstance(target_member, discord.Member):

@@ -201,8 +201,10 @@ class TweakDropdown(discord.ui.Select):
     async def on_timeout(self):
         self.disabled = True
         self.placeholder = "Timed out"
-
-        await self.ctx.edit(view=self._view)
+        if isinstance(self.ctx, BlooContext):
+            await self.ctx.edit(view=self._view)
+        else:
+            await self.ctx.message.edit(view=self._view)
 
     async def format_tweak_page(self, entry):
         embed = tweak_embed_format(entry)

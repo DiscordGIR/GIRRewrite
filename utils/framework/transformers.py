@@ -1,8 +1,9 @@
 from typing import Dict
 import discord
-from discord import app_commands
+from discord import AppCommandOptionType, app_commands
 
 from utils import get_ios_cfw, transform_groups
+from utils.framework.checks import PermissionsFailure
 
 class DeviceTransformer(app_commands.Transformer):
     @classmethod
@@ -43,6 +44,46 @@ class VersionOnDeviceTransformer(app_commands.Transformer):
             raise app_commands.TransformerError("No firmware found with that version.")
 
         return firmware[0]
+
+class ModsAndAboveMember(app_commands.Transformer):
+    @classmethod
+    def type(cls) -> AppCommandOptionType:
+        return AppCommandOptionType.user
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+        await app_commands.transformers.MemberTransformer.transform(interaction, value)
+        await check_invokee(interaction, value)
+
+        return value
+
+
+class ModsAndAboveMemberOrUser(app_commands.Transformer):
+    @classmethod
+    def type(cls) -> AppCommandOptionType:
+        return AppCommandOptionType.user
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+        await check_invokee(interaction, value)
+
+        return value
+
+
+async def check_invokee(interaction: discord.Interaction, user: discord.Member):
+    if isinstance(user, discord.Member):
+        if user.id == interaction.user.id:
+            raise PermissionsFailure("You can't call that on yourself.")
+        
+        if user.id == interaction.client.user.id:
+            raise PermissionsFailure("You can't call that on me :(")
+        
+        if user:
+            if user.top_role >= interaction.user.top_role:
+                raise PermissionsFailure(
+                    message=f"{user.mention}'s top role is the same or higher than yours!")
+
+
 
 # class ImageAttachment(app_commands.Transformer):
 #     @classmethod
