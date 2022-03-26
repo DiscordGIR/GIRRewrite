@@ -14,6 +14,7 @@ from utils import BlooContext, cfg
 from utils.context import transform_context
 from utils.framework import (gatekeeper, memed_and_up, mempro_and_up,
                              mod_and_up, whisper, find_triggered_filters, find_triggered_raid_phrases, MessageTextBucket)
+from utils.framework.transformers import ImageAttachment
 from utils.views import GenericDescriptionModal, Menu, memes_autocomplete
 
 
@@ -97,7 +98,7 @@ class Memes(commands.Cog):
     @app_commands.describe(name="Name of the meme")
     @app_commands.describe(image="Image to show in embed")
     @transform_context
-    async def add(self, ctx: BlooContext, name: str, image: discord.Attachment = None) -> None:
+    async def add(self, ctx: BlooContext, name: str, image: ImageAttachment = None) -> None:
         if not name.isalnum():
             raise commands.BadArgument("Meme name must be alphanumeric.")
 
@@ -107,12 +108,6 @@ class Memes(commands.Cog):
 
         if (guild_service.get_meme(name.lower())) is not None:
             raise commands.BadArgument("Meme with that name already exists.")
-
-        # ensure the attached file is an image
-        if image is not None:
-            _type = image.content_type
-            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-                raise commands.BadArgument("Attached file was not an image.")
 
         # prompt the user for common issue body
         modal = GenericDescriptionModal(ctx, author=ctx.author, title=f"New meme — {name}")
@@ -133,6 +128,7 @@ class Memes(commands.Cog):
 
         # did the user want to attach an image to this meme?
         if image is not None:
+            _type = image.content_type
             image = await image.read()
             # save image bytes
             meme.image.put(image, content_type=_type)
@@ -153,7 +149,7 @@ class Memes(commands.Cog):
     @app_commands.autocomplete(name=memes_autocomplete)
     @app_commands.describe(image="Image to show in embed")
     @transform_context
-    async def edit(self, ctx: BlooContext, name: str, image: discord.Attachment = None) -> None:
+    async def edit(self, ctx: BlooContext, name: str, image: ImageAttachment = None) -> None:
         if len(name.split()) > 1:
             raise commands.BadArgument(
                 "Meme names can't be longer than 1 word.")
@@ -163,12 +159,6 @@ class Memes(commands.Cog):
 
         if meme is None:
             raise commands.BadArgument("That meme does not exist.")
-
-        # ensure the attached file is an image
-        if image is not None:
-            _type = image.content_type
-            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-                raise commands.BadArgument("Attached file was not an image.")
 
         # prompt the user for common issue body
         modal = GenericDescriptionModal(ctx, author=ctx.author, title=f"New meme — {name}", prefill=meme.content)
@@ -183,6 +173,7 @@ class Memes(commands.Cog):
         meme.content = description
 
         if image is not None:
+            _type = image.content_type
             image = await image.read()
 
             # save image bytes
@@ -269,7 +260,7 @@ class Memes(commands.Cog):
     @app_commands.command(description="Classify an image with Magic!")
     @app_commands.describe(image="Image to classify")
     @transform_context
-    async def neuralnet(self, ctx: BlooContext, image: discord.Attachment) -> None:
+    async def neuralnet(self, ctx: BlooContext, image: ImageAttachment) -> None:
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
@@ -284,10 +275,6 @@ class Memes(commands.Cog):
             # ratelimit only if the invoker is not a moderator
             if bucket.update_rate_limit(current):
                 raise commands.BadArgument("That command is on cooldown.")
-
-        if image is None or image.content_type not in ["image/png", "image/jpeg", "image/webp"]:
-            raise commands.BadArgument(
-                "Attached file was not an image.")
 
         if image.size > 8_000_000:
             raise commands.BadArgument(
@@ -335,7 +322,7 @@ class Memes(commands.Cog):
     @app_commands.describe(bottom_text="Text to show on bottom")
     @app_commands.describe(image="Image to use as base")
     @transform_context
-    async def regular(self, ctx: BlooContext, top_text: str, bottom_text: str, image: discord.Attachment) -> None:
+    async def regular(self, ctx: BlooContext, top_text: str, bottom_text: str, image: ImageAttachment) -> None:
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
@@ -357,10 +344,6 @@ class Memes(commands.Cog):
             # ratelimit only if the invoker is not a moderator
             if bucket.update_rate_limit(current):
                 raise commands.BadArgument("That command is on cooldown.")
-
-        if image is None or image.content_type not in ["image/png", "image/jpeg", "image/webp"]:
-            raise commands.BadArgument(
-                "Attached file was not an image.")
 
         if image.size > 8_000_000:
             raise commands.BadArgument(
@@ -393,7 +376,7 @@ class Memes(commands.Cog):
     @app_commands.describe(bottom_text="Text to show on bottom")
     @app_commands.describe(image="Image to use as base")
     @transform_context
-    async def motivate(self, ctx: BlooContext, top_text: str, bottom_text: str, image: discord.Attachment) -> None:
+    async def motivate(self, ctx: BlooContext, top_text: str, bottom_text: str, image: ImageAttachment) -> None:
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
@@ -415,10 +398,6 @@ class Memes(commands.Cog):
             # ratelimit only if the invoker is not a moderator
             if bucket.update_rate_limit(current):
                 raise commands.BadArgument("That command is on cooldown.")
-
-        if image is None or image.content_type not in ["image/png", "image/jpeg", "image/webp"]:
-            raise commands.BadArgument(
-                "Attached file was not an image.")
 
         if image.size > 8_000_000:
             raise commands.BadArgument(

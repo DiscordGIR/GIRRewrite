@@ -1,17 +1,16 @@
 import os
 import platform
-import traceback
 from datetime import datetime
 from math import floor
 
 import discord
 import psutil
-from data.services.user_service import user_service
+from data.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
-from utils import BlooContext, cfg, logger, transform_context
-from utils.framework import whisper, mod_and_up
+from utils import BlooContext, cfg, transform_context
+from utils.framework import mod_and_up, whisper
 
 
 class Stats(commands.Cog):
@@ -77,6 +76,7 @@ class Stats(commands.Cog):
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Displays info about the server")
     @transform_context
+    @whisper
     async def serverinfo(self, ctx: BlooContext):
         guild = ctx.guild
         embed = discord.Embed(title="Server Information",
@@ -93,8 +93,8 @@ class Stats(commands.Cog):
         embed.add_field(name="Channels", value=len(
             guild.channels) + len(guild.voice_channels), inline=True)
         embed.add_field(name="Roles", value=len(guild.roles), inline=True)
-        # TODO: use ban cache
-        embed.add_field(name="Bans", value=len(await guild.bans()), inline=True)
+        embed.add_field(name="Bans", value=len(
+            self.bot.ban_cache.cache), inline=True)
         embed.add_field(name="Owner", value=guild.owner.mention, inline=True)
         embed.add_field(
             name="Created", value=f"{format_dt(guild.created_at, style='F')} ({format_dt(guild.created_at, style='R')})", inline=True)
@@ -104,6 +104,7 @@ class Stats(commands.Cog):
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Present statistics on who has been banned for raids.")
     @transform_context
+    @whisper
     async def raidstats(self, ctx: BlooContext) -> None:
         embed = discord.Embed(title="Raid Statistics",
                               color=discord.Color.blurple())
@@ -118,7 +119,7 @@ class Stats(commands.Cog):
                         value=f"{total}", inline=False)
         await ctx.respond_or_edit(embed=embed, ephemeral=ctx.whisper)
 
-    # @mod_and_up() #TODO: Fix
+    @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Present statistics on cases by each mod.")
     @app_commands.describe(mod="Moderator to view statistics of")

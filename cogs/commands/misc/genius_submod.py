@@ -7,11 +7,8 @@ from data.services import guild_service
 from discord.ext import commands
 from utils import BlooContext, cfg
 from utils.context import transform_context
-from utils.framework import genius_or_submod_and_up, whisper_in_general
-from utils.framework.checks import submod_or_admin_and_up
+from utils.framework import genius_or_submod_and_up, whisper_in_general, submod_or_admin_and_up, ImageAttachment
 from utils.views import CommonIssueModal, EditCommonIssue, issue_autocomplete, GenericDescriptionModal
-
-# from utils.views.prompt import GenericDescriptionModal
 
 
 async def prepare_issue_response(title, description, author, buttons=[], image: discord.Attachment = None):
@@ -63,18 +60,12 @@ class Genius(commands.Cog):
     @app_commands.describe(title="Title of the issue")
     @app_commands.describe(image="Image to show in issue")
     @transform_context
-    async def new(self, ctx: BlooContext, *, title: str,  image: discord.Attachment = None) -> None:
+    async def new(self, ctx: BlooContext, title: str,  image: ImageAttachment = None) -> None:
         # get #common-issues channel
         channel = ctx.guild.get_channel(
             guild_service.get_guild().channel_common_issues)
         if not channel:
             raise commands.BadArgument("common issues channel not found")
-
-        # ensure the attached file is an image
-        if image is not None:
-            _type = image.content_type
-            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-                raise commands.BadArgument("Attached file was not an image.")
 
         # prompt the user for common issue body
         modal = CommonIssueModal(ctx=ctx, author=ctx.author, title=title)
@@ -101,7 +92,7 @@ class Genius(commands.Cog):
     @app_commands.autocomplete(title=issue_autocomplete)
     @app_commands.describe(image="Image to show in issue")
     @transform_context
-    async def edit(self, ctx: BlooContext, *, title: str, image: discord.Attachment = None) -> None:
+    async def edit(self, ctx: BlooContext, title: str, image: ImageAttachment = None) -> None:
         channel = ctx.guild.get_channel(
             guild_service.get_guild().channel_common_issues)
         if not channel:
@@ -112,12 +103,6 @@ class Genius(commands.Cog):
                 "Issue not found! Title must match one of the embeds exactly, use autocomplete to help!")
 
         message: discord.Message = self.bot.issue_cache.cache[title]
-
-        # ensure the attached file is an image
-        if image is not None:
-            _type = image.content_type
-            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-                raise commands.BadArgument("Attached file was not an image.")
 
         # prompt the user for common issue body
         modal = EditCommonIssue(
@@ -146,14 +131,8 @@ class Genius(commands.Cog):
     @app_commands.describe(channel="Channel to post the embed in")
     @app_commands.describe(image="Image to show in embed")
     @transform_context
-    async def postembed(self, ctx: BlooContext, *, title: str, channel: discord.TextChannel = None, image: discord.Attachment = None):
+    async def postembed(self, ctx: BlooContext, title: str, channel: discord.TextChannel = None, image: ImageAttachment = None):
         post_channel = channel or ctx.channel
-
-        # ensure the attached file is an image
-        if image is not None:
-            _type = image.content_type
-            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-                raise commands.BadArgument("Attached file was not an image.")
 
         # prompt the user for common issue body
         modal = GenericDescriptionModal(ctx=ctx,
@@ -307,7 +286,7 @@ class Genius(commands.Cog):
     @app_commands.command(description="Post a new subreddit news post")
     @app_commands.describe(image="Image to show in embed")
     @transform_context
-    async def subnews(self, ctx: BlooContext, image: discord.Attachment = None):
+    async def subnews(self, ctx: BlooContext, image: ImageAttachment = None):
         db_guild = guild_service.get_guild()
 
         channel = ctx.guild.get_channel(db_guild.channel_subnews)
@@ -330,11 +309,6 @@ class Genius(commands.Cog):
         body = f"{subnews.mention} New Subreddit news post!\n\n{description}"
 
         if image is not None:
-            # ensure the attached file is an image
-            _type = image.content_type
-            if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-                raise commands.BadArgument("Attached file was not an image.")
-
             f = await image.to_file()
         else:
             f = None

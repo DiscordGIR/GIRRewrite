@@ -45,7 +45,6 @@ class Bot(commands.Bot):
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
 
 
-# TODO: complete this (send error to webhook, log to cmd line, handle fatal error case)
 @bot.tree.error
 async def app_command_error(interaction: discord.Interaction, _: Union[Command, ContextMenu], error: AppCommandError):
     ctx = BlooContext(interaction)
@@ -81,7 +80,7 @@ async def app_command_error(interaction: discord.Interaction, _: Union[Command, 
 
 @bot.event
 async def on_ready():
-    print("""
+    logger.info("""
             88          88                          
             88          88                          
             88          88                          

@@ -1,10 +1,8 @@
-import random
 import re
 from datetime import datetime
 from io import BytesIO
 
 import discord
-from aiohttp import request
 from data.model.tag import Tag
 from data.services.guild_service import guild_service
 from discord import app_commands
@@ -12,8 +10,8 @@ from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
 from utils import BlooContext, cfg
 from utils.context import transform_context
-from utils.framework import (MessageTextBucket, PermissionsFailure, gatekeeper,
-                             genius_or_submod_and_up, whisper)
+from utils.framework import (MessageTextBucket, gatekeeper,
+                             genius_or_submod_and_up, whisper, ImageAttachment)
 from utils.views import Menu, tags_autocomplete, EditTagModal, TagModal
 
 
@@ -178,7 +176,7 @@ class Tags(commands.Cog):
     @app_commands.describe(name="Name of the tag")
     @app_commands.describe(image="Image to attach to the tag")
     @transform_context
-    async def add(self, ctx: BlooContext, name: str, image: discord.Attachment = None) -> None:
+    async def add(self, ctx: BlooContext, name: str, image: ImageAttachment = None) -> None:
         if not name.isalnum():
             raise commands.BadArgument("Tag name must be alphanumeric.")
 
@@ -191,11 +189,7 @@ class Tags(commands.Cog):
 
         content_type = None
         if image is not None:
-            # ensure the attached file is an image
             content_type = image.content_type
-            if content_type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-                raise commands.BadArgument("Attached file was not an image.")
-
             image = await image.read()
 
         modal = TagModal(bot=self.bot, tag_name=name, author=ctx.author)
@@ -204,7 +198,7 @@ class Tags(commands.Cog):
 
         tag = modal.tag
         if tag is None:
-            await ctx.send_warning("Tag creation was cancelled.")
+            return
 
         # did the user want to attach an image to this tag?
         if image is not None:
@@ -226,7 +220,7 @@ class Tags(commands.Cog):
     @app_commands.autocomplete(name=tags_autocomplete)
     @app_commands.describe(image="Image to attach to the tag")
     @transform_context
-    async def edit(self, ctx: BlooContext, name: str, image: discord.Attachment = None) -> None:
+    async def edit(self, ctx: BlooContext, name: str, image: ImageAttachment = None) -> None:
         if len(name.split()) > 1:
             raise commands.BadArgument(
                 "Tag names can't be longer than 1 word.")
@@ -241,9 +235,6 @@ class Tags(commands.Cog):
         if image is not None:
             # ensure the attached file is an image
             content_type = image.content_type
-            if content_type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-                raise commands.BadArgument("Attached file was not an image.")
-
             image = await image.read()
 
             # save image bytes

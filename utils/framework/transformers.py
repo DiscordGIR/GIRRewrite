@@ -55,7 +55,7 @@ class VersionOnDevice(app_commands.Transformer):
 
 class Duration(app_commands.Transformer):
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+    async def transform(cls, _: discord.Interaction, value: str) -> discord.Attachment:
         try:
             value = pytimeparse.parse(value)
         except ValueError:
@@ -115,15 +115,19 @@ async def check_invokee(interaction: discord.Interaction, user: discord.Member):
                     message=f"{user.mention}'s top role is the same or higher than yours!")
 
 
-# class ImageAttachment(app_commands.Transformer):
-#     @classmethod
-#     async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
-#         if value is None:
-#             return
+class ImageAttachment(app_commands.Transformer):
+    @classmethod
+    def type(cls) -> AppCommandOptionType:
+        return AppCommandOptionType.attachment
+    
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+        if value is None:
+            return
 
-#         image = await app_commands.Transformer.transform(interaction, value)
-#         _type = image.content_type
-#         if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-#             raise app_commands.TransformerError("Attached file was not an image.")
+        image = await app_commands.transformers.passthrough_transformer(AppCommandOptionType.attachment).transform(interaction, value)
+        _type = image.content_type
+        if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
+            raise commands.BadArgument("Attached file was not an image.")
 
-#         return image
+        return image
