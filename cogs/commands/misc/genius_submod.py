@@ -117,7 +117,7 @@ class Genius(commands.Cog):
 
         embed, f, view = await prepare_issue_response(title, description, ctx.author, buttons, image)
         embed.set_footer(text=message.embeds[0].footer.text)
-        await message.edit(embed=embed, attachments=[f] if f is not None else discord.utils.MISSING, view=view)
+        await message.edit(embed=embed, attachments=[f] if f is not None else [], view=view)
         await ctx.send_success("Common issue edited!", delete_after=5, followup=True)
         await self.do_reindex(channel)
 

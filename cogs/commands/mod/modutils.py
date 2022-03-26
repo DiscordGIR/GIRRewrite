@@ -330,13 +330,12 @@ class ModUtils(commands.Cog):
     async def viewmuted(self, ctx: BlooContext):
         muted_members = [user for user in ctx.guild.members if user.is_timed_out()]
 
-        if muted_members == []:
-            await ctx.send_warning("No one is muted.")
+        if not muted_members:
+            await ctx.send_warning("No one is muted.", delete_after=5)
             return
 
         new_line = "\n"
-        muted_list = new_line.join([f'{user} {user.mention} '+'(Unmuted '+format_dt(user.communication_disabled_until,
-                                   style='R')+')' for user in sorted(muted_members[:8], key=lambda member: member.communication_disabled_until)])
+        muted_list = new_line.join([f"{user.mention} {user} — Unmuted {format_dt(user.timed_out_until, style='R')}" for user in sorted(muted_members[:8], key=lambda member: member.timed_out_until)])
         embed = discord.Embed(color=discord.Color.red(),
                               description=muted_list)
         embed.set_footer(text=f"{len(muted_members)} users muted")

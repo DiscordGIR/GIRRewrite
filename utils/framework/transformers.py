@@ -59,7 +59,7 @@ class Duration(app_commands.Transformer):
         try:
             value = pytimeparse.parse(value)
         except ValueError:
-            raise commands.BadArgument(
+            raise app_commands.TransformerError(
                 f"Could not parse {value} as a duration.")
         return value
 
@@ -97,7 +97,7 @@ class UserOnly(app_commands.Transformer):
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> discord.User:
         if isinstance(value, discord.Member):
-            raise commands.BadArgument(
+            raise PermissionsFailure(
                 "You can't call this command on guild members!")
 
         return value
@@ -130,6 +130,6 @@ class ImageAttachment(app_commands.Transformer):
         image = await app_commands.transformers.passthrough_transformer(AppCommandOptionType.attachment).transform(interaction, value)
         _type = image.content_type
         if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
-            raise commands.BadArgument("Attached file was not an image.")
+            raise app_commands.TransformerError("Attached file was not an image.")
 
         return image

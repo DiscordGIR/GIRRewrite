@@ -51,7 +51,11 @@ class Misc(commands.Cog):
             raise commands.BadArgument("Time has to be in the future >:(")
         reminder = discord.utils.escape_markdown(reminder)
 
-        ctx.tasks.schedule_reminder(ctx.author.id, reminder, time)
+        try:
+            ctx.tasks.schedule_reminder(ctx.author.id, reminder, time)
+        except:
+            raise commands.BadArgument("Could not schedule reminder, you probably have too many reminders already!")
+
         await ctx.send_success(title="Reminder set", description=f"We'll remind you {discord.utils.format_dt(time, style='R')}", delete_after=5)
 
     # TODO: emoji transformer
@@ -73,11 +77,10 @@ class Misc(commands.Cog):
         except commands.PartialEmojiConversionFailure:
             em = emoji
         if isinstance(em, str):
-            async with ctx.typing():
-                emoji_url_file = self.emojis.get(em)
-                if emoji_url_file is None:
-                    raise commands.BadArgument(
-                        "Couldn't find a suitable emoji.")
+            emoji_url_file = self.emojis.get(em)
+            if emoji_url_file is None:
+                raise commands.BadArgument(
+                    "Couldn't find a suitable emoji.")
 
             im = Image.open(io.BytesIO(base64.b64decode(emoji_url_file)))
             image_conatiner = io.BytesIO()
