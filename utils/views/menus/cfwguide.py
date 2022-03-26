@@ -54,7 +54,7 @@ class BypassMenu(Menu):
             )
         if bypass.get("repository") is not None:
             extra_buttons.append(
-                discord.ui.Button(label="View Repository", style=discord.ButtonStyle.link, url=bypass.get("repository").get("uri"))
+                discord.ui.Button(label="View Repository", style=discord.ButtonStyle.link, url=bypass.get("repository").get("uri").replace("beerpsi.me/sharerepo", "sharerepo.stkc.win"))
             )
 
         if app.get("uri") is not None:

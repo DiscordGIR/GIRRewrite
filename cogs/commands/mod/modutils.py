@@ -328,7 +328,7 @@ class ModUtils(commands.Cog):
     @app_commands.command(description="List all timed out users")
     @transform_context
     async def viewmuted(self, ctx: BlooContext):
-        muted_members = [user for user in ctx.guild.members if user.timed_out]
+        muted_members = [user for user in ctx.guild.members if user.is_timed_out()]
 
         if muted_members == []:
             await ctx.send_warning("No one is muted.")

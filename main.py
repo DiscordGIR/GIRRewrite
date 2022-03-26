@@ -83,7 +83,7 @@ async def app_command_error(interaction: discord.Interaction, _: Union[Command, 
 
 @bot.event
 async def on_ready():
-    logger.info("""
+    print("""
             88          88                          
             88          88                          
             88          88                          
