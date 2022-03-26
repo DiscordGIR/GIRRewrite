@@ -50,11 +50,8 @@ class Genius(commands.Cog):
         self.bot = bot
         self.cache = []
 
-    # commonissue = discord.SlashCommandGroup("commonissue", "Interact with common issues", guild_ids=[
-    #     cfg.guild_id], permissions=slash_perms.genius_or_submod_and_up())
     common_issue = app_commands.Group(name="commonissue", description="Interact with tags", guild_ids=[cfg.guild_id])
 
-    # TODO: image only transformer
     @genius_or_submod_and_up()
     @common_issue.command(description="Submit a new common issue")
     @app_commands.describe(title="Title of the issue")

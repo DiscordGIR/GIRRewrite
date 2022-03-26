@@ -5,7 +5,6 @@ import json
 from typing import Union
 
 import discord
-import pytimeparse
 import pytz
 from data.services import guild_service, user_service
 from discord import app_commands
@@ -14,7 +13,7 @@ from discord.utils import format_dt
 from PIL import Image
 from utils import (BlooContext, cfg, get_dstatus_components,
                    get_dstatus_incidents, transform_context)
-from utils.framework import (MONTH_MAPPING, gatekeeper,
+from utils.framework import (MONTH_MAPPING, Duration, gatekeeper,
                              give_user_birthday_role, mod_and_up, whisper)
 from utils.views import (PFPButton, PFPView, date_autocompleter,
                          rule_autocomplete)
@@ -34,16 +33,15 @@ class Misc(commands.Cog):
             raise Exception(
                 "Could not find emojis.json. Make sure to run scrape_emojis.py")
 
-    # TODO: duration transformer
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Send yourself a reminder after a given time gap")
     @app_commands.describe(reminder="What do you want to be reminded of?")
     @app_commands.describe(duration="When do we remind you? (i.e 1m, 1h, 1d)")
     @transform_context
     @whisper
-    async def remindme(self, ctx: BlooContext, reminder: str, duration: str):
+    async def remindme(self, ctx: BlooContext, reminder: str, duration: Duration):
         now = datetime.datetime.now()
-        delta = pytimeparse.parse(duration)
+        delta = duration
         if delta is None:
             raise commands.BadArgument(
                 "Please give me a valid time to remind you! (i.e 1h, 30m)")
@@ -139,7 +137,6 @@ class Misc(commands.Cog):
             db_guild = guild_service.get_guild()
             await give_user_birthday_role(self.bot, db_guild, ctx.author, ctx.guild)
 
-    # TODO: do this as buttons?
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Get avatar of another user or yourself.")
     @app_commands.describe(user="The user you want to get the avatar of")

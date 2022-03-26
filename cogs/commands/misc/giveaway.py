@@ -11,6 +11,7 @@ from discord.ext import commands
 from discord.utils import format_dt
 from utils import BlooContext, cfg, end_giveaway, transform_context
 from utils.framework import admin_and_up
+from utils.framework.transformers import Duration
 from utils.views import time_suggestions
 
 
@@ -21,7 +22,6 @@ class Giveaway(commands.Cog):
 
     giveaway = app_commands.Group(name="giveaway", description="Interact with tags", guild_ids=[cfg.guild_id])
 
-    # TODO: duration transformer
     @admin_and_up()
     @giveaway.command(description="Start a giveaway.")
     @app_commands.describe(prize="The prize to give away.")
@@ -31,8 +31,8 @@ class Giveaway(commands.Cog):
     @app_commands.describe(winners="The number of winners.",)
     @app_commands.describe(channel="The channel to send the giveaway in.")
     @transform_context
-    async def start(self, ctx: BlooContext, prize: str, sponsor: discord.Member, time: str, winners: int, channel: discord.TextChannel):
-        delta = pytimeparse.parse(time)
+    async def start(self, ctx: BlooContext, prize: str, sponsor: discord.Member, time: Duration, winners: int, channel: discord.TextChannel):
+        delta = time
         if delta is None:
             raise commands.BadArgument("Invalid time passed in.")
 
