@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 
 import discord
 import humanize
-import pytimeparse
 from apscheduler.jobstores.base import ConflictingIdError
 from data.model import Case
 from data.services import guild_service, user_service
@@ -11,7 +10,7 @@ from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
 from utils import BlooContext, cfg, transform_context
 from utils.framework import always_whisper, mod_and_up, ModsAndAboveMemberOrUser
-from utils.framework.transformers import ModsAndAboveMember
+from utils.framework.transformers import Duration, ModsAndAboveMember
 from utils.mod import (add_ban_case, add_kick_case, notify_user,
                        prepare_editreason_log, prepare_liftwarn_log,
                        prepare_mute_log, prepare_removepoints_log,
@@ -92,76 +91,62 @@ class ModActions(commands.Cog):
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, db_guild, member, log)
 
-    # @mod_and_up()
-    # @slash_command(guild_ids=[cfg.guild_id], description="Mute a user", permissions=slash_perms.mod_and_up())
-    # async def mute(self, ctx: BlooContext, member: Option(discord.Member, description="User to mute"), duration: Option(str, description="Duration for mute") = "", reason: Option(str, description="Reason for mute") = "No reason.") -> None:
-    #     """Mutes a user (mod only)
+    @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Mute a user")
+    @app_commands.describe(member="User to mute")
+    @app_commands.describe(duration="Duration of the mute (i.e 10m, 1h, 1d...)")
+    @app_commands.describe(reason="Reason for muting")
+    @transform_context
+    async def mute(self, ctx: BlooContext, member: ModsAndAboveMember, duration: Duration, reason: str = "No reason.") -> None:
+        reason = escape_markdown(reason)
+        reason = escape_mentions(reason)
 
-    #     Example usage
-    #     --------------
-    #     /mute member:<member> dur:<duration> reason:<reason>
+        now = datetime.now(tz=timezone.utc)
+        delta = duration
 
-    #     Parameters
-    #     ----------
-    #     user : discord.Member
-    #         "Member to mute"
-    #     dur : str
-    #         "Duration of mute (i.e 1h, 10m, 1d)"
-    #     reason : str, optional
-    #         "Reason for mute, by default 'No reason.'"
+        if delta is None:
+            raise commands.BadArgument("Please input a valid duration!")
 
-    #     """
-    #     await ctx.defer()
-    #     member: discord.Member = await mods_and_above_member_resolver(ctx, member)
+        if member.is_timed_out():
+            raise commands.BadArgument("This user is already muted.")
 
-    #     reason = escape_markdown(reason)
-    #     reason = escape_mentions(reason)
+        time = now + timedelta(seconds=delta)
+        if time > now + timedelta(days=14):
+            raise commands.BadArgument("Mutes can't be longer than 14 days!")
 
-    #     now = datetime.now(tz=timezone.utc)
-    #     delta = pytimeparse.parse(duration)
+        db_guild = guild_service.get_guild()
+        case = Case(
+            _id=db_guild.case_id,
+            _type="MUTE",
+            date=now,
+            mod_id=ctx.author.id,
+            mod_tag=str(ctx.author),
+            reason=reason,
+        )
 
-    #     if delta is None:
-    #         raise commands.BadArgument("Please input a valid duration!")
+        case.until = time
+        case.punishment = humanize.naturaldelta(
+            time - now, minimum_unit="seconds")
 
-    #     if member.timed_out:
-    #         raise commands.BadArgument("This user is already muted.")
+        try:
+            await member.timeout(time, reason=reason)
+            ctx.tasks.schedule_untimeout(member.id, time)
+        except ConflictingIdError:
+            raise commands.BadArgument(
+                "The database thinks this user is already muted.")
 
-    #     time = now + timedelta(seconds=delta)
-    #     if time > now + timedelta(days=14):
-    #         raise commands.BadArgument("Mutes can't be longer than 14 days!")
+        guild_service.inc_caseid()
+        user_service.add_case(member.id, case)
 
-    #     db_guild = guild_service.get_guild()
-    #     case = Case(
-    #         _id=db_guild.case_id,
-    #         _type="MUTE",
-    #         date=now,
-    #         mod_id=ctx.author.id,
-    #         mod_tag=str(ctx.author),
-    #         reason=reason,
-    #     )
+        log = prepare_mute_log(ctx.author, member, case)
+        await ctx.respond_or_edit(embed=log, delete_after=10)
 
-    #     case.until = time
-    #     case.punishment = humanize.naturaldelta(
-    #         time - now, minimum_unit="seconds")
+        log.remove_author()
+        log.set_thumbnail(url=member.display_avatar)
 
-    #     try:
-    #         await member.timeout(until=time, reason=reason)
-    #         ctx.tasks.schedule_untimeout(member.id, time)
-    #     except ConflictingIdError:
-    #         raise commands.BadArgument(
-    #             "The database thinks this user is already muted.")
-
-    #     guild_service.inc_caseid()
-    #     user_service.add_case(member.id, case)
-
-    #     log = prepare_mute_log(ctx.author, member, case)
-    #     await ctx.respond(embed=log, delete_after=10)
-
-    #     log.remove_author()
-    #     log.set_thumbnail(url=member.display_avatar)
-
-    #     dmed = await notify_user(member, f"You have been muted in {ctx.guild.name}", log)
-    #     await submit_public_log(ctx, db_guild, member, log, dmed)
+        dmed = await notify_user(member, f"You have been muted in {ctx.guild.name}", log)
+        await submit_public_log(ctx, db_guild, member, log, dmed)
 
     # @mod_and_up()
     # @slash_command(guild_ids=[cfg.guild_id], description="Unmute a user", permissions=slash_perms.mod_and_up())

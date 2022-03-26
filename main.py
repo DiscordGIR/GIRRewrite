@@ -62,7 +62,7 @@ async def app_command_error(interaction: discord.Interaction, _: Union[Command, 
             or isinstance(error, commands.BotMissingPermissions)
             or isinstance(error, commands.MaxConcurrencyReached)
             or isinstance(error, commands.NoPrivateMessage)):
-        await ctx.send_error(error)
+        await ctx.send_error(error, followup=True, whisper=True, delete_after=5)
     else:
         try:
             raise error
@@ -76,7 +76,7 @@ async def app_command_error(interaction: discord.Interaction, _: Union[Command, 
             if len(tb_formatted) > 1000:
                 tb_formatted = "...\n" + tb_formatted[-1000:]
 
-            await ctx.send_error(description=f"`{error}`\n```{tb_formatted}```")
+            await ctx.send_error(description=f"`{error}`\n```{tb_formatted}```", followup=True, whisper=True, delete_after=5)
 
 
 @bot.event

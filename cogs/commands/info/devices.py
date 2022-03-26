@@ -7,7 +7,7 @@ from discord.ext import commands
 from utils import BlooContext, cfg, transform_context, get_ios_cfw, transform_groups
 from utils.framework import (always_whisper,
                              ensure_invokee_role_lower_than_bot, whisper)
-from utils.framework.transformers import DeviceTransformer, VersionOnDeviceTransformer
+from utils.framework.transformers import DeviceTransformer, VersionOnDevice
 from utils.views import (Confirm, device_autocomplete,
                          ios_on_device_autocomplete)
 
@@ -29,7 +29,7 @@ class Devices(commands.Cog):
     @app_commands.autocomplete(version=ios_on_device_autocomplete)
     @transform_context
     @always_whisper
-    async def add(self, ctx: BlooContext, device: DeviceTransformer, version: VersionOnDeviceTransformer) -> None:
+    async def add(self, ctx: BlooContext, device: DeviceTransformer, version: VersionOnDevice) -> None:
         new_nick = ctx.author.display_name
         # check if user already has a device in their nick
         if re.match(self.devices_test, ctx.author.display_name):

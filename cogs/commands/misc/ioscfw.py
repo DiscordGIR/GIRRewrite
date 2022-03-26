@@ -7,7 +7,7 @@ from utils import (BlooContext, cfg, get_ios_cfw, get_ipsw_firmware_info,
                    transform_context, transform_groups)
 from utils.framework import whisper, whisper_in_general
 from utils.framework.transformers import (DeviceTransformer,
-                                          VersionOnDeviceTransformer)
+                                          VersionOnDevice)
 from utils.views import (BypassMenu, CIJMenu, bypass_autocomplete,
                          device_autocomplete, ios_beta_version_autocomplete,
                          ios_on_device_autocomplete, ios_version_autocomplete,
@@ -341,7 +341,7 @@ class iOSCFW(commands.Cog):
     @app_commands.autocomplete(version=ios_on_device_autocomplete)
     @transform_context
     @whisper
-    async def canijailbreak(self, ctx: BlooContext, device: DeviceTransformer, version: VersionOnDeviceTransformer) -> None:
+    async def canijailbreak(self, ctx: BlooContext, device: DeviceTransformer, version: VersionOnDevice) -> None:
         response = await get_ios_cfw()
         found_jbs = []
         jailbreaks = response.get("jailbreak")
