@@ -19,6 +19,29 @@ def transform_context(func: discord.app_commands.Command):
     return decorator
 
 
+class PromptData:
+    def __init__(self, value_name, description, convertor=None, timeout=120, title="", reprompt=False, raw=False):
+        self.value_name = value_name
+        self.description = description
+        self.convertor = convertor
+        self.title = title
+        self.reprompt = reprompt
+        self.timeout = timeout
+        self.raw = raw
+
+    def __copy__(self):
+        return PromptData(self.value_name, self.description, self.convertor, self.title, self.reprompt)
+
+
+class PromptDataReaction:
+    def __init__(self, message, reactions, timeout=None, delete_after=False, raw_emoji=False):
+        self.message = message
+        self.reactions = reactions
+        self.timeout = timeout
+        self.delete_after = delete_after
+        self.raw_emoji = raw_emoji
+
+
 class BlooContext:
     def __init__(self, interaction: discord.Interaction):
         self.interaction: discord.Interaction = interaction
@@ -179,28 +202,123 @@ class BlooContext:
             title=title, description=description,  color=discord.Color.red())
         return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper or whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
+    async def prompt(self, info: PromptData):
+        """Prompts for a response
+        
+        Parameters
+        ----------
+        info : PromptData
+            "Prompt information"
 
-class PromptData:
-    def __init__(self, value_name, description, convertor=None, timeout=120, title="", reprompt=False, raw=False):
-        self.value_name = value_name
-        self.description = description
-        self.convertor = convertor
-        self.title = title
-        self.reprompt = reprompt
-        self.timeout = timeout
-        self.raw = raw
+        """
+        def wait_check(m):
+            return m.author == self.author and m.channel == self.channel
+    
+        ret = None
+        embed = discord.Embed(title=info.title if not info.reprompt else f"That wasn't a valid {info.value_name}. {info.title if info.title is not None else ''}", description=info.description, color=discord.Color.blurple() if not info.reprompt else discord.Color.orange())
+        embed.set_footer(text="Send 'cancel' to cancel.")
 
-    def __copy__(self):
-        return PromptData(self.value_name, self.description, self.convertor, self.title, self.reprompt)
+        await self.respond_or_edit(content="", embed=embed, ephemeral=True, view=None)
+        try:
+            response = await self.bot.wait_for('message', check=wait_check, timeout=info.timeout)
+        except asyncio.TimeoutError:
+            await self.send_warning("Timed out.", delete_after=5)
+        else:
+            try:
+                await response.delete()
+            except:
+                pass
+            if response.content.lower() == "cancel":
+                await self.send_warning("Cancelled.", delete_after=5)
+                return
+            elif not response.content and info.convertor is not None:
+                info.reprompt = True
+                return await self.prompt(info)
+            else:
+                if info.convertor in [str, int, pytimeparse.parse]:
+                    try:
+                        if info.raw:
+                            ret = info.convertor(response.content), response
+                        else:
+                            ret = info.convertor(response.content)
+                    except Exception:
+                        ret = None
+                    
+                    if ret is None:
+                        info.reprompt = True
+                        return await self.prompt(info)
 
+                    if info.convertor is pytimeparse.parse:
+                        now = datetime.now()
+                        time = now + timedelta(seconds=ret)
+                        if time < now:
+                            raise commands.BadArgument("Time has to be in the future >:(")
 
-class PromptDataReaction:
-    def __init__(self, message, reactions, timeout=None, delete_after=False, raw_emoji=False):
-        self.message = message
-        self.reactions = reactions
-        self.timeout = timeout
-        self.delete_after = delete_after
-        self.raw_emoji = raw_emoji
+                else:
+                    if info.convertor is not None:
+                        value = await info.convertor(self, response.content)
+                    else:
+                        value = response.content
+
+                    if info.raw:
+                        ret = value, response
+                    else:
+                        ret = value
+                    
+        return ret
+    
+    async def prompt_reaction(self, info: PromptDataReaction):
+        """Prompts for a reaction
+        
+        Parameters
+        ----------
+        info : PromptDataReaction
+            "Prompt data"
+            
+        """
+        for reaction in info.reactions:
+            await info.message.add_reaction(reaction)
+            
+        def wait_check(reaction, user):
+            res = (user.id != self.bot.user.id
+                and reaction.message.id == info.message.id)
+            
+            if info.reactions:
+                res = res and str(reaction.emoji) in info.reactions
+            
+            return res
+            
+        if info.timeout is None:
+            while True:
+                try:
+                    reaction, reactor = await self.bot.wait_for('reaction_add', timeout=300.0, check=wait_check)
+                    if reaction is not None:
+                        return str(reaction.emoji), reactor    
+                except asyncio.TimeoutError:
+                    if self.bot.report.pending_tasks.get(info.message.id) == "TERMINATE":
+                        return "TERMINATE", None
+        else:
+            try:
+                reaction, reactor = await self.bot.wait_for('reaction_add', timeout=info.timeout, check=wait_check)
+            except asyncio.TimeoutError:
+                try:
+                    if info.delete_after:
+                        await info.message.delete()
+                    else:
+                        await info.message.clear_reactions()
+                    return None, None
+                except Exception:
+                    pass
+            else:
+                if info.delete_after:
+                    await info.message.delete()
+                else:
+                    await info.message.clear_reactions()
+                
+                if not info.raw_emoji:
+                    return str(reaction.emoji), reactor    
+                else:
+                    return reaction, reactor    
 
 
 class BlooOldContext(commands.Context):
