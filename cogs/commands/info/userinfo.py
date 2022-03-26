@@ -143,67 +143,7 @@ class UserInfo(commands.Cog):
     @transform_context
     @whisper
     async def userinfo(self, ctx: BlooContext, user: Union[discord.Member, discord.User] = None) -> None:
-        await self.handle_userinfo(ctx, user)
-
-    # TODO: unsupported in cogs for now
-    # @app_commands.guilds(cfg.guild_id)
-    # @app_commands.context_menu(name="Userinfo")
-    # @whisper
-    # async def userinfo_rc(self, ctx: BlooContext, user: discord.Member) -> None:
-    #     await self.handle_userinfo(ctx, user)
-
-    # TODO: unsupported in cogs for now
-    # @whisper()
-    # @message_command(guild_ids=[cfg.guild_id], name="Userinfo")
-    # async def userinfo_msg(self, ctx: BlooContext, message: discord.Message) -> None:
-    #     await self.handle_userinfo(ctx, message.author)
-
-    async def handle_userinfo(self, ctx: BlooContext, user: Union[discord.Member, discord.User]):
-        is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
-        if user is None:
-            user = ctx.author
-
-        # is the invokee in the guild?
-        if isinstance(user, discord.User) and not is_mod:
-            raise commands.BadArgument(
-                "You do not have permission to use this command.")
-
-        # non-mods are only allowed to request their own userinfo
-        if not is_mod and user.id != ctx.author.id:
-            raise commands.BadArgument(
-                "You do not have permission to use this command.")
-
-        # prepare list of roles and join date
-        roles = ""
-        if isinstance(user, discord.Member) and user.joined_at is not None:
-            reversed_roles = user.roles
-            reversed_roles.reverse()
-
-            for role in reversed_roles[:-1]:
-                roles += role.mention + " "
-            joined = f"{format_dt(user.joined_at, style='F')} ({format_dt(user.joined_at, style='R')})"
-        else:
-            roles = "No roles."
-            joined = f"User not in {ctx.guild}"
-
-        results = user_service.get_user(user.id)
-
-        embed = discord.Embed(title=f"User Information", color=user.color)
-        embed.set_author(name=user)
-        embed.set_thumbnail(url=user.display_avatar)
-        embed.add_field(name="Username",
-                        value=f'{user} ({user.mention})', inline=True)
-        embed.add_field(
-            name="Level", value=results.level if not results.is_clem else "0", inline=True)
-        embed.add_field(
-            name="XP", value=results.xp if not results.is_clem else "0/0", inline=True)
-        embed.add_field(
-            name="Roles", value=roles[:1024] if roles else "None", inline=False)
-        embed.add_field(
-            name="Join date", value=joined, inline=True)
-        embed.add_field(name="Account creation date",
-                        value=f"{format_dt(user.created_at, style='F')} ({format_dt(user.created_at, style='R')})", inline=True)
-        await ctx.respond(embed=embed, ephemeral=ctx.whisper)
+        await handle_userinfo(ctx, user)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Show your or another user's XP")
@@ -332,3 +272,50 @@ def xp_for_next_level(_next):
 
 async def setup(bot):
     await bot.add_cog(UserInfo(bot))
+
+async def handle_userinfo(ctx: BlooContext, user: Union[discord.Member, discord.User]):
+    is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
+    if user is None:
+        user = ctx.author
+
+    # is the invokee in the guild?
+    if isinstance(user, discord.User) and not is_mod:
+        raise commands.BadArgument(
+            "You do not have permission to use this command.")
+
+    # non-mods are only allowed to request their own userinfo
+    if not is_mod and user.id != ctx.author.id:
+        raise commands.BadArgument(
+            "You do not have permission to use this command.")
+
+    # prepare list of roles and join date
+    roles = ""
+    if isinstance(user, discord.Member) and user.joined_at is not None:
+        reversed_roles = user.roles
+        reversed_roles.reverse()
+
+        for role in reversed_roles[:-1]:
+            roles += role.mention + " "
+        joined = f"{format_dt(user.joined_at, style='F')} ({format_dt(user.joined_at, style='R')})"
+    else:
+        roles = "No roles."
+        joined = f"User not in {ctx.guild}"
+
+    results = user_service.get_user(user.id)
+
+    embed = discord.Embed(title=f"User Information", color=user.color)
+    embed.set_author(name=user)
+    embed.set_thumbnail(url=user.display_avatar)
+    embed.add_field(name="Username",
+                    value=f'{user} ({user.mention})', inline=True)
+    embed.add_field(
+        name="Level", value=results.level if not results.is_clem else "0", inline=True)
+    embed.add_field(
+        name="XP", value=results.xp if not results.is_clem else "0/0", inline=True)
+    embed.add_field(
+        name="Roles", value=roles[:1024] if roles else "None", inline=False)
+    embed.add_field(
+        name="Join date", value=joined, inline=True)
+    embed.add_field(name="Account creation date",
+                    value=f"{format_dt(user.created_at, style='F')} ({format_dt(user.created_at, style='R')})", inline=True)
+    await ctx.respond(embed=embed, ephemeral=ctx.whisper)

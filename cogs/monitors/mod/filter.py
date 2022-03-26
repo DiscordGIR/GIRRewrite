@@ -48,26 +48,6 @@ class Filter(commands.Cog):
         await reaction.message.remove_reaction(reaction.emoji, reacter)
         await manual_report(reacter, reaction.message)
 
-    # @mod_and_up()
-    # @always_whisper()
-    # @user_command(guild_ids=[cfg.guild_id], name="Generate report")
-    # async def generate_report_rc(self, ctx: BlooContext, member: discord.Member) -> None:
-    #     if ctx.author.top_role <= member.top_role:
-    #         raise commands.BadArgument(
-    #             "Target user must have a lower role than yourself.")
-    #     await manual_report(self.bot, ctx.author, member)
-    #     await ctx.send_success("Generated report!")
-
-    # @mod_and_up()
-    # @always_whisper()
-    # @message_command(guild_ids=[cfg.guild_id], name="Generate report")
-    # async def generate_report_msg(self, ctx: BlooContext, message: discord.Message) -> None:
-    #     if ctx.author.top_role <= message.author.top_role:
-    #         raise commands.BadArgument(
-    #             "Target user must have a lower role than yourself.")
-    #     await manual_report(self.bot, ctx.author, message)
-    #     await ctx.send_success("Generated report!")
-
     @commands.Cog.listener()
     async def on_message(self, message):
         await self.run_filter(message)

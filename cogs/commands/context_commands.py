@@ -5,6 +5,7 @@ from io import BytesIO
 
 import discord
 from cogs.commands.info.tags import prepare_tag_embed
+from cogs.commands.info.userinfo import handle_userinfo
 from data.services import guild_service
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
@@ -13,6 +14,7 @@ from utils.framework import MessageTextBucket, gatekeeper
 from utils.framework.checks import mod_and_up
 from utils.framework.transformers import ModsAndAboveMember
 from utils.views import PFPButton, PFPView
+from utils.views.menus.report import manual_report
 from utils.views.menus.report_action import WarnView
 
 support_tags = [tag.name for tag in guild_service.get_guild(
@@ -115,8 +117,38 @@ def setup_context_commands(bot: commands.Bot):
     @mod_and_up()
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Warn 50 points")
     async def warn_msg(interaction: discord.Interaction, message: discord.Message) -> None:
-        member = await ModsAndAboveMember.transform(interaction, member)
+        member = await ModsAndAboveMember.transform(interaction, message.author)
         ctx = BlooContext(interaction)
         ctx.whisper = True
         view = WarnView(ctx, message.author)
         await ctx.respond(embed=discord.Embed(description=f"Choose a warn reason for {message.author.mention}.", color=discord.Color.blurple()), view=view, ephemeral=True)
+
+    @mod_and_up()
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Generate report")
+    async def generate_report_rc(interaction: discord.Interaction, member: discord.Member) -> None:
+        ctx = BlooContext(interaction)
+        ctx.whisper = True
+        member = await ModsAndAboveMember.transform(interaction, member)
+        await manual_report(ctx.author, member)
+        await ctx.send_success("Generated report!")
+
+    @mod_and_up()
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Generate report")
+    async def generate_report_msg(interaction: discord.Interaction, message: discord.Message) -> None:
+        ctx = BlooContext(interaction)
+        ctx.whisper = True
+        member = await ModsAndAboveMember.transform(interaction, message.author)
+        await manual_report(ctx.author, message)
+        await ctx.send_success("Generated report!")
+
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Userinfo")
+    async def userinfo_rc(interaction: discord.Interaction, user: discord.Member) -> None:
+        ctx = BlooContext(interaction)
+        whisper(ctx)
+        await handle_userinfo(ctx, user)
+
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Userinfo")
+    async def userinfo_msg(interaction: discord.Interaction, message: discord.Message) -> None:
+        ctx = BlooContext(interaction)
+        whisper(ctx)
+        await handle_userinfo(ctx, message.author)

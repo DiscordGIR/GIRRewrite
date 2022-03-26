@@ -229,12 +229,12 @@ class ReportActions(ui.View):
         return True
 
     @ui.button(emoji="✅", label="Dismiss", style=discord.ButtonStyle.primary)
-    async def dismiss(self, _: ui.Button, interaction: discord.Interaction):
+    async def dismiss(self, interaction: discord.Interaction, _: ui.Button):
         await interaction.message.delete()
         self.stop()
 
     @ui.button(emoji="⚠️", label="Warn", style=discord.ButtonStyle.primary)
-    async def warn(self, _: ui.Button, interaction: discord.Interaction):
+    async def warn(self, interaction: discord.Interaction, _: ui.Button):
         view = ReportActionReason(
             target_member=self.target_member, mod=interaction.user, mod_action=ModAction.WARN)
         await interaction.response.send_message(embed=discord.Embed(description=f"{interaction.user.mention}, choose a warn reason for {self.target_member.mention}.", color=discord.Color.blurple()), view=view)
@@ -246,7 +246,7 @@ class ReportActions(ui.View):
         self.stop()
 
     @ui.button(emoji="❌", label="Ban", style=discord.ButtonStyle.primary)
-    async def ban(self, _: ui.Button, interaction: discord.Interaction):
+    async def ban(self, interaction: discord.Interaction, _: ui.Button):
         view = ReportActionReason(
             target_member=self.target_member, mod=interaction.user, mod_action=ModAction.BAN)
         await interaction.response.send_message(embed=discord.Embed(description=f"{interaction.user.mention}, choose a ban reason for {self.target_member.mention}.", color=discord.Color.blurple()), view=view)
@@ -258,7 +258,7 @@ class ReportActions(ui.View):
         self.stop()
 
     @ui.button(emoji="🆔", label="Post ID", style=discord.ButtonStyle.primary)
-    async def id(self, _: ui.Button, interaction: discord.Interaction):
+    async def id(self, interaction: discord.Interaction, _: ui.Button):
         await interaction.response.send_message(self.target_member.id)
         await asyncio.sleep(10)
         await interaction.delete_original_message()
@@ -340,7 +340,7 @@ class SpamReportActions(ui.View):
         return True
 
     @ui.button(emoji="✅", label="Dismiss", style=discord.ButtonStyle.primary)
-    async def dismiss(self, _: ui.Button, interaction: discord.Interaction):
+    async def dismiss(self, interaction: discord.Interaction, _: ui.Button):
         try:
             await unmute(interaction, self.target_member, interaction.guild.me, reason="Reviewed by a moderator.")
         except Exception:
@@ -351,7 +351,7 @@ class SpamReportActions(ui.View):
             self.stop()
         
     @ui.button(emoji="💀", label="Ban", style=discord.ButtonStyle.primary)
-    async def ban(self, _: ui.Button, interaction: discord.Interaction):
+    async def ban(self, interaction: discord.Interaction, _: ui.Button):
         try:
             await ban(interaction, self.target_member, mod=interaction.user, reason="Spam detected")
         except Exception:
