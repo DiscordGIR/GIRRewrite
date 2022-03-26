@@ -14,6 +14,7 @@ initial_extensions = [
     "cogs.monitors.misc.songs",
     "cogs.monitors.mod.antiraid",
     "cogs.monitors.mod.blootooth",
+    "cogs.monitors.mod.boosteremojis",
     "cogs.monitors.mod.logging",
     "cogs.monitors.mod.filter",
     "cogs.monitors.mod.sabbath",
