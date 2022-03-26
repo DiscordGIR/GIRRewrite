@@ -146,19 +146,6 @@ class Misc(commands.Cog):
         if user is None:
             user = ctx.author
 
-        await self.handle_avatar(ctx, user)
-
-#     @whisper()
-#     @user_command(guild_ids=[cfg.guild_id], name="View avatar")
-#     async def avatar_rc(self, ctx: BlooContext, member: discord.Member):
-#         await self.handle_avatar(ctx, member)
-
-#     @whisper()
-#     @message_command(guild_ids=[cfg.guild_id], name="View avatar")
-#     async def avatar_msg(self, ctx: BlooContext, message: discord.Message):
-#         await self.handle_avatar(ctx, message.author)
-
-    async def handle_avatar(self, ctx, user: Union[discord.Member, discord.User]):
         embed = discord.Embed(title=f"{user}'s avatar")
         animated = ["gif", "png", "jpeg", "webp"]
         not_animated = ["png", "jpeg", "webp"]

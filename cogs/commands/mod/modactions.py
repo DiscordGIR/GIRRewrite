@@ -35,22 +35,6 @@ class ModActions(commands.Cog):
 
         await warn(ctx, target_member=user, mod=ctx.author, points=points, reason=reason)
 
-    # @mod_and_up()
-    # @always_whisper()
-    # @user_command(guild_ids=[cfg.guild_id], name="Warn 50 points")
-    # async def warn_rc(self, ctx: BlooContext, member: discord.Member) -> None:
-    #     member = await mods_and_above_external_resolver(ctx, member)
-    #     view = WarnView(ctx, member)
-    #     await ctx.respond(embed=discord.Embed(description=f"Choose a warn reason for {member.mention}.", color=discord.Color.blurple()), view=view, ephemeral=True)
-
-    # @mod_and_up()
-    # @always_whisper()
-    # @message_command(guild_ids=[cfg.guild_id], name="Warn 50 points")
-    # async def warn_msg(self, ctx: BlooContext, message: discord.Message) -> None:
-    #     member = await mods_and_above_external_resolver(ctx, message.author)
-    #     view = WarnView(ctx, message.author)
-    #     await ctx.respond(embed=discord.Embed(description=f"Choose a warn reason for {member.mention}.", color=discord.Color.blurple()), view=view, ephemeral=True)
-
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Kick a user")

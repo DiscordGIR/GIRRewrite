@@ -1,20 +1,32 @@
+import functools
+import random
 from datetime import datetime
 from io import BytesIO
-import random
+
+import discord
+from cogs.commands.info.tags import prepare_tag_embed
+from data.services import guild_service
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
-from cogs.commands.info.tags import prepare_tag_embed
-from utils import cfg, BlooContext
-import discord
-from data.services import guild_service
+from utils import BlooContext, cfg
 from utils.framework import MessageTextBucket, gatekeeper
+from utils.framework.checks import mod_and_up
+from utils.framework.transformers import ModsAndAboveMember
+from utils.views import PFPButton, PFPView
+from utils.views.menus.report_action import WarnView
 
 support_tags = [tag.name for tag in guild_service.get_guild(
-    ).tags if "support" in tag.name]
+).tags if "support" in tag.name]
 
 tag_cooldown = CooldownMapping.from_cooldown(
-        1, 5, MessageTextBucket.custom)
+    1, 5, MessageTextBucket.custom)
 
+
+def whisper(ctx: BlooContext):
+    if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != guild_service.get_guild().channel_botspam:
+        ctx.whisper = True
+    else:
+        ctx.whisper = False
 
 async def handle_support_tag(ctx: BlooContext, member: discord.Member) -> None:
     if not support_tags:
@@ -43,6 +55,31 @@ async def handle_support_tag(ctx: BlooContext, member: discord.Member) -> None:
     await ctx.respond_or_edit(content=title, embed=prepare_tag_embed(tag), file=file or discord.utils.MISSING)
 
 
+async def handle_avatar(ctx, member: discord.Member):
+    embed = discord.Embed(title=f"{member}'s avatar")
+    animated = ["gif", "png", "jpeg", "webp"]
+    not_animated = ["png", "jpeg", "webp"]
+
+    avatar = member.avatar or member.default_avatar
+
+    def fmt(format_):
+        return f"[{format_}]({avatar.replace(format=format_, size=4096)})"
+
+    if member.display_avatar.is_animated():
+        embed.description = f"View As\n{'  '.join([fmt(format_) for format_ in animated])}"
+    else:
+        embed.description = f"View As\n{'  '.join([fmt(format_) for format_ in not_animated])}"
+
+    embed.set_image(url=avatar.replace(size=4096))
+    embed.color = discord.Color.random()
+
+    view = PFPView(ctx)
+    if member.guild_avatar is not None:
+        view.add_item(PFPButton(ctx, member))
+
+    view.message = await ctx.respond(embed=embed, ephemeral=ctx.whisper, view=view)
+
+
 def setup_context_commands(bot: commands.Bot):
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Support tag")
     async def support_tag_rc(interaction: discord.Interaction, user: discord.Member) -> None:
@@ -53,3 +90,33 @@ def setup_context_commands(bot: commands.Bot):
     async def support_tag_msg(interaction: discord.Interaction, message: discord.Message) -> None:
         ctx = BlooContext(interaction)
         await handle_support_tag(ctx, message.author)
+
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="View avatar")
+    async def avatar_rc(interaction: discord.Interaction, member: discord.Member):
+        ctx = BlooContext(interaction)
+        whisper(ctx)
+        await handle_avatar(ctx, member)
+
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="View avatar")
+    async def avatar_msg(interaction: discord.Interaction, message: discord.Message):
+        ctx = BlooContext(interaction)
+        whisper(ctx)
+        await handle_avatar(ctx, message.author)
+
+    @mod_and_up()
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Warn 50 points")
+    async def warn_rc(interaction: discord.Interaction, member: discord.Member) -> None:
+        member = await ModsAndAboveMember.transform(interaction, member)
+        ctx = BlooContext(interaction)
+        ctx.whisper = True
+        view = WarnView(ctx, member)
+        await ctx.respond(embed=discord.Embed(description=f"Choose a warn reason for {member.mention}.", color=discord.Color.blurple()), view=view, ephemeral=True)
+
+    @mod_and_up()
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Warn 50 points")
+    async def warn_msg(interaction: discord.Interaction, message: discord.Message) -> None:
+        member = await ModsAndAboveMember.transform(interaction, member)
+        ctx = BlooContext(interaction)
+        ctx.whisper = True
+        view = WarnView(ctx, message.author)
+        await ctx.respond(embed=discord.Embed(description=f"Choose a warn reason for {message.author.mention}.", color=discord.Color.blurple()), view=view, ephemeral=True)

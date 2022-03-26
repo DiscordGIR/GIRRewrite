@@ -264,12 +264,12 @@ class ReportActions(ui.View):
         await interaction.delete_original_message()
 
     @ui.button(emoji="🧹", label="Clean up", style=discord.ButtonStyle.primary)
-    async def purge(self, button: ui.Button, interaction: discord.Interaction):
+    async def purge(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.channel.purge(limit=100)
         self.stop()
 
     @ui.button(emoji="🔎", label="Claim report", style=discord.ButtonStyle.primary)
-    async def claim(self, button: ui.Button, interaction: discord.Interaction):
+    async def claim(self, interaction: discord.Interaction, button: ui.Button):
         report_embed = interaction.message.embeds[0]
         if "(claimed)" in report_embed.title:
             ctx = BlooContext(interaction)
@@ -300,7 +300,7 @@ class RaidPhraseReportActions(ui.View):
         return True
 
     @ui.button(emoji="✅", label="Dismiss", style=discord.ButtonStyle.primary)
-    async def dismiss(self, button: ui.Button, interaction: discord.Interaction):
+    async def dismiss(self, interaction: discord.Interaction, button: ui.Button):
         try:
             await unmute(interaction, self.target_member, mod=interaction.user, reason="Reviewed by a moderator.")
         except Exception:
@@ -311,7 +311,7 @@ class RaidPhraseReportActions(ui.View):
             self.stop()
         
     @ui.button(emoji="💀", label="Ban and add raidphrase", style=discord.ButtonStyle.primary)
-    async def ban(self, button: ui.Button, interaction: discord.Interaction):
+    async def ban(self, interaction: discord.Interaction, button: ui.Button):
         ctx = BlooContext(interaction)
         try:
             await ban(interaction, self.target_member, mod=interaction.user, reason="Raid phrase detected")
@@ -362,7 +362,7 @@ class SpamReportActions(ui.View):
             self.stop()
         
     @ui.button(emoji="⚠️", label="Temporary mute", style=discord.ButtonStyle.primary)
-    async def mute(self, button: ui.Button, interaction: discord.Interaction):
+    async def mute(self, interaction: discord.Interaction, button: ui.Button):
         ctx = BlooContext(interaction)
         view = GenericDescriptionModal(ctx, interaction.user, title=f"Mute duration for {self.target_member}", label="How long should they be muted for?", placeholder="i.e 1h, 1d, ...")
         await interaction.response.send_modal(view)
