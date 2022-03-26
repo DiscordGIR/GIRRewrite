@@ -142,7 +142,7 @@ class BlooContext:
         #         await self.interaction.delete_original_message()
         
         if self.interaction.response.is_done(): # we've responded to the interaction already
-            if await self.interaction.original_message() and not kwargs.get("followup"): # is there a message to edit and do we want to edit it?
+            if not kwargs.get("followup"): # is there a message to edit and do we want to edit it?
                 ephemeral = kwargs.get("ephemeral")
                 if kwargs.get("ephemeral") is not None:
                     del kwargs["ephemeral"]

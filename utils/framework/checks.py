@@ -107,7 +107,7 @@ def submod_or_admin_and_up():
             return
 
         if not (gatekeeper.has(interaction.guild, interaction.user, 6) or submod in interaction.user.roles):
-            raise BadArgument(
+            raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
         return True
@@ -123,7 +123,7 @@ def genius_or_submod_and_up():
             return
 
         if not (gatekeeper.has(interaction.guild, interaction.user, 4) or submod in interaction.user.roles):
-            raise BadArgument(
+            raise PermissionsFailure(
                 "You do not have permission to use this command.")
 
         return True

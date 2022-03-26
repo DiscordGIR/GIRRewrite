@@ -40,7 +40,6 @@ class AntiRaid(commands.Cog):
             await ctx.send_warning("Cancelled adding new raid phrases.", followup=True)
             return
 
-        await ctx.interaction.response.defer()
         phrases = list(set(phrases.split("\n")))
         phrases = [phrase.strip() for phrase in phrases if phrase.strip()]
 
@@ -70,13 +69,12 @@ class AntiRaid(commands.Cog):
         do_add = view.value
 
         if do_add:
-            await ctx.interaction.response.defer()
             for phrase in new_phrases:
                 guild_service.add_raid_phrase(phrase)
 
-            await ctx.send_success(f"Added {len(new_phrases)} phrases to the raid filter.", followup=True)
+            await ctx.send_success(f"Added {len(new_phrases)} phrases to the raid filter.")
         else:
-            await ctx.send_warning("Cancelled.", followup=True)
+            await ctx.send_warning("Cancelled.")
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)

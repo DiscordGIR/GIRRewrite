@@ -4,7 +4,7 @@ from datetime import datetime
 from io import BytesIO
 
 import discord
-from cogs.commands.info.tags import prepare_tag_embed
+from cogs.commands.info.tags import prepare_tag_embed, prepare_tag_view
 from cogs.commands.info.userinfo import handle_userinfo
 from data.services import guild_service
 from discord.ext import commands
@@ -54,7 +54,7 @@ async def handle_support_tag(ctx: BlooContext, member: discord.Member) -> None:
             file), filename="image.gif" if tag.image.content_type == "image/gif" else "image.png")
 
     title = f"Hey {member.mention}, have a look at this!"
-    await ctx.respond_or_edit(content=title, embed=prepare_tag_embed(tag), file=file or discord.utils.MISSING)
+    await ctx.respond_or_edit(content=title, embed=prepare_tag_embed(tag), file=file or discord.utils.MISSING, view=prepare_tag_view(tag))
 
 
 async def handle_avatar(ctx, member: discord.Member):

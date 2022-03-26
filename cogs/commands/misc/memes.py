@@ -129,6 +129,8 @@ class Memes(commands.Cog):
         # did the user want to attach an image to this meme?
         if image is not None:
             _type = image.content_type
+            if image.size > 8_000_000:
+                raise commands.BadArgument("That image is too big!")
             image = await image.read()
             # save image bytes
             meme.image.put(image, content_type=_type)
@@ -174,6 +176,8 @@ class Memes(commands.Cog):
 
         if image is not None:
             _type = image.content_type
+            if image.size > 8_000_000:
+                raise commands.BadArgument("That image is too big!")
             image = await image.read()
 
             # save image bytes

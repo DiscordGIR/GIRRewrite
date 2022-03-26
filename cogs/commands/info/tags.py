@@ -151,6 +151,9 @@ class Tags(commands.Cog):
         content_type = None
         if image is not None:
             content_type = image.content_type
+            if image.size > 8_000_000:
+                raise commands.BadArgument("That image is too big!")
+
             image = await image.read()
 
         modal = TagModal(bot=self.bot, tag_name=name, author=ctx.author)
@@ -196,8 +199,10 @@ class Tags(commands.Cog):
         if image is not None:
             # ensure the attached file is an image
             content_type = image.content_type
-            image = await image.read()
+            if image.size > 8_000_000:
+                raise commands.BadArgument("That image is too big!")
 
+            image = await image.read()
             # save image bytes
             if tag.image is not None:
                 tag.image.replace(image, content_type=content_type)
@@ -211,7 +216,7 @@ class Tags(commands.Cog):
         await modal.wait()
 
         if not modal.edited:
-            await ctx.send_warning("Tag edit was cancelled.")
+            await ctx.send_warning("Tag edit was cancelled.", followup=True, ephemeral=True)
             return
 
         tag = modal.tag
