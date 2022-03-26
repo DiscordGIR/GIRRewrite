@@ -139,14 +139,13 @@ class Genius(commands.Cog):
 
         description = modal.value
         if not description:
-            await ctx.send_warning("Cancelled new embed.")
+            await ctx.send_warning("Cancelled new embed.", followup=True)
             return
 
-        embed, f, _ = await prepare_issue_response(title, description, ctx.author, image)
+        embed, f, _ = await prepare_issue_response(title, description, ctx.author, image=image)
         await post_channel.send(embed=embed, file=f)
 
-        if post_channel != ctx.channel:
-            await ctx.send_success(f"Embed posted in {post_channel.mention}!", delete_after=5)
+        await ctx.send_success(f"Embed posted in {post_channel.mention}!", delete_after=5, ephemeral=True)
 
     @genius_or_submod_and_up()
     @common_issue.command(description="Repost common-issues table of contents")
