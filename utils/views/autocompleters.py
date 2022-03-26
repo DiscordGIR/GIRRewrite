@@ -3,12 +3,12 @@ from itertools import groupby
 from typing import List
 
 import discord
-from data.services import guild_service
+from data.model import Case
+from data.services import guild_service, user_service
 from discord import app_commands
 from discord.ext.commands import Command
-from utils import get_ios_cfw, transform_groups
-from utils.fetchers import canister_fetch_repos
-from utils.framework.birthday import MONTH_MAPPING
+from utils import get_ios_cfw, transform_groups, canister_fetch_repos
+from utils.framework import MONTH_MAPPING
 
 
 def sort_versions(version):
@@ -177,3 +177,11 @@ async def filterwords_autocomplete(_: discord.Interaction, current: str) -> List
     words.sort()
 
     return [app_commands.Choice(name=word, value=word) for word in words if str(word).startswith(str(current))][:25]
+
+
+async def warn_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    cases: List[Case] = [case for case in user_service.get_cases(
+        int(interaction.namespace["member"].id)).cases if case._type == "WARN" and not case.lifted]
+    cases.sort(key=lambda x: x._id, reverse=True)
+
+    return [app_commands.Choice(name=f"{case._id} - {case.punishment} points - {case.reason}", value=str(case._id)) for case in cases if (not current or str(case._id).startswith(str(current)))][:25]
