@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Union
 
 import discord
 import pytimeparse
@@ -55,7 +55,7 @@ class VersionOnDevice(app_commands.Transformer):
 
 class Duration(app_commands.Transformer):
     @classmethod
-    async def transform(cls, _: discord.Interaction, value: str) -> discord.Attachment:
+    async def transform(cls, _: discord.Interaction, value: str):
         try:
             value = pytimeparse.parse(value)
         except ValueError:
@@ -70,7 +70,7 @@ class ModsAndAboveMember(app_commands.Transformer):
         return AppCommandOptionType.user
 
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Member:
         await app_commands.transformers.MemberTransformer.transform(interaction, value)
         await check_invokee(interaction, value)
 
@@ -83,10 +83,11 @@ class ModsAndAboveMemberOrUser(app_commands.Transformer):
         return AppCommandOptionType.user
 
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+    async def transform(cls, interaction: discord.Interaction, value: str) -> Union[discord.Member, discord.User]:
         await check_invokee(interaction, value)
 
         return value
+
 
 class UserOnly(app_commands.Transformer):
     @classmethod
@@ -94,9 +95,10 @@ class UserOnly(app_commands.Transformer):
         return AppCommandOptionType.user
 
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.User:
         if isinstance(value, discord.Member):
-            raise commands.BadArgument("You can't call this command on guild members!")
+            raise commands.BadArgument(
+                "You can't call this command on guild members!")
 
         return value
 
@@ -119,7 +121,7 @@ class ImageAttachment(app_commands.Transformer):
     @classmethod
     def type(cls) -> AppCommandOptionType:
         return AppCommandOptionType.attachment
-    
+
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
         if value is None:
