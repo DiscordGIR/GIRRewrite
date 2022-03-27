@@ -22,9 +22,7 @@ class ReportActionReason(ui.View):
         self.success = False
 
     async def interaction_check(self, interaction: discord.Interaction):
-        if self.mod != interaction.user:
-            return False
-        return True
+        return self.mod == interaction.user
 
     @ui.button(label="piracy", style=discord.ButtonStyle.primary)
     async def piracy(self, interaction: discord.Interaction, button: ui.Button):
@@ -60,7 +58,6 @@ class ReportActionReason(ui.View):
 
     @ui.button(emoji="❌", label="Cancel", style=discord.ButtonStyle.primary)
     async def cancel(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.message.delete()
         self.stop()
 
     async def modaction_callback(self, interaction: discord.Interaction, reason: str):

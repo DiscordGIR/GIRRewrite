@@ -241,9 +241,9 @@ class ReportActions(ui.View):
         await view.wait()
         if view.success:
             await interaction.message.delete()
+            self.stop()
         else:
             await interaction.delete_original_message()
-        self.stop()
 
     @ui.button(emoji="❌", label="Ban", style=discord.ButtonStyle.primary)
     async def ban(self, interaction: discord.Interaction, _: ui.Button):
