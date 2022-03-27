@@ -58,6 +58,11 @@ class ReportActionReason(ui.View):
     async def troll(self, interaction: discord.Interaction, button: ui.Button):
         await self.modaction_callback(interaction, "troll")
 
+    @ui.button(emoji="❌", label="Cancel", style=discord.ButtonStyle.primary)
+    async def cancel(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.message.delete()
+        self.stop()
+
     async def modaction_callback(self, interaction: discord.Interaction, reason: str):
         if self.mod_action == ModAction.WARN:
             points = await self.prompt_for_points(reason, interaction)
