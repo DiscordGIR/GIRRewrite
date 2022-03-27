@@ -5,11 +5,15 @@ from utils.context import BlooContext
 
 class Confirm(ui.View):
     def __init__(self, ctx: BlooContext, true_response = None, false_response = None):
-        super().__init__()
+        super().__init__(timeout=20)
         self.ctx = ctx
         self.value = None
         self.true_response = true_response
         self.false_response = false_response
+
+    async def on_timeout(self) -> None:
+        await self.ctx.send_warning("Timed out.")
+        return await super().on_timeout()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self.ctx.author

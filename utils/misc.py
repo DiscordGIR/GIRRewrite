@@ -10,3 +10,6 @@ def transform_groups(groups):
             final_groups.append(group)
 
     return final_groups
+
+def format_number(number):
+    return f"{number:,}"

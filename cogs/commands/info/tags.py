@@ -117,6 +117,36 @@ class Tags(commands.Cog):
 
         await ctx.respond(content=title, embed=prepare_tag_embed(tag), view=prepare_tag_view(tag), file=_file)
 
+    @commands.guild_only()
+    @commands.command(name="tag", aliases=["t"])
+    async def _tag(self, ctx: commands.Context, name: str):
+        name = name.lower()
+        tag = guild_service.get_tag(name)
+
+        if tag is None:
+            raise commands.BadArgument("That tag does not exist.")
+
+        # run cooldown so tag can't be spammed
+        bucket = self.tag_cooldown.get_bucket(tag.name)
+        current = datetime.now().timestamp()
+        # ratelimit only if the invoker is not a moderator
+        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(guild_service.get_guild().role_sub_mod) in ctx.author.roles):
+            raise commands.BadArgument("That tag is on cooldown.")
+
+        # if the Tag has an image, add it to the embed
+        _file = tag.image.read()
+        if _file is not None:
+            _file = discord.File(BytesIO(
+                _file), filename="image.gif" if tag.image.content_type == "image/gif" else "image.png")
+        else:
+            _file = discord.utils.MISSING
+
+        if ctx.message.reference is not None:
+            title = f"Hey {ctx.message.reference.resolved.author.mention}, have a look at this!"
+            await ctx.send(content=title, embed=prepare_tag_embed(tag), view=prepare_tag_view(tag), file=_file)
+        else:
+            await ctx.message.reply(embed=prepare_tag_embed(tag), view=prepare_tag_view(tag), file=_file, mention_author=False)
+
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="List all tags")
     @transform_context

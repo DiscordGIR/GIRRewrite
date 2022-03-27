@@ -151,6 +151,8 @@ class BlooContext:
                     del kwargs["delete_after"]
                 if "followup" in kwargs:
                     del kwargs["followup"]
+                if kwargs.get("view") is discord.utils.MISSING:
+                    kwargs["view"] = None
                 await self.edit(*args, **kwargs)
                 if delete_after and not ephemeral:
                     self.bot.loop.create_task(self.delay_delete(self.interaction, delete_after))

@@ -9,7 +9,7 @@ from data.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
-from utils import BlooContext, cfg, transform_context
+from utils import BlooContext, cfg, transform_context, format_number
 from utils.framework import mod_and_up, whisper
 
 
@@ -20,7 +20,6 @@ class Stats(commands.Cog):
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Test server latency by measuring how long it takes to edit a message")
-    @mod_and_up()
     @transform_context
     @whisper
     async def ping(self, ctx: BlooContext) -> None:
@@ -86,15 +85,15 @@ class Stats(commands.Cog):
         if guild.banner is not None:
             embed.set_image(url=guild.banner.url)
 
-        embed.add_field(name="Emojis", value=len(guild.emojis), inline=True)
-        embed.add_field(name="Boost Tier",
-                        value=guild.premium_tier, inline=True)
-        embed.add_field(name="Users", value=guild.member_count, inline=True)
+        embed.add_field(name="Users", value=format_number(guild.member_count), inline=True)
         embed.add_field(name="Channels", value=len(
             guild.channels) + len(guild.voice_channels), inline=True)
         embed.add_field(name="Roles", value=len(guild.roles), inline=True)
         embed.add_field(name="Bans", value=len(
             self.bot.ban_cache.cache), inline=True)
+        embed.add_field(name="Emojis", value=len(guild.emojis), inline=True)
+        embed.add_field(name="Boost Tier",
+                        value=guild.premium_tier, inline=True)
         embed.add_field(name="Owner", value=guild.owner.mention, inline=True)
         embed.add_field(
             name="Created", value=f"{format_dt(guild.created_at, style='F')} ({format_dt(guild.created_at, style='R')})", inline=True)
