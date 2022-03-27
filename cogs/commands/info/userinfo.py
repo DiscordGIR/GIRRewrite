@@ -1,16 +1,16 @@
-import discord
-from discord import app_commands
-from discord.ext import commands
-from discord.utils import format_dt
-
 from datetime import datetime
 from math import floor
 from typing import Union
-from data.services import user_service
-from utils import cfg, BlooContext, transform_context
 
-from utils.framework import PermissionsFailure, whisper, gatekeeper
+import discord
+from data.services import user_service
+from discord import app_commands
+from discord.ext import commands
+from discord.utils import format_dt
+from utils import BlooContext, cfg, transform_context
+from utils.framework import PermissionsFailure, gatekeeper, whisper
 from utils.views import Menu
+
 
 def format_xptop_page(ctx, entries, current_page, all_pages):
     """Formats the page for the xptop embed.
@@ -136,7 +136,6 @@ class UserInfo(commands.Cog):
         self.bot = bot
         self.start_time = datetime.now()
 
-
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Get info of another user or yourself.")
     @app_commands.describe(user="User to get info of")
@@ -237,7 +236,7 @@ class UserInfo(commands.Cog):
         # users can only invoke on themselves if they aren't mods
         if not gatekeeper.has(ctx.guild, ctx.author, 5) and user.id != ctx.author.id:
             raise PermissionsFailure(
-                f"You don't have permissions to check others' warnpoints.")
+                f"You don't have permissions to check others' cases.")
 
         # fetch user's cases from our database
         results = user_service.get_cases(user.id)
@@ -272,6 +271,7 @@ def xp_for_next_level(_next):
 
 async def setup(bot):
     await bot.add_cog(UserInfo(bot))
+
 
 async def handle_userinfo(ctx: BlooContext, user: Union[discord.Member, discord.User]):
     is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)

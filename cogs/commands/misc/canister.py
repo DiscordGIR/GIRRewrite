@@ -117,13 +117,33 @@ class Canister(commands.Cog):
         embed = discord.Embed(title=repo_data.get(
             'name'), color=discord.Color.blue())
         embed.add_field(name="URL", value=repo_data.get('uri'), inline=True)
-        embed.add_field(name="Version", value=repo_data.get(
-            'version'), inline=True)
-
         embed.set_thumbnail(url=f'{repo_data.get("uri")}/CydiaIcon.png')
         embed.set_footer(text="Powered by Canister")
 
-        await ctx.respond(embed=embed)
+        this_repo = repo_data.get("uri")
+        view = discord.ui.View()
+        for repo in default_repos:
+            if repo in this_repo:
+                [view.add_item(item) for item in [
+                    discord.ui.Button(label='Cannot add default repo', emoji="<:sileo:679466569407004684>",
+                                      url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={this_repo}', disabled=True, style=discord.ButtonStyle.url, row=1),
+                    discord.ui.Button(label='Cannot add default repo', emoji="<:zebra:911433583032422420>",
+                                      url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={this_repo}', disabled=True, style=discord.ButtonStyle.url, row=1),
+                    discord.ui.Button(label='Cannot add default repo', emoji="<:Add:947354227171262534>",
+                                      url=f'https://sharerepo.stkc.win/?repo={this_repo}', style=discord.ButtonStyle.url, disabled=True, row=1)
+                ]]
+                break
+        if not view.children:
+            [view.add_item(item) for item in [
+                discord.ui.Button(label='Add Repo to Sileo', emoji="<:sileo:679466569407004684>",
+                                  url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={this_repo}', style=discord.ButtonStyle.url, row=1),
+                discord.ui.Button(label='Add Repo to Zebra', emoji="<:zebra:911433583032422420>",
+                                  url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={this_repo}', style=discord.ButtonStyle.url, row=1),
+                discord.ui.Button(label='Other Package Managers', emoji="<:cydiasileosplit:932650041099825232>",
+                                  url=f'https://sharerepo.stkc.win/?repo={this_repo}', style=discord.ButtonStyle.url, row=1)
+            ]]
+
+        await ctx.respond(embed=embed, ephemeral=ctx.whisper, view=view)
 
 
 async def setup(bot):

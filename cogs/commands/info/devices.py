@@ -4,10 +4,11 @@ from collections import defaultdict
 import discord
 from discord import app_commands
 from discord.ext import commands
-from utils import BlooContext, cfg, transform_context, get_ios_cfw, transform_groups
-from utils.framework import (always_whisper,
+from utils import (BlooContext, cfg, get_ios_cfw, transform_context,
+                   transform_groups)
+from utils.framework import (DeviceTransformer, VersionOnDevice,
+                             always_whisper,
                              ensure_invokee_role_lower_than_bot, whisper)
-from utils.framework.transformers import DeviceTransformer, VersionOnDevice
 from utils.views import (Confirm, device_autocomplete,
                          ios_on_device_autocomplete)
 

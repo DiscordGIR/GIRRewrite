@@ -8,8 +8,7 @@ from data.services.guild_service import guild_service
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
-from utils import BlooContext, cfg
-from utils.context import transform_context
+from utils import BlooContext, cfg, transform_context, format_number
 from utils.framework import (MessageTextBucket, gatekeeper,
                              genius_or_submod_and_up, whisper, ImageAttachment)
 from utils.views import Menu, tags_autocomplete, EditTagModal, TagModal
@@ -20,7 +19,7 @@ def format_tag_page(_, entries, current_page, all_pages):
     embed = discord.Embed(
         title=f'All tags', color=discord.Color.blurple())
     for tag in entries:
-        desc = f"Added by: {tag.added_by_tag}\nUsed {tag.use_count} times"
+        desc = f"Added by: {tag.added_by_tag}\nUsed {format_number(tag.use_count)} times"
         if tag.image.read() is not None:
             desc += "\nHas image attachment"
         embed.add_field(name=tag.name, value=desc)
@@ -51,7 +50,7 @@ def prepare_tag_embed(tag):
         embed.set_image(url="attachment://image.gif" if tag.image.content_type ==
                         "image/gif" else "attachment://image.png")
     embed.set_footer(
-        text=f"Added by {tag.added_by_tag} | Used {tag.use_count} times")
+        text=f"Added by {tag.added_by_tag} | Used {format_number(tag.use_count)} times")
     return embed
 
 

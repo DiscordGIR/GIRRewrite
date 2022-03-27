@@ -55,7 +55,11 @@ def tweak_embed_format(entry):
     if entry.get('tintColor') is None and entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
         embed.color = discord.Color.blue()
     elif entry.get('tintColor') is not None:
-        embed.color = int(entry.get('tintColor').replace('#', '0x'), 0)
+        try:
+            color = int(entry.get('tintColor').replace('#', '0x'), 0)
+        except:
+            color = discord.Color.blue()
+        embed.color = color
 
     if entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
         embed.set_thumbnail(url=entry.get('packageIcon'))

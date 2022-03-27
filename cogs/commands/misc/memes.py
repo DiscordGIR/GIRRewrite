@@ -10,11 +10,11 @@ from data.services import guild_service
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
-from utils import BlooContext, cfg
-from utils.context import transform_context
-from utils.framework import (gatekeeper, memed_and_up, mempro_and_up,
-                             mod_and_up, whisper, find_triggered_filters, find_triggered_raid_phrases, MessageTextBucket)
-from utils.framework.transformers import ImageAttachment
+from utils import BlooContext, cfg, format_number, transform_context
+from utils.framework import (ImageAttachment, MessageTextBucket,
+                             find_triggered_filters,
+                             find_triggered_raid_phrases, gatekeeper,
+                             memed_and_up, mempro_and_up, mod_and_up, whisper)
 from utils.views import GenericDescriptionModal, Menu, memes_autocomplete
 
 
@@ -22,7 +22,7 @@ def format_meme_page(_, entries, current_page, all_pages):
     embed = discord.Embed(
         title=f'All memes', color=discord.Color.blurple())
     for meme in entries:
-        desc = f"Added by: {meme.added_by_tag}\nUsed {meme.use_count} {'time' if meme.use_count == 1 else 'times'}"
+        desc = f"Added by: {meme.added_by_tag}\nUsed {format_number(meme.use_coun)} {'time' if meme.use_count == 1 else 'times'}"
         if meme.image.read() is not None:
             desc += "\nHas image attachment"
         embed.add_field(name=meme.name, value=desc)
@@ -69,7 +69,8 @@ class Memes(commands.Cog):
                 file), filename="image.gif" if meme.image.content_type == "image/gif" else "image.png")
 
         if user_to_mention is not None:
-            title = random.choice(self.meme_phrases).format(user=user_to_mention.mention)
+            title = random.choice(self.meme_phrases).format(
+                user=user_to_mention.mention)
         else:
             title = None
 
@@ -90,8 +91,8 @@ class Memes(commands.Cog):
                     page_formatter=format_meme_page, whisper=ctx.whisper)
         await menu.start()
 
-
-    memes = app_commands.Group(name="memes", description="Interact with memes", guild_ids=[cfg.guild_id])
+    memes = app_commands.Group(
+        name="memes", description="Interact with memes", guild_ids=[cfg.guild_id])
 
     @mod_and_up()
     @memes.command(description="Add a new meme")
@@ -110,7 +111,8 @@ class Memes(commands.Cog):
             raise commands.BadArgument("Meme with that name already exists.")
 
         # prompt the user for common issue body
-        modal = GenericDescriptionModal(ctx, author=ctx.author, title=f"New meme — {name}")
+        modal = GenericDescriptionModal(
+            ctx, author=ctx.author, title=f"New meme — {name}")
         await ctx.interaction.response.send_modal(modal)
         await modal.wait()
 
@@ -163,7 +165,8 @@ class Memes(commands.Cog):
             raise commands.BadArgument("That meme does not exist.")
 
         # prompt the user for common issue body
-        modal = GenericDescriptionModal(ctx, author=ctx.author, title=f"New meme — {name}", prefill=meme.content)
+        modal = GenericDescriptionModal(
+            ctx, author=ctx.author, title=f"New meme — {name}", prefill=meme.content)
         await ctx.interaction.response.send_modal(modal)
         await modal.wait()
 
@@ -318,7 +321,7 @@ class Memes(commands.Cog):
                         "An error occurred classifying that image.")
 
     memegen = app_commands.Group(name="memegen", description="Generate memes", guild_ids=[
-                                        cfg.guild_id])
+        cfg.guild_id])
 
     @memed_and_up()
     @memegen.command(description="Meme generator")
@@ -457,7 +460,7 @@ class Memes(commands.Cog):
                 "top_p": 1,
                 "frequency_penalty": 0,
                 "presence_penalty": 0
-                }) as resp:
+            }) as resp:
 
                 if resp.status == 200:
                     data = await resp.json()
@@ -468,9 +471,12 @@ class Memes(commands.Cog):
 
                     embed = discord.Embed(color=discord.Color.random())
                     prompt_formatted = discord.utils.escape_markdown(prompt)
-                    embed.add_field(name="Prompt", value=prompt_formatted[:1024] + "..." if len(prompt_formatted) > 1024 else prompt_formatted, inline=False)
-                    embed.add_field(name="Response", value=text or "API did not return a response.", inline=False)
-                    embed.set_footer(text=f"Requested by {ctx.author} • /memegen aitext")
+                    embed.add_field(name="Prompt", value=prompt_formatted[:1024] + "..." if len(
+                        prompt_formatted) > 1024 else prompt_formatted, inline=False)
+                    embed.add_field(
+                        name="Response", value=text or "API did not return a response.", inline=False)
+                    embed.set_footer(
+                        text=f"Requested by {ctx.author} • /memegen aitext")
                     await ctx.respond(embed=embed)
                 else:
                     raise commands.BadArgument("An OpenAI API error occured.")
