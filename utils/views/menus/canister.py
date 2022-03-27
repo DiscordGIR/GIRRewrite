@@ -155,7 +155,6 @@ class TweakMenu(Menu):
 
 
 async def canister(ctx: BlooContext, whisper: bool, result):
-    ctx.interaction.response._responded = True
     await TweakMenu(ctx, result, per_page=1, page_formatter=format_tweak_page, whisper=whisper, start_page=25, show_skip_buttons=False).start(ctx.interaction)
 
 
