@@ -116,7 +116,7 @@ class TweakMenu(Menu):
                                   url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={self.ctx.repo}', style=discord.ButtonStyle.url, row=1),
                 discord.ui.Button(label='Add Repo to Zebra', emoji="<:zebra:911433583032422420>",
                                   url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={self.ctx.repo}', style=discord.ButtonStyle.url, row=1),
-                discord.ui.Button(label='Other Package Managers', emoji="<:cydiasileosplit:932650041099825232>",
+                discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
                                   url=f'https://sharerepo.stkc.win/?repo={self.ctx.repo}', style=discord.ButtonStyle.url, row=1)
             ]
         else:
@@ -164,6 +164,18 @@ async def canister(ctx: BlooContext, whisper: bool, result):
 
 class TweakDropdown(discord.ui.Select):
     def __init__(self, author, entries, interaction, should_whisper):
+        self.repo_icons = {
+            "http://apt.thebigboss.org/repofiles/cydia": "<:colored_sileo_tweak_icon_bigboss:957470630956138496>",
+            "https://repo.chariz.com": "<:colored_sileo_tweak_icon_chariz:957470675411537980>",
+            "https://repo.chimera.sh": "<:colored_sileo_tweak_icon_chimera:957470798602440714>",
+            "https://repo.dynastic.co": "<:colored_sileo_tweak_icon_dynasti:957470833952043038>",
+            "https://apt.bingner.com": "<:colored_sileo_tweak_icon_elu:957471017578684496>",
+            "https://havoc.app": "<:colored_sileo_tweak_icon_havoc:957471075942428723>",
+            "https://repo.theodyssey.dev": "<:colored_sileo_tweak_icon_odyssey:957471133844799518>",
+            "https://repo.packix.com": "<:colored_sileo_tweak_icon_packix:957471186638479470>",
+            "https://apt.procurs.us": "<:colored_sileo_tweak_icon_procurs:957471236718460959>",
+            "https://repo.twickd.com": "<:colored_sileo_tweak_icon_twickd:957471321351135233>",
+        }
         self.author = author
         self.interaction = interaction
         self.raw_entries = entries
@@ -172,7 +184,7 @@ class TweakDropdown(discord.ui.Select):
         self.current_entry = entries[0]
         self.entries = {entry.get("identifier"): entry for entry in entries}
         options = [discord.SelectOption(label=(option.get("name") or option.get('identifier'))[:100] or "No title", description=f"{option.get('author').split('<')[0] if option.get('author') is not None else option.get('maintainer').split('<')[0]} • {option.get('repository').get('name')}"[:100], value=option.get(
-            "identifier"), emoji="<:sileo_tweak_icon:922017793677869056>") for option in entries]
+            "identifier"), emoji=self.repo_icons.get(option.get("repository").get("uri")) if self.repo_icons.get(option.get("repository").get("uri")) else "<:sileo_tweak_icon:957456295898779678>") for option in entries]
 
         if len(self.raw_entries) > 24:
             options.append(discord.SelectOption(
