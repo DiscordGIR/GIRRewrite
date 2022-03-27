@@ -37,6 +37,7 @@ class Bot(commands.Bot):
             logger.info("Presetup phase completed! Connecting to Discord...")
 
     async def setup_hook(self):
+        bot.remove_command("help")
         for extension in initial_extensions:
             await self.load_extension(extension)
 

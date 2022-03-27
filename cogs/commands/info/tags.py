@@ -162,7 +162,7 @@ class Tags(commands.Cog):
     tags = app_commands.Group(name="tags", description="Interact with tags", guild_ids=[cfg.guild_id])
 
     @genius_or_submod_and_up()
-    @tags.command(name="add")
+    @tags.command(description="Create a tag")
     @app_commands.describe(name="Name of the tag")
     @app_commands.describe(image="Image to attach to the tag")
     @transform_context

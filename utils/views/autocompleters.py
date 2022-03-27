@@ -19,8 +19,17 @@ def sort_versions(version):
 
 
 async def command_list_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-    commands: List[Command] = interaction.client.commands
-    return [app_commands.Choice(name=command.name, value=command.name) for command in commands if current.lower() in command.name.lower()]
+    tree: app_commands.CommandTree = interaction.client.tree
+    commands = []
+    for command in tree.walk_commands(guild=interaction.guild):
+        if isinstance(command, app_commands.Group):
+            continue
+        if command.parent is not None:
+            commands.append(f"{command.parent.name} {command.name}")
+        else:
+            commands.append(command.name)
+    commands.sort()
+    return [app_commands.Choice(name=cmd, value=cmd) for cmd in commands if current.lower() in cmd.lower()][:25]
 
 
 async def tags_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:

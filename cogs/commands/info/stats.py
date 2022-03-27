@@ -35,9 +35,9 @@ class Stats(commands.Cog):
 
         ping = floor((datetime.utcnow() - b).total_seconds() * 1000)
         embed.description = ""
-        embed.add_field(name="Message Latency", value=f"`{ping}ms`")
+        embed.add_field(name="Message Latency", value=f"`{format_number(ping)}ms`")
         embed.add_field(name="API Latency",
-                        value=f"`{floor(self.bot.latency*1000)}ms`")
+                        value=f"`{format_number(floor(self.bot.latency*1000))}ms`")
 
         await ctx.respond_or_edit(embed=embed)
 
