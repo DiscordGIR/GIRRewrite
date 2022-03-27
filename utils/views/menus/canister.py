@@ -112,7 +112,7 @@ class TweakMenu(Menu):
                                   url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={self.ctx.repo}', style=discord.ButtonStyle.url, row=1),
                 discord.ui.Button(label='Add Repo to Zebra', emoji="<:zebra:911433583032422420>",
                                   url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={self.ctx.repo}', style=discord.ButtonStyle.url, row=1),
-                discord.ui.Button(label='Other Package Managers', emoji="<:cydiasileosplit:932650041099825232>",
+                discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
                                   url=f'https://sharerepo.stkc.win/?repo={self.ctx.repo}', style=discord.ButtonStyle.url, row=1)
             ]
         else:
