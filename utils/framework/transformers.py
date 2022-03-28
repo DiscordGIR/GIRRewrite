@@ -10,7 +10,7 @@ from utils.framework import PermissionsFailure
 
 class DeviceTransformer(app_commands.Transformer):
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> Dict:
+    async def transform(cls, interaction: discord.Interaction, value: str) -> Union[Dict, str]:
         response = await get_ios_cfw()
         device_groups = response.get("group")
 
@@ -27,7 +27,7 @@ class DeviceTransformer(app_commands.Transformer):
 
 class VersionOnDevice(app_commands.Transformer):
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> Dict:
+    async def transform(cls, interaction: discord.Interaction, value: str) -> Union[Dict, str]:
         device = interaction.namespace["device"]
         if device is None:
             raise app_commands.TransformerError(

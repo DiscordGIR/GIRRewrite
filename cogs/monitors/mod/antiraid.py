@@ -8,8 +8,8 @@ from data.services import guild_service, user_service
 from discord.ext import commands
 from expiringdict import ExpiringDict
 from utils import cfg
-from utils.framework import MessageTextBucket, gatekeeper
-from utils.mod import find_triggered_raid_phrases, mute, prepare_ban_log
+from utils.framework import MessageTextBucket, gatekeeper, find_triggered_raid_phrases
+from utils.mod import mute, prepare_ban_log
 from utils.views import report_raid, report_raid_phrase, report_spam
 
 

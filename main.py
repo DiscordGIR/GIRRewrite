@@ -3,16 +3,19 @@ import os
 import traceback
 import discord
 from discord.ext import commands
+from discord import app_commands
 from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError, TransformerError
 from extensions import initial_extensions
 from utils import cfg, db, logger, BlooContext, BanCache, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
-from utils.framework import PermissionsFailure, gatekeeper
+from utils.framework import PermissionsFailure, gatekeeper, find_triggered_filters
 from cogs.commands.context_commands import setup_context_commands
 
 from typing import Union
+from data.services.user_service import user_service
 
 # Remove warning from songs cog
 import warnings
+
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
@@ -46,8 +49,41 @@ class Bot(commands.Bot):
         self.tasks = Tasks(self)
         await init_client_session()
 
-bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions)
+class MyTree(app_commands.CommandTree):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.bot:
+            return False
+
+        options = interaction.data.get("options")
+        if options is None or not options:
+            return True
+
+        if gatekeeper.has(interaction.user.guild, interaction.user, 6):
+            return True
+
+        db_user = user_service.get_user(interaction.user.id)
+        if db_user.command_bans.get(interaction.data.get("name")):
+            ctx = BlooContext(interaction)
+            await ctx.send_error("You are not allowed to use that command!", whisper=True)
+            return False
+
+        message_content = " ".join(
+            [str(option.get("value") or "") for option in options])
+
+        triggered_words = find_triggered_filters(
+            message_content, interaction.user)
+
+        if triggered_words:
+            ctx = BlooContext(interaction)
+            await ctx.send_error("Your interaction contained a filtered word. Aborting!", whisper=True)
+            return
+
+        return True
+
+bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions, tree_cls=MyTree)
 
 @bot.tree.error
 async def app_command_error(interaction: discord.Interaction, _: Union[Command, ContextMenu], error: AppCommandError):
