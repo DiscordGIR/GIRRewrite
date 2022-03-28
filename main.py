@@ -49,6 +49,7 @@ class Bot(commands.Bot):
         self.tasks = Tasks(self)
         await init_client_session()
 
+
 class MyTree(app_commands.CommandTree):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,21 +58,36 @@ class MyTree(app_commands.CommandTree):
         if interaction.user.bot:
             return False
 
-        options = interaction.data.get("options")
-        if options is None or not options:
-            return True
-
         if gatekeeper.has(interaction.user.guild, interaction.user, 6):
             return True
 
+        command = interaction.command
+        if command is None or interaction.type != discord.InteractionType.application_command:
+            return True
+
+        if command.parent is not None:
+            command_name = f"{command.parent.name} {command.name}"
+        else:
+            command_name = command.name
+
         db_user = user_service.get_user(interaction.user.id)
-        if db_user.command_bans.get(interaction.data.get("name")):
+
+        if db_user.command_bans.get(command_name):
             ctx = BlooContext(interaction)
             await ctx.send_error("You are not allowed to use that command!", whisper=True)
             return False
 
-        message_content = " ".join(
-            [str(option.get("value") or "") for option in options])
+        options = interaction.data.get("options")
+        if options is None or not options:
+            return True
+
+        message_content = ""
+        for option in options:
+            if option.get("type") == 1:
+                for sub_option in option.get("options"):
+                    message_content += sub_option.get("value") + " "
+            else:
+                message_content += option.get("value") + " "
 
         triggered_words = find_triggered_filters(
             message_content, interaction.user)
@@ -82,6 +98,7 @@ class MyTree(app_commands.CommandTree):
             return
 
         return True
+
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions, tree_cls=MyTree)
 

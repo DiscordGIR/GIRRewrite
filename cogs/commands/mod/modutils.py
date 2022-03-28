@@ -1,4 +1,5 @@
 import datetime
+import typing
 
 import discord
 import pytz
@@ -224,33 +225,37 @@ class ModUtils(commands.Cog):
             await member.send(f"According to my calculations, today is your birthday! We've hiven you the {birthday_role} role for 24 hours.")
 
     # TODO: this needs fixing
-    # @mod_and_up()
-    # @app_commands.guilds(cfg.guild_id)
-    # @app_commands.command(description="Toggle banning a user from using a command")
-    # @app_commands.describe(member="The member to ban")
-    # @app_commands.describe(command="The command to ban")
-    # @app_commands.autocomplete(command=command_list_autocomplete)
-    # async def command_ban(self, ctx: BlooContext, member: ModsAndAboveMember, command: str):
-    #     _commands = []
-    #     for cog in ctx.bot.cogs:
-    #         for cmd in ctx.bot.cogs[cog].get_commands():
-    #             if isinstance(cmd, discord.MessageCommand) or isinstance(cmd, discord.UserCommand):
-    #                 continue
-    #             else:
-    #                 _commands.append(cmd.name.lower())
+    @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Toggle banning a user from using a command")
+    @app_commands.describe(member="The member to ban")
+    @app_commands.describe(command_name="The command to ban")
+    @app_commands.autocomplete(command_name=command_list_autocomplete)
+    @transform_context
+    async def command_ban(self, ctx: BlooContext, member: ModsAndAboveMember, command_name: str):
+        final_command = ""
+        command: typing.Union[app_commands.Command, app_commands.Group] = self.bot.tree.get_command(command_name.split()[0].lower(), guild=ctx.guild)
+        if not command_name:
+                raise commands.BadArgument("That command doesn't exist.")
 
-    #     if command.lower() not in _commands:
-    #         raise commands.BadArgument("That command doesn't exist.")
+        final_command += command.name
 
-    #     db_user = user_service.get_user(member.id)
-    #     if command in db_user.command_bans:
-    #         db_user.command_bans[command] = not db_user.command_bans[command]
-    #     else:
-    #         db_user.command_bans[command] = True
+        if isinstance(command, app_commands.Group):
+            sub_command = command.get_command(command_name.split()[1].lower())
+            if not sub_command:
+                raise commands.BadArgument("That command doesn't exist.")
 
-    #     db_user.save()
+            final_command += f" {sub_command.name}"
+        print(final_command)
+        db_user = user_service.get_user(member.id)
+        if final_command in db_user.command_bans:
+            db_user.command_bans[final_command] = not db_user.command_bans[final_command]
+        else:
+            db_user.command_bans[final_command] = True
 
-    #     await ctx.send_success(f"{member.mention} was {'banned' if db_user.command_bans[command] else 'unbanned'} from using `/{command}`.")
+        db_user.save()
+
+        await ctx.send_success(f"{member.mention} was {'banned' if db_user.command_bans[final_command] else 'unbanned'} from using `/{final_command}`.")
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
