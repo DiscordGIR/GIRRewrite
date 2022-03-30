@@ -12,23 +12,15 @@ from utils.framework import find_triggered_filters
 platforms = {
     "spotify": {
         "name": "Spotify",
-        "emote": "<:spotify:911031828444491806>"
+        "emote": "<:spotify:958777486353764382>"
     },
     "appleMusic": {
         "name": "Apple Music",
-        "emote": "<:appleMusic:911031685511004160>"
+        "emote": "<:appleMusic:958777636337876992>"
     },
     "youtube": {
         "name": "YouTube",
-        "emote": "<:youtube:911032125199908934>"
-    },
-    "tidal": {
-        "name": "Tidal",
-        "emote": "<:tidal:911047304868417586>"
-    },
-    "amazonMusic": {
-        "name": "Amazon Music",
-        "emote": "<:amazonMusic:911047410409689088>"
+        "emote": "<:youtube:958777702087811133>"
     },
 }
 
