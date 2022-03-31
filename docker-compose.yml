@@ -1,0 +1,41 @@
+version: '3.4'
+
+services:
+  bloo:
+    container_name: bloo
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+      network: host # comment this out if you want to use dockerized mongo
+    restart: always
+    network_mode: host # comment this out if you want to use dockerized mongo
+    # also, if you want to use dockerized Mongo you need to change DB_HOST to "mongo" in .env
+
+#####
+##### uncomment the following to use dockerized mongo
+#     depends_on:
+#       - mongo
+#   mongo:
+#     image: mongo
+#     restart: unless-stopped
+#     environment:
+#       - MONGO_DATA_DIR=/data/db
+#       - MONGO_LOG_DIR=/dev/null
+#     volumes:
+#       - ./mongo_data:/data/db
+
+
+# #### This is optional if you want a GUI to manage your database
+# #### Only applicable with Dockerized mongo
+# #### If you run this, USE A FIREWALL or the database will be accessible from the internet
+# ### The database is running in unauthenticated mode.
+
+#   mongo-express:
+#     image: mongo-express
+#     restart: unless-stopped
+#     depends_on:
+#       - mongo
+#     ports:
+#       - 8081:8081
+#     environment:
+#       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
