@@ -1,4 +1,6 @@
 # GIR Rewrite
+![](https://media.discordapp.net/attachments/688120259105914974/959101668245520424/GIR.png)
+
 GIR is a sophisticated moderation and miscellaneous utilities Discord bot created for the [r/Jailbreak Discord server](https://reddit.com/r/jailbreak). It features:
 
 - Completely based on Discord's Slash Commands, written in the [Discord.py library](https://github.com/Rapptz/discord.py)
