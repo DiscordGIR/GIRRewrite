@@ -36,6 +36,9 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def sync(self, ctx: commands.Context):
+        if ctx.author.id != cfg.owner_id:
+            return
+
         try:
             async with ctx.typing():
                 await self.bot.tree.sync(guild=discord.Object(id=cfg.guild_id))
