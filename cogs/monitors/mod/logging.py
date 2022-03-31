@@ -435,11 +435,15 @@ class Logging(commands.Cog):
         if data.get("type") != 1:
             return
 
-        if data.get("options") is not None:
-            options = " ".join(
-                [f'`{option.get("name")}: {option.get("value")}`' for option in data.get("options")])
-        else:
-            options = ""
+        options = interaction.data.get("options") or []
+
+        message_content = ""
+        for option in options:
+            if option.get("type") == 1:
+                for sub_option in option.get("options"):
+                    message_content += sub_option.get("value") + " "
+            else:
+                message_content += option.get("value") + " "
 
         db_guild = guild_service.get_guild()
         private = interaction.guild.get_channel(db_guild.channel_private)
@@ -450,7 +454,7 @@ class Logging(commands.Cog):
         embed.add_field(
             name="Member", value=f'{interaction.user} ({interaction.user.mention})', inline=True)
         embed.add_field(
-            name="Command", value=f'`/{data.get("name")}` {options}', inline=False)
+            name="Command", value=f'`/{data.get("name")}{" " + message_content.strip() if message_content else ""}`', inline=False)
         embed.timestamp = datetime.now()
         embed.set_footer(text=interaction.user.id)
 
