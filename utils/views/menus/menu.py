@@ -87,31 +87,31 @@ class Menu(ui.View):
         await self.refresh_response_message()
         self.stop()
 
-    @ui.button(emoji='⏮️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
+    @ui.button(emoji='<:Arrow_Icon_HardLeft:957676574918975578>', style=discord.ButtonStyle.blurple, row=2, disabled=True)
     async def first(self, interaction: discord.Interaction, button: ui.Button):
         if self.on_interaction_check(interaction):
             self.current_page = 1
             await self.refresh_response_message(interaction)
 
-    @ui.button(emoji='⬅️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
+    @ui.button(emoji='<:ArrowLeft:957270073817583636>', style=discord.ButtonStyle.blurple, row=2, disabled=True)
     async def previous(self, interaction: discord.Interaction, button: ui.Button):
         if self.on_interaction_check(interaction):
             self.current_page -= 1
             await self.refresh_response_message(interaction)
 
-    @ui.button(emoji='⏹️', style=discord.ButtonStyle.blurple, row=2)
+    @ui.button(emoji='<:Stop:957270274691194891>', style=discord.ButtonStyle.blurple, row=2)
     async def pause(self, interaction: discord.Interaction, button: ui.Button):
         if self.on_interaction_check(interaction):
             await self.on_timeout()
             await self.refresh_response_message(interaction)
 
-    @ui.button(emoji='➡️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
+    @ui.button(emoji='<:ArrowRight:957270142360895548>', style=discord.ButtonStyle.blurple, row=2, disabled=True)
     async def next(self, interaction: discord.Interaction, button: ui.Button):
         if self.on_interaction_check(interaction):
             self.current_page += 1
             await self.refresh_response_message(interaction)
 
-    @ui.button(emoji='⏭️', style=discord.ButtonStyle.blurple, row=2, disabled=True)
+    @ui.button(emoji='<:Arrow_Icon_HardRight:957676487060893726>', style=discord.ButtonStyle.blurple, row=2, disabled=True)
     async def last(self, interaction: discord.Interaction, button: ui.Button):
         if self.on_interaction_check(interaction):
             self.current_page = len(self.pages)

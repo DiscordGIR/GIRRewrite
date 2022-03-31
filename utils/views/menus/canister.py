@@ -315,7 +315,7 @@ class BypassMenu(Menu):
 
 class JumpButton(discord.ui.Button):
     def __init__(self, ctx, max_page: int, tmb):
-        super().__init__(style=discord.ButtonStyle.primary, emoji="⤴️")
+        super().__init__(style=discord.ButtonStyle.primary, emoji="<:RightArrowCurvingUp:957270226167296090>")
         self.max_page = max_page
         self.ctx = ctx
         self.tmb = tmb
