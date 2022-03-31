@@ -1,6 +1,6 @@
 import os
 from dotenv.main import load_dotenv
-from utils.logger import logger
+from .logging import logger
 
 
 class Config:
@@ -62,7 +62,7 @@ class Config:
         self.dev = os.environ.get("DEV") is not None
 
         logger.info(
-            f"Bloo will be running in: {self.guild_id} in \033[1m{'DEVELOPMENT' if self.dev else 'PRODUCTION'}\033[0m mode")
+            f"GIR will be running in: {self.guild_id} in \033[1m{'DEVELOPMENT' if self.dev else 'PRODUCTION'}\033[0m mode")
         logger.info(f"Bot owned by: {self.owner_id}")
 
     def setup_warning(self, k: str):
