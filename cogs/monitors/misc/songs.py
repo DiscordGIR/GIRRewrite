@@ -78,7 +78,7 @@ class Songs(commands.Cog):
             title, message.author)
 
         if triggered_words:
-            title = "<:fr:712506651520925698>"
+            title = "<:fr:959135064657109012>"
 
         view = discord.ui.View()
         for platform, body in platforms.items():
