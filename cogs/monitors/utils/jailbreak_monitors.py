@@ -47,9 +47,9 @@ class RepoWatcher(commands.Cog):
 
         view = discord.ui.View()
 
-        view.add_item(discord.ui.Button(label='Add Repo to Sileo', emoji="<:sileo:679466569407004684>",
+        view.add_item(discord.ui.Button(label='Add Repo to Sileo', emoji="<:Sileo:959128883498729482>",
                                         url=f"https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={potential_repo}", style=discord.ButtonStyle.url))
-        view.add_item(discord.ui.Button(label='Add Repo to Zebra', emoji="<:zebra:911433583032422420>",
+        view.add_item(discord.ui.Button(label='Add Repo to Zebra', emoji="<:Zeeb:959129860603801630>",
                                         url=f"https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={potential_repo}", style=discord.ButtonStyle.url))
         view.add_item(discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
                                         url=f"https://sharerepo.stkc.win/?repo={potential_repo}", style=discord.ButtonStyle.url))
@@ -151,7 +151,7 @@ class Sileo(commands.Cog):
                 if icon is not None:
                     embed.set_thumbnail(url=canister.get('packageIcon'))
 
-                view.add_item(discord.ui.Button(label='Add Repo to Sileo', emoji="<:sileo:679466569407004684>",
+                view.add_item(discord.ui.Button(label='Add Repo to Sileo', emoji="<:Sileo:959128883498729482>",
                                                 url=f"https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={canister.get('repository')['uri']}", style=discord.ButtonStyle.url))
                 await message.reply(embed=embed, view=view, mention_author=False)
 

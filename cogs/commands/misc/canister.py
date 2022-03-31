@@ -125,9 +125,9 @@ class Canister(commands.Cog):
         for repo in default_repos:
             if repo in this_repo:
                 [view.add_item(item) for item in [
-                    discord.ui.Button(label='Cannot add default repo', emoji="<:sileo:679466569407004684>",
+                    discord.ui.Button(label='Cannot add default repo', emoji="<:Sileo:959128883498729482>",
                                       url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={this_repo}', disabled=True, style=discord.ButtonStyle.url, row=1),
-                    discord.ui.Button(label='Cannot add default repo', emoji="<:zebra:911433583032422420>",
+                    discord.ui.Button(label='Cannot add default repo', emoji="<:Zeeb:959129860603801630>",
                                       url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={this_repo}', disabled=True, style=discord.ButtonStyle.url, row=1),
                     discord.ui.Button(label='Cannot add default repo', emoji="<:Add:947354227171262534>",
                                       url=f'https://sharerepo.stkc.win/?repo={this_repo}', style=discord.ButtonStyle.url, disabled=True, row=1)
@@ -135,9 +135,9 @@ class Canister(commands.Cog):
                 break
         if not view.children:
             [view.add_item(item) for item in [
-                discord.ui.Button(label='Add Repo to Sileo', emoji="<:sileo:679466569407004684>",
+                discord.ui.Button(label='Add Repo to Sileo', emoji="<:Sileo:959128883498729482>",
                                   url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={this_repo}', style=discord.ButtonStyle.url, row=1),
-                discord.ui.Button(label='Add Repo to Zebra', emoji="<:zebra:911433583032422420>",
+                discord.ui.Button(label='Add Repo to Zebra', emoji="<:Zeeb:959129860603801630>",
                                   url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={this_repo}', style=discord.ButtonStyle.url, row=1),
                 discord.ui.Button(label='Other Package Managers', emoji="<:cydiasileosplit:932650041099825232>",
                                   url=f'https://sharerepo.stkc.win/?repo={this_repo}', style=discord.ButtonStyle.url, row=1)
