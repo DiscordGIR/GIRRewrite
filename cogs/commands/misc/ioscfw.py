@@ -3,7 +3,7 @@ import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands
-from utils import (BlooContext, cfg, get_ios_cfw, get_ipsw_firmware_info,
+from utils import (GIRContext, cfg, get_ios_cfw, get_ipsw_firmware_info,
                    transform_context, transform_groups)
 from utils.framework import whisper, whisper_in_general
 from utils.framework.transformers import (DeviceTransformer,
@@ -95,7 +95,7 @@ class iOSCFW(commands.Cog):
     @app_commands.describe(user_to_mention="User to ping in response")
     @transform_context
     @whisper_in_general
-    async def jailbreak(self, ctx: BlooContext, name: str, user_to_mention: discord.Member = None) -> None:
+    async def jailbreak(self, ctx: GIRContext, name: str, user_to_mention: discord.Member = None) -> None:
         response = await get_ios_cfw()
 
         jbs = [jb for _, jb in response.get(
@@ -173,7 +173,7 @@ class iOSCFW(commands.Cog):
     @app_commands.autocomplete(version=ios_version_autocomplete)
     @transform_context
     @whisper_in_general
-    async def firmware(self, ctx: BlooContext, version: str) -> None:
+    async def firmware(self, ctx: GIRContext, version: str) -> None:
         response = await get_ios_cfw()
         og_version = version
         for os_version in ["iOS", "tvOS", "watchOS", "audioOS"]:
@@ -197,7 +197,7 @@ class iOSCFW(commands.Cog):
     @app_commands.autocomplete(version=ios_beta_version_autocomplete)
     @transform_context
     @whisper_in_general
-    async def betafirmware(self, ctx: BlooContext, version: str) -> None:
+    async def betafirmware(self, ctx: GIRContext, version: str) -> None:
         response = await get_ios_cfw()
         og_version = version
         for os_version in ["iOS", "tvOS", "watchOS", "audioOS"]:
@@ -278,7 +278,7 @@ class iOSCFW(commands.Cog):
     @app_commands.autocomplete(device=device_autocomplete)
     @transform_context
     @whisper_in_general
-    async def deviceinfo(self, ctx: BlooContext, device: str) -> None:
+    async def deviceinfo(self, ctx: GIRContext, device: str) -> None:
         response = await get_ios_cfw()
         all_devices = response.get("group")
         transformed_devices = transform_groups(all_devices)
@@ -341,7 +341,7 @@ class iOSCFW(commands.Cog):
     @app_commands.autocomplete(version=ios_on_device_autocomplete)
     @transform_context
     @whisper
-    async def canijailbreak(self, ctx: BlooContext, device: DeviceTransformer, version: VersionOnDevice) -> None:
+    async def canijailbreak(self, ctx: GIRContext, device: DeviceTransformer, version: VersionOnDevice) -> None:
         response = await get_ios_cfw()
         found_jbs = []
         jailbreaks = response.get("jailbreak")
@@ -395,7 +395,7 @@ class iOSCFW(commands.Cog):
     @app_commands.autocomplete(app=bypass_autocomplete)
     @transform_context
     @whisper_in_general
-    async def bypass(self, ctx: BlooContext, app: str):
+    async def bypass(self, ctx: GIRContext, app: str):
         data = await get_ios_cfw()
         bypasses = data.get('bypass')
         matching_apps = [body for _, body in bypasses.items(

@@ -3,7 +3,7 @@ from discord import app_commands
 from data.model import FilterWord
 from data.services import guild_service, user_service
 from discord.ext import commands
-from utils import BlooContext, cfg, transform_context
+from utils import GIRContext, cfg, transform_context
 from utils.framework import (admin_and_up, always_whisper, gatekeeper,
                              mod_and_up)
 from utils.views import Menu, filterwords_autocomplete
@@ -56,7 +56,7 @@ class Filters(commands.Cog):
     @app_commands.describe(val="True for ping, false for not")
     @transform_context
     @always_whisper
-    async def offlineping(self, ctx: BlooContext, val: bool = None):
+    async def offlineping(self, ctx: GIRContext, val: bool = None):
         cur = user_service.get_user(ctx.author.id)
 
         if val is None:
@@ -79,7 +79,7 @@ class Filters(commands.Cog):
     @app_commands.choices(bypass=[app_commands.Choice(name=name, value=key) for key, name in gatekeeper._permission_names.items()])
     @app_commands.describe(phrase="The word to filter")
     @transform_context
-    async def add(self, ctx: BlooContext, notify: bool, bypass: int, phrase: str) -> None:
+    async def add(self, ctx: GIRContext, notify: bool, bypass: int, phrase: str) -> None:
         fw = FilterWord()
         fw.bypass = bypass
         fw.notify = notify
@@ -96,7 +96,7 @@ class Filters(commands.Cog):
     @mod_and_up()
     @_filter.command(description="List filtered words", name="list")
     @transform_context
-    async def _list(self, ctx: BlooContext):
+    async def _list(self, ctx: GIRContext):
         filters = guild_service.get_guild().filter_words
         if len(filters) == 0:
             raise commands.BadArgument(
@@ -112,7 +112,7 @@ class Filters(commands.Cog):
     @app_commands.describe(word="The word to mark as piracy")
     @app_commands.autocomplete(word=filterwords_autocomplete)
     @transform_context
-    async def piracy(self, ctx: BlooContext, word: str):
+    async def piracy(self, ctx: GIRContext, word: str):
         word = word.lower()
 
         words = guild_service.get_guild().filter_words
@@ -131,7 +131,7 @@ class Filters(commands.Cog):
     @app_commands.describe(word="The word to remove")
     @app_commands.autocomplete(word=filterwords_autocomplete)
     @transform_context
-    async def remove(self, ctx: BlooContext, word: str):
+    async def remove(self, ctx: GIRContext, word: str):
         word = word.lower()
 
         words = guild_service.get_guild().filter_words
@@ -148,7 +148,7 @@ class Filters(commands.Cog):
     @app_commands.command(description="Whitelist a guild from invite filter")
     @app_commands.describe(guild_id="The guild to whitelist")
     @transform_context
-    async def whitelist(self, ctx: BlooContext, guild_id: str):
+    async def whitelist(self, ctx: GIRContext, guild_id: str):
         try:
             guild_id = int(guild_id)
         except ValueError:
@@ -164,7 +164,7 @@ class Filters(commands.Cog):
     @app_commands.command(description="Add a guild back to invite filter")
     @app_commands.describe(guild_id="The guild to blacklist")
     @transform_context
-    async def blacklist(self, ctx: BlooContext, guild_id: str):
+    async def blacklist(self, ctx: GIRContext, guild_id: str):
         try:
             guild_id = int(guild_id)
         except ValueError:
@@ -180,7 +180,7 @@ class Filters(commands.Cog):
     @app_commands.command(description="Ignore channel in filter")
     @app_commands.describe(channel="Channel to ignore")
     @transform_context
-    async def ignorechannel(self, ctx: BlooContext, channel: discord.TextChannel) -> None:
+    async def ignorechannel(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
         if guild_service.add_ignored_channel(channel.id):
             await ctx.send_success(f"The filter will no longer run in {channel.mention}.")
         else:
@@ -191,7 +191,7 @@ class Filters(commands.Cog):
     @app_commands.command(description="Ungnore channel in filter")
     @app_commands.describe(channel="Channel to unignore")
     @transform_context
-    async def unignorechannel(self, ctx: BlooContext, channel: discord.TextChannel) -> None:
+    async def unignorechannel(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
         if guild_service.remove_ignored_channel(channel.id):
             await ctx.send_success(f"Resumed filtering in {channel.mention}.")
         else:
@@ -203,7 +203,7 @@ class Filters(commands.Cog):
     @app_commands.describe(word="The word to disable")
     @app_commands.autocomplete(word=filterwords_autocomplete)
     @transform_context
-    async def falsepositive(self, ctx: BlooContext, *, word: str):
+    async def falsepositive(self, ctx: GIRContext, *, word: str):
         word = word.lower()
 
         words = guild_service.get_guild().filter_words

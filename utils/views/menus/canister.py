@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 
 import discord
-from utils import BlooContext
+from utils import GIRContext
 from utils.framework import gatekeeper
 
 from .menu import Menu
@@ -158,7 +158,7 @@ class TweakMenu(Menu):
         self.stop()
 
 
-async def canister(ctx: BlooContext, whisper: bool, result):
+async def canister(ctx: GIRContext, whisper: bool, result):
     await TweakMenu(ctx, result, per_page=1, page_formatter=format_tweak_page, whisper=whisper, start_page=25, show_skip_buttons=False).start(ctx.interaction)
 
 
@@ -216,7 +216,7 @@ class TweakDropdown(discord.ui.Select):
     async def on_timeout(self):
         self.disabled = True
         self.placeholder = "Timed out"
-        if isinstance(self.ctx, BlooContext):
+        if isinstance(self.ctx, GIRContext):
             await self.ctx.edit(view=self._view)
         else:
             await self.ctx.message.edit(view=self._view)

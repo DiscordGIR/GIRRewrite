@@ -8,7 +8,7 @@ from data.services import guild_service, user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
-from utils import BlooContext, cfg, transform_context
+from utils import GIRContext, cfg, transform_context
 from utils.framework import mod_and_up, ModsAndAboveMemberOrUser, Duration, ModsAndAboveMember, UserOnly
 from utils.mod import (add_ban_case, add_kick_case, notify_user,
                        prepare_editreason_log, prepare_liftwarn_log,
@@ -29,7 +29,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(points="Points to warn the user with")
     @app_commands.describe(reason="Reason for warning")
     @transform_context
-    async def warn(self, ctx: BlooContext, user: ModsAndAboveMemberOrUser, points: app_commands.Range[int, 1, 600], reason: str):
+    async def warn(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, points: app_commands.Range[int, 1, 600], reason: str):
         if points < 1:  # can't warn for negative/0 points
             raise commands.BadArgument(message="Points can't be lower than 1.")
 
@@ -41,7 +41,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(member="User to kick")
     @app_commands.describe(reason="Reason for kicking")
     @transform_context
-    async def kick(self, ctx: BlooContext, member: ModsAndAboveMember, reason: str) -> None:
+    async def kick(self, ctx: GIRContext, member: ModsAndAboveMember, reason: str) -> None:
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
 
@@ -60,7 +60,7 @@ class ModActions(commands.Cog):
     @app_commands.command(description="Kick a user")
     @app_commands.describe(member="User to kick")
     @transform_context
-    async def roblox(self, ctx: BlooContext, member: ModsAndAboveMember) -> None:
+    async def roblox(self, ctx: GIRContext, member: ModsAndAboveMember) -> None:
         reason = "This Discord server is for iOS jailbreaking, not Roblox. Please join https://discord.gg/jailbreak instead, thank you!"
 
         db_guild = guild_service.get_guild()
@@ -80,7 +80,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(duration="Duration of the mute (i.e 10m, 1h, 1d...)")
     @app_commands.describe(reason="Reason for muting")
     @transform_context
-    async def mute(self, ctx: BlooContext, member: ModsAndAboveMember, duration: Duration, reason: str = "No reason.") -> None:
+    async def mute(self, ctx: GIRContext, member: ModsAndAboveMember, duration: Duration, reason: str = "No reason.") -> None:
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
 
@@ -136,7 +136,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(member="User to unmute")
     @app_commands.describe(reason="Reason for unmuting")
     @transform_context
-    async def unmute(self, ctx: BlooContext, member: ModsAndAboveMember, reason: str) -> None:
+    async def unmute(self, ctx: GIRContext, member: ModsAndAboveMember, reason: str) -> None:
         db_guild = guild_service.get_guild()
 
         if not member.is_timed_out():
@@ -172,7 +172,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(user="User to ban")
     @app_commands.describe(reason="Reason for banning")
     @transform_context
-    async def ban(self, ctx: BlooContext, user: ModsAndAboveMemberOrUser, reason: str):
+    async def ban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
         db_guild = guild_service.get_guild()
@@ -207,7 +207,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(user="User to unban")
     @app_commands.describe(reason="Reason for unbanning")
     @transform_context
-    async def unban(self, ctx: BlooContext, user: UserOnly, reason: str) -> None:
+    async def unban(self, ctx: GIRContext, user: UserOnly, reason: str) -> None:
         if ctx.guild.get_member(user.id) is not None:
             raise commands.BadArgument(
                 "You can't unban someone already in the server!")
@@ -246,7 +246,7 @@ class ModActions(commands.Cog):
     @app_commands.command(description="Purge channel messages")
     @app_commands.describe(amount="Number of messages to purge")
     @transform_context
-    async def purge(self, ctx: BlooContext, amount: app_commands.Range[int, 1, 100]) -> None:
+    async def purge(self, ctx: GIRContext, amount: app_commands.Range[int, 1, 100]) -> None:
         if amount <= 0:
             raise commands.BadArgument(
                 "Number of messages to purge must be greater than 0")
@@ -266,7 +266,7 @@ class ModActions(commands.Cog):
     @app_commands.autocomplete(case_id=warn_autocomplete)
     @app_commands.describe(reason="Reason for lifting the warn")
     @transform_context
-    async def liftwarn(self, ctx: BlooContext, member: ModsAndAboveMember, case_id: str, reason: str) -> None:
+    async def liftwarn(self, ctx: GIRContext, member: ModsAndAboveMember, case_id: str, reason: str) -> None:
         cases = user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
 
@@ -315,7 +315,7 @@ class ModActions(commands.Cog):
     @app_commands.autocomplete(case_id=warn_autocomplete)
     @app_commands.describe(new_reason="New reason for the case")
     @transform_context
-    async def editreason(self, ctx: BlooContext, member: ModsAndAboveMember, case_id: str, new_reason: str) -> None:
+    async def editreason(self, ctx: GIRContext, member: ModsAndAboveMember, case_id: str, new_reason: str) -> None:
         # retrieve user's case with given ID
         cases = user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
@@ -376,7 +376,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(points="Amount of points to remove")
     @app_commands.describe(reason="Reason for removing points")
     @transform_context
-    async def removepoints(self, ctx: BlooContext, member: ModsAndAboveMember, points: app_commands.Range[int, 1, 600], reason: str) -> None:
+    async def removepoints(self, ctx: GIRContext, member: ModsAndAboveMember, points: app_commands.Range[int, 1, 600], reason: str) -> None:
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
 

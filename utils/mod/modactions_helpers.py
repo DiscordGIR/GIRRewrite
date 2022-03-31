@@ -6,7 +6,7 @@ from data.model.case import Case
 from data.model.guild import Guild
 from data.services.guild_service import guild_service
 from data.services.user_service import user_service
-from utils.context import BlooContext
+from utils.context import GIRContext
 from utils.mod.mod_logs import prepare_ban_log, prepare_kick_log
 
 from utils.config import cfg
@@ -63,12 +63,12 @@ async def notify_user(target_member, text, log):
     return True
 
 
-async def notify_user_warn(ctx: BlooContext, target_member: discord.Member, mod: discord.Member, db_user, db_guild, cur_points: int, log):
+async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: discord.Member, db_user, db_guild, cur_points: int, log):
     """Notifies a specified user about a warn
 
     Parameters
     ----------
-    ctx : BlooContext
+    ctx : GIRContext
         "Bot context"
     target_member : discord.Member
         "User to notify"
@@ -120,7 +120,7 @@ async def notify_user_warn(ctx: BlooContext, target_member: discord.Member, mod:
 
 
 async def response_log(ctx, log):
-    if isinstance(ctx, BlooContext):
+    if isinstance(ctx, GIRContext):
         if ctx.interaction.response.is_done():
             res = await ctx.interaction.followup.send(embed=log)
             await res.delete(delay=10)
@@ -139,12 +139,12 @@ async def response_log(ctx, log):
         await ctx.send(embed=log, delete_after=10)
 
 
-async def submit_public_log(ctx: BlooContext, db_guild: Guild, user: Union[discord.Member, discord.User], log, dmed: bool = None):
+async def submit_public_log(ctx: GIRContext, db_guild: Guild, user: Union[discord.Member, discord.User], log, dmed: bool = None):
     """Submits a public log
 
     Parameters
     ----------
-    ctx : BlooContext
+    ctx : GIRContext
         "Bot context"
     user : discord.Member
         "User to notify"
@@ -173,7 +173,7 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
 
     Parameters
     ----------
-    ctx : BlooContext
+    ctx : GIRContext
         "Bot context"
     user : discord.Member
         "Member who was banned"

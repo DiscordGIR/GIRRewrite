@@ -2,7 +2,7 @@ from enum import Enum
 
 import discord
 from discord import ui
-from utils.context import BlooContext
+from utils.context import GIRContext
 
 from utils.mod.global_modactions import ban, warn
 from utils.views.modals.prompt import GenericDescriptionModal
@@ -119,7 +119,7 @@ class PointsView(ui.View):
 
 
 class WarnView(ui.View):
-    def __init__(self, ctx: BlooContext, member: discord.Member):
+    def __init__(self, ctx: GIRContext, member: discord.Member):
         super().__init__(timeout=30)
         self.target_member = member
         self.ctx = ctx

@@ -1,10 +1,10 @@
 import discord
 
-from utils import BlooContext
+from utils import GIRContext
 
 
 class GenericDescriptionModal(discord.ui.Modal):
-    def __init__(self, ctx: BlooContext, author: discord.Member, title: str, label: str = "Description", placeholder: str = "Please enter a description", prefill: str = ""):
+    def __init__(self, ctx: GIRContext, author: discord.Member, title: str, label: str = "Description", placeholder: str = "Please enter a description", prefill: str = ""):
         self.ctx = ctx
         self.author = author
         self.value = None

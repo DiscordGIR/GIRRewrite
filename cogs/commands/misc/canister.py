@@ -5,7 +5,7 @@ import discord
 from data.services import guild_service
 from discord import app_commands
 from discord.ext import commands
-from utils import BlooContext, canister_search_package, cfg, transform_context
+from utils import GIRContext, canister_search_package, cfg, transform_context
 from utils.fetchers import canister_fetch_repos
 from utils.framework import gatekeeper, whisper_in_general
 from utils.views import TweakDropdown, default_repos, repo_autocomplete
@@ -66,7 +66,7 @@ class Canister(commands.Cog):
     @app_commands.command(description="Search for a jailbreak tweak or package")
     @app_commands.describe(query="Name of package to search for")
     @transform_context
-    async def package(self, ctx: BlooContext, query: str) -> None:
+    async def package(self, ctx: GIRContext, query: str) -> None:
         if len(query) < 2:
             raise commands.BadArgument("Please enter a longer query.")
 
@@ -99,7 +99,7 @@ class Canister(commands.Cog):
     @app_commands.autocomplete(query=repo_autocomplete)
     @transform_context
     @whisper_in_general
-    async def repo(self, ctx: BlooContext, query: str) -> None:
+    async def repo(self, ctx: GIRContext, query: str) -> None:
         repos = await canister_fetch_repos()
         matches = [repo for repo in repos if repo.get("slug") and repo.get(
             "slug") is not None and repo.get("slug").lower() == query.lower()]

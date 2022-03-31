@@ -42,7 +42,7 @@ async def on_ready():
 
 async def main():
     async with bot:
-        await bot.start(os.environ.get("BLOO_TOKEN"), reconnect=True)
+        await bot.start(os.environ.get("GIR_TOKEN"), reconnect=True)
 
 asyncio.run(main())
 

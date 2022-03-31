@@ -1,10 +1,10 @@
 import discord
 
-from utils import BlooContext
+from utils import GIRContext
 
 
 class PFPView(discord.ui.View):
-    def __init__(self, ctx: BlooContext, embed=discord.Embed):
+    def __init__(self, ctx: GIRContext, embed=discord.Embed):
         super().__init__(timeout=30)
         self.embed = embed
         self.ctx = ctx
@@ -16,7 +16,7 @@ class PFPView(discord.ui.View):
 
 
 class PFPButton(discord.ui.Button):
-    def __init__(self, ctx: BlooContext, member: discord.Member):
+    def __init__(self, ctx: GIRContext, member: discord.Member):
         super().__init__(label="Show other avatar", style=discord.ButtonStyle.primary)
         self.ctx = ctx
         self.member = member

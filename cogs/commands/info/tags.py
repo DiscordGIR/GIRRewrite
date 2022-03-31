@@ -8,7 +8,7 @@ from data.services.guild_service import guild_service
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
-from utils import BlooContext, cfg, transform_context, format_number
+from utils import GIRContext, cfg, transform_context, format_number
 from utils.framework import (MessageTextBucket, gatekeeper,
                              genius_or_submod_and_up, whisper, ImageAttachment)
 from utils.views import Menu, tags_autocomplete, EditTagModal, TagModal
@@ -87,7 +87,7 @@ class Tags(commands.Cog):
     @app_commands.describe(user_to_mention="Member to ping in response")
     @app_commands.autocomplete(name=tags_autocomplete)
     @transform_context
-    async def tag(self, ctx: BlooContext, name: str, user_to_mention: discord.Member = None):
+    async def tag(self, ctx: GIRContext, name: str, user_to_mention: discord.Member = None):
         name = name.lower()
         tag = guild_service.get_tag(name)
 
@@ -150,7 +150,7 @@ class Tags(commands.Cog):
     @app_commands.command(description="List all tags")
     @transform_context
     @whisper
-    async def taglist(self, ctx: BlooContext):
+    async def taglist(self, ctx: GIRContext):
         _tags = sorted(guild_service.get_guild().tags, key=lambda tag: tag.name)
 
         if len(_tags) == 0:
@@ -166,7 +166,7 @@ class Tags(commands.Cog):
     @app_commands.describe(name="Name of the tag")
     @app_commands.describe(image="Image to attach to the tag")
     @transform_context
-    async def add(self, ctx: BlooContext, name: str, image: ImageAttachment = None) -> None:
+    async def add(self, ctx: GIRContext, name: str, image: ImageAttachment = None) -> None:
         if not name.isalnum():
             raise commands.BadArgument("Tag name must be alphanumeric.")
 
@@ -213,7 +213,7 @@ class Tags(commands.Cog):
     @app_commands.autocomplete(name=tags_autocomplete)
     @app_commands.describe(image="Image to attach to the tag")
     @transform_context
-    async def edit(self, ctx: BlooContext, name: str, image: ImageAttachment = None) -> None:
+    async def edit(self, ctx: GIRContext, name: str, image: ImageAttachment = None) -> None:
         if len(name.split()) > 1:
             raise commands.BadArgument(
                 "Tag names can't be longer than 1 word.")
@@ -265,7 +265,7 @@ class Tags(commands.Cog):
     @app_commands.describe(name="Name of the tag")
     @app_commands.autocomplete(name=tags_autocomplete)
     @transform_context
-    async def delete(self, ctx: BlooContext, name: str):
+    async def delete(self, ctx: GIRContext, name: str):
         name = name.lower()
 
         tag = guild_service.get_tag(name)

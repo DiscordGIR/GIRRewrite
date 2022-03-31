@@ -4,7 +4,7 @@ from collections import defaultdict
 import discord
 from discord import app_commands
 from discord.ext import commands
-from utils import (BlooContext, cfg, get_ios_cfw, transform_context,
+from utils import (GIRContext, cfg, get_ios_cfw, transform_context,
                    transform_groups)
 from utils.framework import (DeviceTransformer, VersionOnDevice,
                              always_whisper,
@@ -30,7 +30,7 @@ class Devices(commands.Cog):
     @app_commands.autocomplete(version=ios_on_device_autocomplete)
     @transform_context
     @always_whisper
-    async def add(self, ctx: BlooContext, device: DeviceTransformer, version: VersionOnDevice) -> None:
+    async def add(self, ctx: GIRContext, device: DeviceTransformer, version: VersionOnDevice) -> None:
         new_nick = ctx.author.display_name
         # check if user already has a device in their nick
         if re.match(self.devices_test, ctx.author.display_name):
@@ -72,7 +72,7 @@ class Devices(commands.Cog):
     @device.command(description="Remove device from nickname")
     @transform_context
     @always_whisper
-    async def remove(self, ctx: BlooContext) -> None:
+    async def remove(self, ctx: GIRContext) -> None:
         if not re.match(self.devices_test, ctx.author.display_name):
             raise commands.BadArgument("You don't have a device nickname set!")
 
@@ -87,7 +87,7 @@ class Devices(commands.Cog):
     @device.command(name="list", description="List all devices you can set your nickname to")
     @transform_context
     @whisper
-    async def _list(self, ctx: BlooContext) -> None:
+    async def _list(self, ctx: GIRContext) -> None:
         devices_dict = defaultdict(list)
 
         response = await get_ios_cfw()

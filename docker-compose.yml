@@ -1,8 +1,8 @@
 version: '3.4'
 
 services:
-  bloo:
-    container_name: bloo
+  gir:
+    container_name: gir
     build:
       context: .
       dockerfile: Dockerfile.production

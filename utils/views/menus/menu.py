@@ -3,15 +3,15 @@ from typing import Callable, Union
 
 import discord
 from discord import ui
-from utils import BlooContext
+from utils import GIRContext
 
 
 class Menu(ui.View):
-    def __init__(self, ctx: BlooContext, entries: list, per_page: int, page_formatter: Callable[[BlooContext, list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, timeout_function=None):
+    def __init__(self, ctx: GIRContext, entries: list, per_page: int, page_formatter: Callable[[GIRContext, list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, timeout_function=None):
         super().__init__(timeout=60)
 
         self.ctx = ctx
-        self.is_interaction = isinstance(ctx, BlooContext)
+        self.is_interaction = isinstance(ctx, GIRContext)
 
         """Initializes a menu"""
         def chunks(lst, n):

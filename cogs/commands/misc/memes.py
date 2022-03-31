@@ -10,7 +10,7 @@ from data.services import guild_service
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
-from utils import BlooContext, cfg, format_number, transform_context
+from utils import GIRContext, cfg, format_number, transform_context
 from utils.framework import (ImageAttachment, MessageTextBucket,
                              find_triggered_filters,
                              find_triggered_raid_phrases, gatekeeper,
@@ -48,7 +48,7 @@ class Memes(commands.Cog):
     @app_commands.autocomplete(name=memes_autocomplete)
     @app_commands.describe(user_to_mention="user to mention in the response")
     @transform_context
-    async def meme(self, ctx: BlooContext, name: str, user_to_mention: discord.Member = None):
+    async def meme(self, ctx: GIRContext, name: str, user_to_mention: discord.Member = None):
         name = name.lower()
         meme = guild_service.get_meme(name)
 
@@ -80,7 +80,7 @@ class Memes(commands.Cog):
     @app_commands.command(description="List all memes")
     @transform_context
     @whisper
-    async def memelist(self, ctx: BlooContext):
+    async def memelist(self, ctx: GIRContext):
         memes = sorted(guild_service.get_guild().memes,
                        key=lambda meme: meme.name)
 
@@ -99,7 +99,7 @@ class Memes(commands.Cog):
     @app_commands.describe(name="Name of the meme")
     @app_commands.describe(image="Image to show in embed")
     @transform_context
-    async def add(self, ctx: BlooContext, name: str, image: ImageAttachment = None) -> None:
+    async def add(self, ctx: GIRContext, name: str, image: ImageAttachment = None) -> None:
         if not name.isalnum():
             raise commands.BadArgument("Meme name must be alphanumeric.")
 
@@ -153,7 +153,7 @@ class Memes(commands.Cog):
     @app_commands.autocomplete(name=memes_autocomplete)
     @app_commands.describe(image="Image to show in embed")
     @transform_context
-    async def edit(self, ctx: BlooContext, name: str, image: ImageAttachment = None) -> None:
+    async def edit(self, ctx: GIRContext, name: str, image: ImageAttachment = None) -> None:
         if len(name.split()) > 1:
             raise commands.BadArgument(
                 "Meme names can't be longer than 1 word.")
@@ -206,7 +206,7 @@ class Memes(commands.Cog):
     @app_commands.describe(name="Name of the meme")
     @app_commands.autocomplete(name=memes_autocomplete)
     @transform_context
-    async def delete(self, ctx: BlooContext, name: str):
+    async def delete(self, ctx: GIRContext, name: str):
         name = name.lower()
 
         meme = guild_service.get_meme(name)
@@ -249,7 +249,7 @@ class Memes(commands.Cog):
     @app_commands.describe(question="Question to ask")
     @transform_context
     @whisper
-    async def _8ball(self, ctx: BlooContext, question: str) -> None:
+    async def _8ball(self, ctx: GIRContext, question: str) -> None:
         responses = ["As I see it, yes.", "Ask again later.", "Better not tell you now.", "Cannot predict now.", "Concentrate and ask again.",
                      "Don’t count on it.", "It is certain.", "It is decidedly so.", "Most likely.", "My reply is no.", "My sources say no.",
                      "Outlook not so good.", "Outlook good.", "Reply hazy, try again.", "Signs point to yes.", "Very doubtful.", "Without a doubt.",
@@ -267,7 +267,7 @@ class Memes(commands.Cog):
     @app_commands.command(description="Classify an image with Magic!")
     @app_commands.describe(image="Image to classify")
     @transform_context
-    async def neuralnet(self, ctx: BlooContext, image: ImageAttachment) -> None:
+    async def neuralnet(self, ctx: GIRContext, image: ImageAttachment) -> None:
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
@@ -329,7 +329,7 @@ class Memes(commands.Cog):
     @app_commands.describe(bottom_text="Text to show on bottom")
     @app_commands.describe(image="Image to use as base")
     @transform_context
-    async def regular(self, ctx: BlooContext, top_text: str, bottom_text: str, image: ImageAttachment) -> None:
+    async def regular(self, ctx: GIRContext, top_text: str, bottom_text: str, image: ImageAttachment) -> None:
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
@@ -383,7 +383,7 @@ class Memes(commands.Cog):
     @app_commands.describe(bottom_text="Text to show on bottom")
     @app_commands.describe(image="Image to use as base")
     @transform_context
-    async def motivate(self, ctx: BlooContext, top_text: str, bottom_text: str, image: ImageAttachment) -> None:
+    async def motivate(self, ctx: GIRContext, top_text: str, bottom_text: str, image: ImageAttachment) -> None:
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
@@ -435,7 +435,7 @@ class Memes(commands.Cog):
     @memegen.command(description="AI generated text based on a prompt")
     @app_commands.describe(prompt="Text to base results off of")
     @transform_context
-    async def aitext(self, ctx: BlooContext, prompt: str):
+    async def aitext(self, ctx: GIRContext, prompt: str):
         if cfg.open_ai_token is None:
             raise commands.BadArgument("This command is disabled.")
 

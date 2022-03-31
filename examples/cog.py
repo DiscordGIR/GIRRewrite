@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from utils import cfg, BlooContext, transform_context
+from utils import cfg, GIRContext, transform_context
 from utils.framework import whisper
 
 
@@ -16,7 +16,7 @@ class Greetings(commands.Cog):
     @app_commands.describe(message="The message to send back") # add description to arguments
     @transform_context # this is to turn the interaction object d.py gives into a Context object (ORDER IS IMPORTANT!)
     @whisper # make response ephemeral for non mods (ORDER IS IMPORTANT!
-    async def say(self, ctx: BlooContext, message: str):
+    async def say(self, ctx: GIRContext, message: str):
         await ctx.send_success(message)
 
     # note: we no longer need a command handler in each cog, this is done globally

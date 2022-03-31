@@ -5,7 +5,7 @@ import aiohttp
 import discord
 from data.services import guild_service
 from discord.ext import commands
-from utils import BlooOldContext, PromptData, cfg
+from utils import GIROldContext, PromptData, cfg
 from utils.framework import gatekeeper
 
 
@@ -62,7 +62,7 @@ class BoosterEmojis(commands.Cog):
             )
             try:
                 msg.author = payload.member
-                ctx = await self.bot.get_context(msg, cls=BlooOldContext)
+                ctx = await self.bot.get_context(msg, cls=GIROldContext)
                 name = await ctx.prompt(prompt)
                 while True:
                     if len(name) > 2 and len(name) < 20 and re.match(r"^[a-zA-Z0-9_]*$", name):

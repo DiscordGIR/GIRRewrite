@@ -18,7 +18,7 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
 
     Parameters
     ----------
-    ctx : BlooContext
+    ctx : GIRContext
         "Bot context"
     member : discord.Member
         "Member to mute"

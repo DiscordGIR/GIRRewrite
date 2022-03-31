@@ -6,7 +6,7 @@ import pytimeparse
 from data.services import user_service
 from data.services.guild_service import guild_service
 from discord import ui
-from utils import BlooContext, cfg
+from utils import GIRContext, cfg
 from utils.framework import gatekeeper
 from utils.mod import ban, mute, unmute, warn
 from utils.views.modals.prompt import GenericDescriptionModal
@@ -272,7 +272,7 @@ class ReportActions(ui.View):
     async def claim(self, interaction: discord.Interaction, button: ui.Button):
         report_embed = interaction.message.embeds[0]
         if "(claimed)" in report_embed.title:
-            ctx = BlooContext(interaction)
+            ctx = GIRContext(interaction)
             await ctx.send_error(f"{interaction.user.mention}, this report has already been claimed.", whisper=True)
             return
 
@@ -304,7 +304,7 @@ class RaidPhraseReportActions(ui.View):
         try:
             await unmute(interaction, self.target_member, mod=interaction.user, reason="Reviewed by a moderator.")
         except Exception:
-            ctx = BlooContext(interaction)
+            ctx = GIRContext(interaction)
             await ctx.send_warning("I wasn't able to unmute them.", delete_after=5)
         finally:
             await interaction.message.delete()
@@ -312,7 +312,7 @@ class RaidPhraseReportActions(ui.View):
         
     @ui.button(emoji="💀", label="Ban and add raidphrase", style=discord.ButtonStyle.primary)
     async def ban(self, interaction: discord.Interaction, button: ui.Button):
-        ctx = BlooContext(interaction)
+        ctx = GIRContext(interaction)
         try:
             await ban(interaction, self.target_member, mod=interaction.user, reason="Raid phrase detected")
             self.ctx.bot.ban_cache.ban(self.target_member.id)
@@ -344,7 +344,7 @@ class SpamReportActions(ui.View):
         try:
             await unmute(interaction, self.target_member, interaction.guild.me, reason="Reviewed by a moderator.")
         except Exception:
-            ctx = BlooContext(interaction)
+            ctx = GIRContext(interaction)
             await ctx.send_warning("I wasn't able to unmute them.", delete_after=5)
         finally:
             await interaction.message.delete()
@@ -355,7 +355,7 @@ class SpamReportActions(ui.View):
         try:
             await ban(interaction, self.target_member, mod=interaction.user, reason="Spam detected")
         except Exception:
-            ctx = BlooContext(interaction)
+            ctx = GIRContext(interaction)
             await ctx.send_warning("I wasn't able to ban them.")
         finally:
             await interaction.message.delete()
@@ -363,7 +363,7 @@ class SpamReportActions(ui.View):
         
     @ui.button(emoji="⚠️", label="Temporary mute", style=discord.ButtonStyle.primary)
     async def mute(self, interaction: discord.Interaction, button: ui.Button):
-        ctx = BlooContext(interaction)
+        ctx = GIRContext(interaction)
         view = GenericDescriptionModal(ctx, interaction.user, title=f"Mute duration for {self.target_member}", label="How long should they be muted for?", placeholder="i.e 1h, 1d, ...")
         await interaction.response.send_modal(view)
         await view.wait()

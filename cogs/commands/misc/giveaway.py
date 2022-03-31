@@ -9,7 +9,7 @@ from data.services import guild_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
-from utils import BlooContext, cfg, end_giveaway, transform_context
+from utils import GIRContext, cfg, end_giveaway, transform_context
 from utils.framework import admin_and_up
 from utils.framework.transformers import Duration
 from utils.views import time_suggestions
@@ -31,7 +31,7 @@ class Giveaway(commands.Cog):
     @app_commands.describe(winners="The number of winners.",)
     @app_commands.describe(channel="The channel to send the giveaway in.")
     @transform_context
-    async def start(self, ctx: BlooContext, prize: str, sponsor: discord.Member, time: Duration, winners: int, channel: discord.TextChannel):
+    async def start(self, ctx: GIRContext, prize: str, sponsor: discord.Member, time: Duration, winners: int, channel: discord.TextChannel):
         delta = time
         if delta is None:
             raise commands.BadArgument("Invalid time passed in.")
@@ -74,7 +74,7 @@ class Giveaway(commands.Cog):
     @giveaway.command(description="Pick a new winner of an already ended giveaway.")
     @app_commands.describe(message_id="The ID of the giveaway message.")
     @transform_context
-    async def reroll(self, ctx: BlooContext, message_id: str):
+    async def reroll(self, ctx: GIRContext, message_id: str):
         g = guild_service.get_giveaway(_id=int(message_id))
 
         if g is None:
@@ -107,7 +107,7 @@ class Giveaway(commands.Cog):
     @admin_and_up()
     @giveaway.command(description="End a giveaway early.")
     @app_commands.describe(message_id="The ID of the giveaway message.")
-    async def end(self, ctx: BlooContext, message_id: str):
+    async def end(self, ctx: GIRContext, message_id: str):
         giveaway = guild_service.get_giveaway(_id=int(message_id))
         if giveaway is None:
             raise commands.BadArgument(

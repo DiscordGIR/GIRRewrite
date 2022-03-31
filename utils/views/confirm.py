@@ -1,10 +1,10 @@
 import discord
 from discord import ui
-from utils.context import BlooContext
+from utils.context import GIRContext
 
 
 class Confirm(ui.View):
-    def __init__(self, ctx: BlooContext, true_response = None, false_response = None):
+    def __init__(self, ctx: GIRContext, true_response = None, false_response = None):
         super().__init__(timeout=20)
         self.ctx = ctx
         self.value = None

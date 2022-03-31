@@ -1,7 +1,7 @@
 import re
 import discord
 
-from utils.context import BlooContext
+from utils.context import GIRContext
 
 class CommonIssueModal(discord.ui.Modal):
     def __init__(self, ctx, title, author: discord.Member) -> None:
@@ -89,7 +89,7 @@ class CommonIssueModal(discord.ui.Modal):
         await self.ctx.send_error(error, whisper=True)
 
 class EditCommonIssue(discord.ui.Modal):
-    def __init__(self, ctx: BlooContext, title, issue_message, author: discord.Member) -> None:
+    def __init__(self, ctx: GIRContext, title, issue_message, author: discord.Member) -> None:
         self.ctx = ctx
         self.bot = ctx.bot
         self.author = author

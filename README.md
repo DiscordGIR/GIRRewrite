@@ -1,5 +1,5 @@
-# Bloo
-Bloo is a sophisticated moderation and miscellaneous utilities Discord bot created for the [r/Jailbreak Discord server](https://reddit.com/r/jailbreak). It features:
+# GIR Rewrite
+GIR is a sophisticated moderation and miscellaneous utilities Discord bot created for the [r/Jailbreak Discord server](https://reddit.com/r/jailbreak). It features:
 
 - Completely based on Discord's Slash Commands, written in the [Discord.py library](https://github.com/Rapptz/discord.py)
 - Standard moderation commands such as warn, mute, kick, ban, ...
@@ -10,7 +10,9 @@ Bloo is a sophisticated moderation and miscellaneous utilities Discord bot creat
 - Miscellaneous utilities like `/canijailbreak`
 - And much more!
 
-Bloo is custom made for the r/Jailbreak server and therefore there is no publicly running bot you can invite to your own server. However, you can self-host it as is or fork the code and modify it to your own requirements!
+GIR is custom made for the r/Jailbreak server and therefore there is no publicly running bot you can invite to your own server. However, you can self-host it as is or fork the code and modify it to your own requirements!
+
+> See also: [Bloo](https://github.com/DiscordGIR/Bloo) and [GIR](https://github.com/DiscordGIR/GIR)
 
 ---
 
@@ -45,7 +47,7 @@ This setup uses Docker for deployment. You will need the following:
 3. Skip this step if running Mongo without Docker. If you want to run Mongo in Docker, you will need to edit `docker-compose.yml` slightly. Open it and follow the comments.
 4. Run the bot using `docker-compose up -d --build`.
 
-If everything is successful, the bot should be online in a few seconds. Otherwise, check the container's logs: `docker-compose logs bloo`.
+If everything is successful, the bot should be online in a few seconds. Otherwise, check the container's logs: `docker-compose logs gir`.
 
 The bot can be updated in the future by running: `git pull && docker-compose up -d --build --force-recreate`
 
@@ -65,7 +67,7 @@ You will need the following installed:
 5. VSCode should build the Docker image and open it automatically; this may take a couple of minutes as it has to install some extensions as well.
 6. Set up the `.env` file as shown [here](#env-file).
 7. Make sure the database is set up (see below).
-8. Open the integrated terminal in VSCode and run the `bloo` command to start the bot with hot reload!
+8. Open the integrated terminal in VSCode and run the `gir` command to start the bot with hot reload!
 
 > Note that if you make changes to the `Dockerfile`, `.devcontainer.json`, or need to install a new requirement, you need to rebuild the Docker image. You can do this through the Command Palette again, run "Remote-Containers: Rebuild Container".
 
@@ -95,7 +97,7 @@ If setting up the database from scratch, follow these instructions:
 2. Open up `setup.py` and fill in **ALL** the values. The bot's permissions, and as a result the bot itself, will not work without them.
 3. Run `setup.py`:
     - If running the bot without Docker, follow the first few setup instructions until you need to set up the database, activate the `virtualenv` and then run `python3 setup.py`. Then you can proceed with the rest of the setup instructions.
-    - If running the bot with Docker in production, start the container then run: `docker exec -it <Bloo container name> python3 setup.py` (if you get an error about the container restarting, restart the container and try to run the command again immediately). You can find the container name by running `docker container ls` in the project folder. After it's setup, restart the container. **Note:** changes to `setup.py` won't be transferred until you rebuild the container. So build the container AFTER `setup.py` is set up how you want.
+    - If running the bot with Docker in production, start the container then run: `docker exec -it <GIR container name> python3 setup.py` (if you get an error about the container restarting, restart the container and try to run the command again immediately). You can find the container name by running `docker container ls` in the project folder. After it's setup, restart the container. **Note:** changes to `setup.py` won't be transferred until you rebuild the container. So build the container AFTER `setup.py` is set up how you want.
     - If running the bot with Docker in development, you can just run `python3 setup.py` in the integrated bash shell.
 
 If you want to inspect or change database values:
@@ -126,5 +128,5 @@ If you want to inspect or change database values:
 Special thanks to the following people for ideas, testing, or help:
 - [Jack LaFond](https://www.jack.link/) --- creator of [tunes.ninja](https://tunes.ninja/), the bot that the Songs cog is inspired by
 - Cameren from r/jb, who has given a lot of ideas and helped with testing on many occasions
-- [Lillie](https://github.com/LillieWeeb001/) --- creator of the [fake jailbreak and iCloud bypass list](https://github.com/LillieWeeb001/Anti-Scam-Json-List) used by Bloo's filter
+- [Lillie](https://github.com/LillieWeeb001/) --- creator of the [fake jailbreak and iCloud bypass list](https://github.com/LillieWeeb001/Anti-Scam-Json-List) used by GIR's filter
 - [Emma](https://github.com/emiyl) and the https://ios.cfw.guide team --- their API is used for miscellaneous commands such as `/canijailbreak`, `/deviceinfo`, `/devices add`, `/bypass` and more.

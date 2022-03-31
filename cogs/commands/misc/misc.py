@@ -11,7 +11,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
 from PIL import Image
-from utils import (BlooContext, cfg, get_dstatus_components,
+from utils import (GIRContext, cfg, get_dstatus_components,
                    get_dstatus_incidents, transform_context)
 from utils.framework import (MONTH_MAPPING, Duration, gatekeeper,
                              give_user_birthday_role, mod_and_up, whisper)
@@ -39,7 +39,7 @@ class Misc(commands.Cog):
     @app_commands.describe(duration="When do we remind you? (i.e 1m, 1h, 1d)")
     @transform_context
     @whisper
-    async def remindme(self, ctx: BlooContext, reminder: str, duration: Duration):
+    async def remindme(self, ctx: GIRContext, reminder: str, duration: Duration):
         now = datetime.datetime.now()
         delta = duration
         if delta is None:
@@ -63,7 +63,7 @@ class Misc(commands.Cog):
     @app_commands.command(description="Post large version of a given emoji")
     @app_commands.describe(emoji="The emoji you want to get the large version of")
     @transform_context
-    async def jumbo(self, ctx: BlooContext, emoji: str):
+    async def jumbo(self, ctx: GIRContext, emoji: str):
         # non-mod users will be ratelimited
         bot_chan = guild_service.get_guild().channel_botspam
         if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != bot_chan:
@@ -99,7 +99,7 @@ class Misc(commands.Cog):
     @app_commands.autocomplete(date=date_autocompleter)
     @transform_context
     @whisper
-    async def mybirthday(self, ctx: BlooContext, month: str, date: int) -> None:
+    async def mybirthday(self, ctx: GIRContext, month: str, date: int) -> None:
         user = ctx.author
         if not (gatekeeper.has(ctx.guild, ctx.author, 1) or user.premium_since is not None):
             raise commands.BadArgument(
@@ -145,7 +145,7 @@ class Misc(commands.Cog):
     @app_commands.describe(user="The user you want to get the avatar of")
     @transform_context
     @whisper
-    async def avatar(self, ctx: BlooContext, user: Union[discord.Member, discord.User] = None) -> None:
+    async def avatar(self, ctx: GIRContext, user: Union[discord.Member, discord.User] = None) -> None:
         if user is None:
             user = ctx.author
 
@@ -179,7 +179,7 @@ class Misc(commands.Cog):
     @app_commands.autocomplete(title=rule_autocomplete)
     @app_commands.describe(user_to_mention="User to mention in response")
     @transform_context
-    async def rule(self, ctx: BlooContext, title: str, user_to_mention: discord.Member = None):
+    async def rule(self, ctx: GIRContext, title: str, user_to_mention: discord.Member = None):
         if title not in self.bot.rule_cache.cache:
             potential_rules = [r for r in self.bot.rule_cache.cache if title.lower() == r.lower(
             ) or title.strip() == f"{r} - {self.bot.rule_cache.cache[r].description}"[:100].strip()]
@@ -202,7 +202,7 @@ class Misc(commands.Cog):
     @app_commands.describe(channel="Channel to get the topic for")
     @app_commands.describe(user_to_mention="User to mention in response")
     @transform_context
-    async def topic(self, ctx: BlooContext, channel: discord.TextChannel = None, user_to_mention: discord.Member = None):
+    async def topic(self, ctx: GIRContext, channel: discord.TextChannel = None, user_to_mention: discord.Member = None):
         channel = channel or ctx.channel
         if channel.topic is None:
             raise commands.BadArgument(f"{channel.mention} has no topic!")
@@ -222,7 +222,7 @@ class Misc(commands.Cog):
     @app_commands.describe(question="Question to ask")
     @app_commands.describe(channel="Channel to post the poll in")
     @transform_context
-    async def poll(self, ctx: BlooContext, question: str, channel: discord.TextChannel = None):
+    async def poll(self, ctx: GIRContext, question: str, channel: discord.TextChannel = None):
         if channel is None:
             channel = ctx.channel
 

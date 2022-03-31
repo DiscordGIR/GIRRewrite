@@ -7,7 +7,7 @@ from data.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
-from utils import BlooContext, cfg, transform_context
+from utils import GIRContext, cfg, transform_context
 from utils.framework import PermissionsFailure, gatekeeper, whisper
 from utils.views import Menu
 
@@ -141,7 +141,7 @@ class UserInfo(commands.Cog):
     @app_commands.describe(user="User to get info of")
     @transform_context
     @whisper
-    async def userinfo(self, ctx: BlooContext, user: Union[discord.Member, discord.User] = None) -> None:
+    async def userinfo(self, ctx: GIRContext, user: Union[discord.Member, discord.User] = None) -> None:
         await handle_userinfo(ctx, user)
 
     @app_commands.guilds(cfg.guild_id)
@@ -149,7 +149,7 @@ class UserInfo(commands.Cog):
     @app_commands.describe(member="Memebr to get XP of")
     @transform_context
     @whisper
-    async def xp(self, ctx: BlooContext, member: discord.Member = None) -> None:
+    async def xp(self, ctx: GIRContext, member: discord.Member = None) -> None:
         if member is None:
             member = ctx.author
 
@@ -173,7 +173,7 @@ class UserInfo(commands.Cog):
     @app_commands.describe(member="Memebr to get warnpoints of")
     @transform_context
     @whisper
-    async def warnpoints(self, ctx: BlooContext, member: discord.Member = None):
+    async def warnpoints(self, ctx: GIRContext, member: discord.Member = None):
         # if an invokee is not provided in command, call command on the invoker
         # (get invoker's warnpoints)
         member = member or ctx.author
@@ -200,7 +200,7 @@ class UserInfo(commands.Cog):
     @app_commands.command(description="Show the XP leaderboard.")
     @transform_context
     @whisper
-    async def xptop(self, ctx: BlooContext):
+    async def xptop(self, ctx: GIRContext):
         results = enumerate(user_service.leaderboard())
         results = [(i, m) for (i, m) in results if ctx.guild.get_member(
             m._id) is not None][0:100]
@@ -214,7 +214,7 @@ class UserInfo(commands.Cog):
     @app_commands.describe(user="User to get cases of")
     @transform_context
     @whisper
-    async def cases(self, ctx: BlooContext, user: Union[discord.Member, discord.User] = None):
+    async def cases(self, ctx: GIRContext, user: Union[discord.Member, discord.User] = None):
         """Show list of cases of a user (mod only)
 
         Example usage
@@ -273,7 +273,7 @@ async def setup(bot):
     await bot.add_cog(UserInfo(bot))
 
 
-async def handle_userinfo(ctx: BlooContext, user: Union[discord.Member, discord.User]):
+async def handle_userinfo(ctx: GIRContext, user: Union[discord.Member, discord.User]):
     is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
     if user is None:
         user = ctx.author

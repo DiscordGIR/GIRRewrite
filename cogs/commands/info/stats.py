@@ -9,7 +9,7 @@ from data.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
-from utils import BlooContext, cfg, transform_context, format_number
+from utils import GIRContext, cfg, transform_context, format_number
 from utils.framework import mod_and_up, whisper
 
 
@@ -22,7 +22,7 @@ class Stats(commands.Cog):
     @app_commands.command(description="Test server latency by measuring how long it takes to edit a message")
     @transform_context
     @whisper
-    async def ping(self, ctx: BlooContext) -> None:
+    async def ping(self, ctx: GIRContext) -> None:
         embed = discord.Embed(
             title="Pong!", color=discord.Color.blurple())
         embed.set_thumbnail(url=self.bot.user.display_avatar)
@@ -46,7 +46,7 @@ class Stats(commands.Cog):
     @app_commands.describe(role="The role's ID")
     @transform_context
     @whisper
-    async def roleinfo(self, ctx: BlooContext, role: discord.Role) -> None:
+    async def roleinfo(self, ctx: GIRContext, role: discord.Role) -> None:
         embed = discord.Embed(title="Role Statistics")
         embed.description = f"{len(role.members)} members have role {role.mention}"
         embed.color = role.color
@@ -57,7 +57,7 @@ class Stats(commands.Cog):
     @app_commands.command(description="Statistics about the bot")
     @transform_context
     @whisper
-    async def stats(self, ctx: BlooContext) -> None:
+    async def stats(self, ctx: GIRContext) -> None:
         process = psutil.Process(os.getpid())
 
         embed = discord.Embed(
@@ -76,7 +76,7 @@ class Stats(commands.Cog):
     @app_commands.command(description="Displays info about the server")
     @transform_context
     @whisper
-    async def serverinfo(self, ctx: BlooContext):
+    async def serverinfo(self, ctx: GIRContext):
         guild = ctx.guild
         embed = discord.Embed(title="Server Information",
                               color=discord.Color.blurple())
@@ -104,7 +104,7 @@ class Stats(commands.Cog):
     @app_commands.command(description="Present statistics on who has been banned for raids.")
     @transform_context
     @whisper
-    async def raidstats(self, ctx: BlooContext) -> None:
+    async def raidstats(self, ctx: GIRContext) -> None:
         embed = discord.Embed(title="Raid Statistics",
                               color=discord.Color.blurple())
         raids = user_service.fetch_raids()
@@ -124,7 +124,7 @@ class Stats(commands.Cog):
     @app_commands.describe(mod="Moderator to view statistics of")
     @transform_context
     @whisper
-    async def casestats(self, ctx: BlooContext, mod: discord.Member = None) -> None:
+    async def casestats(self, ctx: GIRContext, mod: discord.Member = None) -> None:
         if mod is None:
             mod = ctx.author
 

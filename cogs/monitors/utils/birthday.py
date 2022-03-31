@@ -4,7 +4,7 @@ import pytz
 from data.services import guild_service, user_service
 from discord.ext import commands, tasks
 
-from utils import BlooContext, cfg
+from utils import GIRContext, cfg
 from utils.framework import MONTH_MAPPING, give_user_birthday_role, whisper, gatekeeper
 from utils.views import date_autocompleter
 

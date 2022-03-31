@@ -6,7 +6,7 @@ from discord.ext.commands import Command, Group
 
 from setuptools import Command
 from data.services.guild_service import guild_service
-from utils import cfg, BlooContext, transform_context
+from utils import cfg, GIRContext, transform_context
 from utils.framework import whisper, gatekeeper
 from utils.views import command_list_autocomplete
 
@@ -24,7 +24,7 @@ class Utilities(commands.Cog):
     @app_commands.describe(command_name="The name of the command to get info of")
     @app_commands.autocomplete(command_name=command_list_autocomplete)
     @transform_context
-    async def help(self, ctx: BlooContext, *, command_name: str = None) -> None:
+    async def help(self, ctx: GIRContext, *, command_name: str = None) -> None:
         """Gets all my cogs and commands."""
 
         if not command_name:
@@ -114,7 +114,7 @@ class Utilities(commands.Cog):
     @app_commands.autocomplete(command_name=command_list_autocomplete)
     @transform_context
     @whisper
-    async def usage(self, ctx: BlooContext, command_name: str):
+    async def usage(self, ctx: GIRContext, command_name: str):
         command_arg_split = command_name.split()
         if len(command_arg_split) > 1:
             # TODO fix this
@@ -134,7 +134,7 @@ class Utilities(commands.Cog):
         embed = await self.get_usage_embed(ctx, command)
         await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
-    async def get_usage_embed(self,  ctx: BlooContext, command: app_commands.Command) -> discord.Embed:
+    async def get_usage_embed(self,  ctx: GIRContext, command: app_commands.Command) -> discord.Embed:
         if command.binding.qualified_name in self.mod_only and not gatekeeper.has(ctx.guild, ctx.author, 5):
             raise commands.BadArgument("You don't have permission to view that command.")
         elif command.binding.qualified_name in self.genius_only and not gatekeeper.has(ctx.guild, ctx.author, 4):
