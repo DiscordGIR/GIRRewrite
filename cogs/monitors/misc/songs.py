@@ -85,7 +85,7 @@ class Songs(commands.Cog):
             platform_links = res.get('linksByPlatform').get(platform)
             if platform_links is not None:
                 view.add_item(discord.ui.Button(style=discord.ButtonStyle.link,
-                              label=body["name"], emoji=body["emote"], url=platform_links.get('url')))
+                            emoji=body["emote"], url=platform_links.get('url')))
 
         await message.reply(content=title, view=view, mention_author=False)
 
