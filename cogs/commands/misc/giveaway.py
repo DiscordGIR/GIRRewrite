@@ -107,6 +107,7 @@ class Giveaway(commands.Cog):
     @admin_and_up()
     @giveaway.command(description="End a giveaway early.")
     @app_commands.describe(message_id="The ID of the giveaway message.")
+    @transform_context
     async def end(self, ctx: GIRContext, message_id: str):
         giveaway = guild_service.get_giveaway(_id=int(message_id))
         if giveaway is None:
