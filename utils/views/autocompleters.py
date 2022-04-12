@@ -131,7 +131,7 @@ async def jailbreakable_device_autocomplete(_: discord.Interaction, current: str
     devices = [d for d in transformed_devices if (any(current.lower() in x.lower(
     ) for x in d.get('devices')) or current.lower() in d.get('name').lower())]
 
-    devices = [d for d in devices if d.get("type") in ['iPhone','iPod','iPad','Apple TV','Apple Watch','HomePod']]
+    devices = [d for d in devices if any(x in d.get("type") for x in ['iPhone','iPod','iPad','Apple TV','Apple Watch','HomePod'])]
 
     devices.sort(key=lambda x: x.get('type') or "zzz")
     devices_groups = groupby(devices, lambda x: x.get('type'))
