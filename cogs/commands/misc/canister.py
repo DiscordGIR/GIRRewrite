@@ -139,7 +139,7 @@ class Canister(commands.Cog):
                                   url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={this_repo}', style=discord.ButtonStyle.url, row=1),
                 discord.ui.Button(label='Add Repo to Zebra', emoji="<:Zeeb:959129860603801630>",
                                   url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={this_repo}', style=discord.ButtonStyle.url, row=1),
-                discord.ui.Button(label='Other Package Managers', emoji="<:cydiasileosplit:932650041099825232>",
+                discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
                                   url=f'https://sharerepo.stkc.win/?repo={this_repo}', style=discord.ButtonStyle.url, row=1)
             ]]
 
