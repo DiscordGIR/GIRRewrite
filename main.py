@@ -85,9 +85,9 @@ class MyTree(app_commands.CommandTree):
         for option in options:
             if option.get("type") == 1:
                 for sub_option in option.get("options"):
-                    message_content += sub_option.get("value") + " "
+                    message_content += str(sub_option.get("value")) + " "
             else:
-                message_content += option.get("value") + " "
+                message_content += str(option.get("value")) + " "
 
         triggered_words = find_triggered_filters(
             message_content, interaction.user)
