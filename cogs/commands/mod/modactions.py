@@ -221,7 +221,7 @@ class ModActions(commands.Cog):
             if self.bot.ban_cache.is_banned(user.id):
                 raise commands.BadArgument("That user is already banned!")
 
-        confirm_embed = discord.Embed(description=f"{ctx.author.mention} wants to staff ban {user.mention} with reason `{reason}`. Another mod needs to click Yes to submit this ban.", color=discord.Color.blurple)
+        confirm_embed = discord.Embed(description=f"{ctx.author.mention} wants to staff ban {user.mention} with reason `{reason}`. Another mod needs to click Yes to submit this ban.", color=discord.Color.blurple())
         view = SecondStaffConfirm(ctx, ctx.author)
         await ctx.respond_or_edit(view=view, embed=confirm_embed)
         await view.wait()
