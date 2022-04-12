@@ -50,7 +50,7 @@ class SecondStaffConfirm(ui.View):
         return await super().on_timeout()
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return interaction.user != self.ctx.author and gatekeeper.has(self.ctx.guild, interaction.user, 6)
+        return interaction.user.id != self.og_mod.id and gatekeeper.has(self.ctx.guild, interaction.user, 5)
 
     # When the confirm button is pressed, set the inner value to `True` and
     # stop the View from listening to more input.

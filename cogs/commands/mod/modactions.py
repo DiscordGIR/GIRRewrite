@@ -10,7 +10,6 @@ from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
 from utils import GIRContext, cfg, transform_context
 from utils.framework import mod_and_up, ModsAndAboveMemberOrUser, Duration, ModsAndAboveMember, UserOnly
-from utils.framework.checks import admin_and_up
 from utils.mod import (add_ban_case, add_kick_case, notify_user,
                        prepare_editreason_log, prepare_liftwarn_log,
                        prepare_mute_log, prepare_removepoints_log,
@@ -203,7 +202,7 @@ class ModActions(commands.Cog):
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, db_guild, user, log)
 
-    @admin_and_up()
+    @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Ban a user anonymously")
     @app_commands.describe(user="User to ban")
@@ -221,7 +220,7 @@ class ModActions(commands.Cog):
             if self.bot.ban_cache.is_banned(user.id):
                 raise commands.BadArgument("That user is already banned!")
 
-        confirm_embed = discord.Embed(description=f"{ctx.author.mention} wants to staff ban {user.mention} with reason `{reason}`. Another mod needs to click Yes to submit this ban.", color=discord.Color.blurple())
+        confirm_embed = discord.Embed(description=f"{ctx.author.mention} wants to staff ban {user.mention} with reason `{reason}`. Another Moderator needs to click Yes to submit this ban.\n\nClicking Yes means this was discussed amongst the staff team and will hide the banning Moderator. This should not be used often.", color=discord.Color.blurple())
         view = SecondStaffConfirm(ctx, ctx.author)
         await ctx.respond_or_edit(view=view, embed=confirm_embed)
         await view.wait()
@@ -234,7 +233,6 @@ class ModActions(commands.Cog):
         log = await add_ban_case(user, ctx.author, reason, db_guild)
 
         log.set_field_at(1, name="Mod", value=f"{ctx.guild.name} Staff")
-        log.set_thumbnail(url=ctx.guild.icon.url)
 
         if not member_is_external:
             if cfg.ban_appeal_url is None:
