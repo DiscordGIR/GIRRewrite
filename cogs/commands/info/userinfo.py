@@ -318,4 +318,11 @@ async def handle_userinfo(ctx: GIRContext, user: Union[discord.Member, discord.U
         name="Join date", value=joined, inline=True)
     embed.add_field(name="Account creation date",
                     value=f"{format_dt(user.created_at, style='F')} ({format_dt(user.created_at, style='R')})", inline=True)
+
+    if user.banner is None and isinstance(user, discord.Member):
+        user = await ctx.bot.fetch_user(user.id)
+
+    if user.banner is not None:
+        embed.set_image(url=user.banner.url)
+
     await ctx.respond(embed=embed, ephemeral=ctx.whisper)
