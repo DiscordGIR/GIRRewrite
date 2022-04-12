@@ -8,44 +8,48 @@ from utils import get_ios_cfw, transform_groups
 from utils.framework import PermissionsFailure
 
 
+async def get_device(value):
+    response = await get_ios_cfw()
+    device_groups = response.get("group")
+
+    transformed_groups = transform_groups(device_groups)
+    devices = [group for group in transformed_groups if group.get(
+        'name').lower() == value.lower() or value.lower() in [x.lower() for x in group.get('devices')]]
+
+    if not devices:
+        raise app_commands.TransformerError(
+            "No device found with that name.")
+
+    return devices[0]
+
 class DeviceTransformer(app_commands.Transformer):
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> Union[Dict, str]:
-        response = await get_ios_cfw()
-        device_groups = response.get("group")
-
-        transformed_groups = transform_groups(device_groups)
-        devices = [group for group in transformed_groups if group.get(
-            'name').lower() == value.lower() or value.lower() in [x.lower() for x in group.get('devices')]]
-
-        if not devices:
-            raise app_commands.TransformerError(
-                "No device found with that name.")
-
-        return devices[0]
+    async def transform(cls, interaction: discord.Interaction, value: str):
+        return await get_device(value)
 
 
 class VersionOnDevice(app_commands.Transformer):
     @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> Union[Dict, str]:
+    async def transform(cls, interaction: discord.Interaction, value: str):
         device = interaction.namespace["device"]
         if device is None:
             raise app_commands.TransformerError(
                 "No device found with that name.")
 
         response = await get_ios_cfw()
-        board = device.get("devices")[0]
+        if isinstance(device, str):
+            board = await get_device(device)
+        board = board.get("devices")[0]
+
         ios = response.get("ios")
 
         ios = [i for _, i in ios.items()]
-
         version = value
         for os_version in ["iOS", "tvOS", "watchOS"]:
             version = version.replace(os_version + " ", "")
-
+        print(board, version)
         firmware = [v for v in ios if board in v.get(
             'devices') and version == v.get('version') or version.lower() == v.get("uniqueBuild").lower()]
-
         if not firmware:
             raise app_commands.TransformerError(
                 "No firmware found with that version.")
