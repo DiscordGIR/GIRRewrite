@@ -47,7 +47,6 @@ class VersionOnDevice(app_commands.Transformer):
         version = value
         for os_version in ["iOS", "tvOS", "watchOS"]:
             version = version.replace(os_version + " ", "")
-        print(board, version)
         firmware = [v for v in ios if board in v.get(
             'devices') and version == v.get('version') or version.lower() == v.get("uniqueBuild").lower()]
         if not firmware:

@@ -121,6 +121,33 @@ async def device_autocomplete(_: discord.Interaction, current: str) -> List[app_
     return [app_commands.Choice(name=device.get('name'), value=device.get("devices")[0] if device.get("devices") else device.get("name")) for device in devices][:25]
 
 
+async def jailbreakable_device_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    res = await get_ios_cfw()
+    if res is None:
+        return []
+
+    all_devices = res.get("group")
+    transformed_devices = transform_groups(all_devices)
+    devices = [d for d in transformed_devices if (any(current.lower() in x.lower(
+    ) for x in d.get('devices')) or current.lower() in d.get('name').lower())]
+
+    devices = [d for d in devices if d.get("type") in ['iPhone','iPod','iPad','Apple TV','Apple Watch','HomePod']]
+
+    devices.sort(key=lambda x: x.get('type') or "zzz")
+    devices_groups = groupby(devices, lambda x: x.get('type'))
+
+    devices = []
+    for _, group in devices_groups:
+        group = list(group)
+        group.sort(key=lambda x: x.get('order'), reverse=True)
+        devices.extend(group)
+
+        if len(devices) >= 25:
+            break
+
+    return [app_commands.Choice(name=device.get('name'), value=device.get("devices")[0] if device.get("devices") else device.get("name")) for device in devices][:25]
+
+
 async def jb_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     apps = await get_ios_cfw()
     if apps is None:

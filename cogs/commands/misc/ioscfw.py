@@ -12,6 +12,7 @@ from utils.views import (BypassMenu, CIJMenu, bypass_autocomplete,
                          device_autocomplete, ios_beta_version_autocomplete,
                          ios_on_device_autocomplete, ios_version_autocomplete,
                          jb_autocomplete)
+from utils.views.autocompleters import jailbreakable_device_autocomplete
 
 
 def format_bypass_page(ctx, entries, current_page, all_pages):
@@ -321,9 +322,9 @@ class iOSCFW(commands.Cog):
             if latest_firmware:
                 embed.add_field(name="Latest firmware",
                                 value=f"{latest_firmware.get('version')} (`{latest_firmware.get('uniqueBuild')}`)", inline=True)
-
         embed.add_field(
             name="SoC", value=f"{models[0].get('soc')} chip ({models[0].get('arch')})", inline=True)
+        embed.set_thumbnail(url=f"https://appledb.dev/assets/images/device@512/{model_number.get('identifier')}/0.png")
 
         embed.set_footer(text="Powered by https://appledb.dev")
 
@@ -336,7 +337,7 @@ class iOSCFW(commands.Cog):
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Find out if you can jailbreak your device")
     @app_commands.describe(device="Name or board identifier of the device")
-    @app_commands.autocomplete(device=device_autocomplete)
+    @app_commands.autocomplete(device=jailbreakable_device_autocomplete)
     @app_commands.describe(version="Version of iOS you want to jailbreak")
     @app_commands.autocomplete(version=ios_on_device_autocomplete)
     @transform_context
