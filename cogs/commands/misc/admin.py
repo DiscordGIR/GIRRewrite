@@ -1,8 +1,9 @@
+import traceback
 import discord
 from discord import app_commands
 from discord.ext import commands
 from data.services import guild_service
-from utils import GIRContext, cfg, transform_context
+from utils import GIRContext, cfg, transform_context, logger
 from utils.framework import admin_and_up, guild_owner_and_up
 from utils.framework.transformers import ImageAttachment
 
@@ -32,6 +33,20 @@ class Admin(commands.Cog):
 
         await ctx.send_success(f"Set sabbath mode to {'on' if g.sabbath_mode else 'off'}!")
 
+    @commands.command()
+    @commands.is_owner()
+    async def sync(self, ctx: commands.Context):
+        if ctx.author.id != cfg.owner_id:
+            return
+
+        try:
+            async with ctx.typing():
+                await self.bot.tree.sync(guild=discord.Object(id=cfg.guild_id))
+        except Exception as e:
+            await ctx.send(f"An error occured\n```{e}```")
+            logger.error(traceback.format_exc())
+        else:
+            await ctx.send("Done!")
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
