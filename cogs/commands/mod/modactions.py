@@ -10,12 +10,14 @@ from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
 from utils import GIRContext, cfg, transform_context
 from utils.framework import mod_and_up, ModsAndAboveMemberOrUser, Duration, ModsAndAboveMember, UserOnly
+from utils.framework.checks import admin_and_up
 from utils.mod import (add_ban_case, add_kick_case, notify_user,
                        prepare_editreason_log, prepare_liftwarn_log,
                        prepare_mute_log, prepare_removepoints_log,
                        prepare_unban_log, prepare_unmute_log,
                        submit_public_log, warn)
 from utils.views import warn_autocomplete
+from utils.views.confirm import SecondStaffConfirm
 
 
 class ModActions(commands.Cog):
@@ -198,6 +200,53 @@ class ModActions(commands.Cog):
             # hackban for user not currently in guild
             await ctx.guild.ban(discord.Object(id=user.id))
 
+        await ctx.respond_or_edit(embed=log, delete_after=10)
+        await submit_public_log(ctx, db_guild, user, log)
+
+    @admin_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Ban a user anonymously")
+    @app_commands.describe(user="User to ban")
+    @app_commands.describe(reason="Reason for banning")
+    @transform_context
+    async def staffban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
+        reason = escape_markdown(reason)
+        reason = escape_mentions(reason)
+        db_guild = guild_service.get_guild()
+
+        member_is_external = isinstance(user, discord.User)
+
+        # if the ID given is of a user who isn't in the guild, try to fetch the profile
+        if member_is_external:
+            if self.bot.ban_cache.is_banned(user.id):
+                raise commands.BadArgument("That user is already banned!")
+
+        confirm_embed = discord.Embed(description=f"{ctx.author.mention} wants to staff ban {user.mention} with reason `{reason}`. Another mod needs to click Yes to submit this ban.", color=discord.Color.blurple)
+        view = SecondStaffConfirm(ctx, ctx.author)
+        await ctx.respond_or_edit(view=view, embed=confirm_embed)
+        await view.wait()
+
+        if not view.value:
+            await ctx.send_warning(f"Cancelled staff banning {user.mention}.")
+            return
+
+        self.bot.ban_cache.ban(user.id)
+        log = await add_ban_case(user, ctx.author, reason, db_guild)
+
+        log.set_field_at(1, name="Mod", value=f"{ctx.guild.name} Staff")
+        log.set_thumbnail(url=ctx.guild.icon.url)
+
+        if not member_is_external:
+            if cfg.ban_appeal_url is None:
+                await notify_user(user, f"You have been banned from {ctx.guild.name}", log)
+            else:
+                await notify_user(user, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
+            await user.ban(reason=reason)
+        else:
+            # hackban for user not currently in guild
+            await ctx.guild.ban(discord.Object(id=user.id))
+
+        await ctx.interaction.message.delete()
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, db_guild, user, log)
 
