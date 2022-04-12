@@ -16,7 +16,7 @@ class BanCache:
 
     async def fetch_ban_cache(self):
         guild = self.bot.get_guild(cfg.guild_id)
-        the_list = await guild.bans()
+        the_list = [ban async for ban in guild.bans(limit=None)]
         self.cache = {entry.user.id for entry in the_list}
 
     def is_banned(self, user_id):

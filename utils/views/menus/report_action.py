@@ -64,7 +64,7 @@ class ReportActionReason(ui.View):
         if self.mod_action == ModAction.WARN:
             points = await self.prompt_for_points(reason, interaction)
             if points is not None:
-                await warn(interaction, self.target_member, interaction.user, self.mod, points, reason)
+                await warn(interaction, self.target_member, self.mod, points, reason)
         else:
             await ban(interaction, self.target_member, self.mod, reason)
 

@@ -253,8 +253,7 @@ class ModActions(commands.Cog):
         elif amount >= 100:
             amount = 100
 
-        msgs = await ctx.channel.history(limit=amount).flatten()
-
+        msgs = [message async for message in ctx.channel.history(limit=amount)]
         await ctx.channel.purge(limit=amount)
         await ctx.send_success(f'Purged {len(msgs)} messages.', delete_after=10)
 

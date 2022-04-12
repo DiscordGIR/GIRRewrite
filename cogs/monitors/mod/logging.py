@@ -441,9 +441,9 @@ class Logging(commands.Cog):
         for option in options:
             if option.get("type") == 1:
                 for sub_option in option.get("options"):
-                    message_content += sub_option.get("value") + " "
+                    message_content += str(sub_option.get("value")) + " "
             else:
-                message_content += option.get("value") + " "
+                message_content += str(option.get("value")) + " "
 
         db_guild = guild_service.get_guild()
         private = interaction.guild.get_channel(db_guild.channel_private)
