@@ -17,6 +17,7 @@ class User(mongoengine.Document):
 
     offline_report_ping = mongoengine.BooleanField(default=False, required=True)
     
+    timezone            = mongoengine.StringField(default=None)
     birthday            = mongoengine.ListField(default=[])
     sticky_roles        = mongoengine.ListField(default=[])
     command_bans        = mongoengine.DictField(default={})

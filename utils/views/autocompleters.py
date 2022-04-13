@@ -3,6 +3,7 @@ from itertools import groupby
 from typing import List
 
 import discord
+import pytz
 from data.model import Case
 from data.services import guild_service, user_service
 from discord import app_commands
@@ -227,3 +228,7 @@ async def warn_autocomplete(interaction: discord.Interaction, current: str) -> L
     cases.sort(key=lambda x: x._id, reverse=True)
 
     return [app_commands.Choice(name=f"{case._id} - {case.punishment} points - {case.reason}", value=str(case._id)) for case in cases if (not current or str(case._id).startswith(str(current)))][:25]
+
+
+async def timezone_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    return [app_commands.Choice(name=tz, value=tz) for tz in pytz.common_timezones_set if current.lower() in tz.lower()][:25]
