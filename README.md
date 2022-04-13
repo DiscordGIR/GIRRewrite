@@ -51,6 +51,8 @@ This setup uses Docker for deployment. You will need the following:
 
 If everything is successful, the bot should be online in a few seconds. Otherwise, check the container's logs: `docker-compose logs gir`.
 
+> **IMPORTANT**: slash commands are not synced automatically. Instead, the bot owner can DM the bot `!sync` to sync slash commands with Discord. This only needs to be done once when the bot is set up, or when you change any of the command data (such adding a new command, changing a command's name or description, etc.) 
+
 The bot can be updated in the future by running: `git pull && docker-compose up -d --build --force-recreate`
 
 ---
