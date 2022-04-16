@@ -440,10 +440,11 @@ class Logging(commands.Cog):
         message_content = ""
         for option in options:
             if option.get("type") == 1:
+                message_content += f"{option.get('name')} "
                 for sub_option in option.get("options"):
-                    message_content += str(sub_option.get("value")) + " "
+                    message_content += f"{sub_option.get('name')}: {sub_option.get('value')} "
             else:
-                message_content += str(option.get("value")) + " "
+                message_content += f"{option.get('name')}: {option.get('value')} "
 
         db_guild = guild_service.get_guild()
         private = interaction.guild.get_channel(db_guild.channel_private)
@@ -453,6 +454,8 @@ class Logging(commands.Cog):
         embed.set_thumbnail(url=interaction.user.display_avatar)
         embed.add_field(
             name="Member", value=f'{interaction.user} ({interaction.user.mention})', inline=True)
+        if interaction.channel is not None:
+            embed.add_field(name="Channel", value=interaction.channel.mention, inline=True)
         embed.add_field(
             name="Command", value=f'`/{data.get("name")}{" " + message_content.strip() if message_content else ""}`', inline=False)
         embed.timestamp = datetime.now()
