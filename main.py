@@ -19,11 +19,7 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-intents = discord.Intents.default()
-intents.members = True
-intents.messages = True
-intents.message_content = True
-intents.presences = True
+intents = discord.Intents.all()
 mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
 
 
