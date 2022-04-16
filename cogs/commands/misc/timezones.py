@@ -25,7 +25,10 @@ def format_tz_page(ctx, entries, current_page, all_pages):
         body = ""
         for entry in entries:
             country_code = Timezones.timezone_country.get(entry)
-            body += f"{country_code_to_emoji(country_code)} {entry}\n"
+            if country_code is not None:
+                body += f"{country_code_to_emoji(country_code)} {entry}\n"
+            else:
+                body += f"{entry}\n"
 
     embed = discord.Embed(
         title=title, color=discord.Color.blurple())
