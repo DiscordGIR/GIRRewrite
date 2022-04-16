@@ -231,4 +231,4 @@ async def warn_autocomplete(interaction: discord.Interaction, current: str) -> L
 
 
 async def timezone_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-    return [app_commands.Choice(name=tz, value=tz) for tz in pytz.common_timezones_set if current.lower() in tz.lower()][:25]
+    return [app_commands.Choice(name=tz, value=tz) for tz in pytz.common_timezones_set if current.lower() in tz.lower() or current.lower() in tz.replace("_", " ").lower()][:25]

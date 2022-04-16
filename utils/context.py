@@ -198,7 +198,7 @@ class GIRContext:
         if not kwargs.get("ephemeral") and delete_after is not None:
             await response.delete(delay=delete_after)
 
-    async def send_success(self, description: str, title: Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None, ephemeral: Optional[bool] = False):
+    async def send_success(self, description: str, title: Optional[str] = None, footer = None, delete_after: Optional[float] = None, followup: Optional[bool] = None, ephemeral: Optional[bool] = False):
         """Send an embed response with green color to an interaction.
 
         Parameters
@@ -214,7 +214,10 @@ class GIRContext:
         """
 
         embed = discord.Embed(
-            title=title, description=description,  color=discord.Color.dark_green())
+            title=title, description=description, color=discord.Color.dark_green())
+        if footer is not None:
+            embed.set_footer(text=footer)
+
         return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper or ephemeral, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
     async def send_warning(self, description: str, title: Optional[str] = None, delete_after: Optional[float] = None, followup: Optional[bool] = None, ephemeral: Optional[bool] = False):
