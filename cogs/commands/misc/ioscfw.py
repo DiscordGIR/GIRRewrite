@@ -151,8 +151,9 @@ class iOSCFW(commands.Cog):
 
             if info.get('guide'):
                 for guide in info.get('guide'):
-                    view.add_item(discord.ui.Button(
-                        label=f'{guide.get("name")} Guide', url=f"https://ios.cfw.guide{guide.get('url')}", style=discord.ButtonStyle.url))
+                    if guide.get('validGuide'):
+                        view.add_item(discord.ui.Button(
+                            label=f'{guide.get("name")} Guide', url=f"https://ios.cfw.guide{guide.get('url')}", style=discord.ButtonStyle.url))
             if info.get('notes') is not None:
                 embed.add_field(
                     name="Notes", value=info.get('notes'), inline=False)
@@ -315,7 +316,7 @@ class iOSCFW(commands.Cog):
         ios = [i for _, i in ios.items()]
         supported_firmwares = [firmware for firmware in ios if model_number.get(
             "identifier") in firmware.get("devices")]
-        supported_firmwares.sort(key=lambda x: x.get("released"))
+        supported_firmwares.sort(key=lambda x: x.get("released") or "")
 
         if supported_firmwares:
             latest_firmware = supported_firmwares[-1]
