@@ -38,7 +38,6 @@ async def format_jailbreak_page(ctx, entries, current_page, all_pages):
     jb = entries[0]
     info = jb.get('info')
     info['name'] = jb.get('name')
-    ctx.jb_info = info
 
     color = info.get("color")
     if color is not None:

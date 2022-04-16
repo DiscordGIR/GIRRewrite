@@ -10,14 +10,15 @@ class CIJMenu(Menu):
 
     def refresh_button_state(self):
         extra_buttons = []
-        if self.ctx.jb_info.get("website") is not None:
-            extra_buttons.append(discord.ui.Button(label='Website', url=self.ctx.jb_info.get(
+        jb_info = self.pages[self.current_page - 1][0].get("info")
+        if jb_info.get("website") is not None:
+            extra_buttons.append(discord.ui.Button(label='Website', url=jb_info.get(
                 "website").get("url"), style=discord.ButtonStyle.url, row=1))
 
-        if self.ctx.jb_info.get('guide'):
+        if jb_info.get('guide'):
             added = False
-            for guide in self.ctx.jb_info.get('guide')[1:]:
-                if guide.get("devices") is None or guide.get("firmwares") is None or not guide.get("validGuide"):
+            for guide in jb_info.get('guide')[1:]:
+                if guide.get("devices") is None or guide.get("firmwares") is None:
                     continue
 
                 if self.ctx.build in guide.get("firmwares") and self.ctx.device_id in guide.get("devices"):
@@ -27,14 +28,17 @@ class CIJMenu(Menu):
                     break
 
             if not added:
-                guide = self.ctx.jb_info.get('guide')[0]
+                guide = jb_info.get('guide')[0]
                 extra_buttons.append(discord.ui.Button(
                     label=f'{guide.get("name")} Guide', url=f"https://ios.cfw.guide{guide.get('url')}", style=discord.ButtonStyle.url, row=1))
 
-        for button in self.extra_buttons:
-            self.remove_item(button)
-
+        self.clear_items()
         for button in extra_buttons:
+            self.add_item(button)
+
+        built_in_buttons = [self.previous,
+                    self.pause, self.next]
+        for button in built_in_buttons:
             self.add_item(button)
 
         self.extra_buttons = extra_buttons
