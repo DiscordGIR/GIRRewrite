@@ -58,6 +58,10 @@ class MyTree(app_commands.CommandTree):
             return True
 
         command = interaction.command
+
+        if isinstance(interaction.command, discord.app_commands.ContextMenu):
+            return True
+
         if command is None or interaction.type != discord.InteractionType.application_command:
             return True
 
