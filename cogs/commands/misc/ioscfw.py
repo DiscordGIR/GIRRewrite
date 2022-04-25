@@ -117,7 +117,7 @@ class iOSCFW(commands.Cog):
         view = discord.ui.View()
 
         if info is not None:
-            embed.set_thumbnail(url=f"https://ios.cfw.guide{info.get('icon')}")
+            embed.set_thumbnail(url=f"https://appledb.dev{info.get('icon')}")
 
             embed.add_field(
                 name="Version", value=info.get("latestVer"), inline=True)
@@ -324,7 +324,7 @@ class iOSCFW(commands.Cog):
                                 value=f"{latest_firmware.get('version')} (`{latest_firmware.get('uniqueBuild')}`)", inline=True)
         embed.add_field(
             name="SoC", value=f"{models[0].get('soc')} chip ({models[0].get('arch')})", inline=True)
-        embed.set_thumbnail(url=f"https://appledb.dev/assets/images/device@512/{model_number.get('identifier').replace(' ', '%20')}/0.png")
+        embed.set_thumbnail(url=f"https://img.appledb.dev/device@512/{model_number.get('identifier').replace(' ', '%20')}/0.png")
 
         embed.set_footer(text="Powered by https://appledb.dev")
 
