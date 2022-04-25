@@ -465,6 +465,36 @@ class Logging(commands.Cog):
             await private.send(embed=embed)
 
     @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        if member.guild.id != cfg.guild_id:
+            return
+
+        embed = discord.Embed()
+        embed.color = discord.Color.dark_blue()
+        embed.set_thumbnail(url=member.display_avatar)
+        embed.add_field(
+            name="Member", value=f'{member} ({member.mention})', inline=False)
+
+        if before.channel is None and member in after.channel.members:
+            embed.title = "Member VC Joined"
+            embed.add_field(name="Joined", value=after.channel.mention, inline=True)
+        elif before.channel is not None and after.channel is None:
+            embed.title = "Member VC Left"
+            embed.add_field(name="Left", value=before.channel.mention, inline=True)
+        else:
+            embed.title = "Member VC Moved"
+            embed.add_field(name="Left", value=before.channel.mention, inline=True)
+            embed.add_field(name="Joined", value=after.channel.mention, inline=True)
+
+        embed.timestamp = datetime.now()
+        embed.set_footer(text=member.id)
+
+        db_guild = guild_service.get_guild()
+        private = member.guild.get_channel(db_guild.channel_private)
+        if private:
+            await private.send(embed=embed)
+
+    @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         if isinstance(error, commands.CommandNotFound):
             return
