@@ -103,11 +103,15 @@ class MyTree(app_commands.CommandTree):
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions, tree_cls=MyTree)
 
 @bot.tree.error
-async def app_command_error(interaction: discord.Interaction, _: Union[Command, ContextMenu], error: AppCommandError):
+async def app_command_error(interaction: discord.Interaction, error: AppCommandError):
     ctx = GIRContext(interaction)
     ctx.whisper = True
     if isinstance(error, CommandInvokeError):
         error = error.original
+
+    if isinstance(error, discord.errors.NotFound):
+        await ctx.channel.send(embed=discord.Embed(color=discord.Color.red(), title=":(\nYour command ran into a problem.", description=f"Sorry {interaction.user.mention}, it looks like I took too long to respond to you! If I didn't do what you wanted in time, please try again."), delete_after=7)
+        return
 
     if (isinstance(error, commands.MissingRequiredArgument)
             or isinstance(error, PermissionsFailure)
