@@ -361,7 +361,7 @@ class ModActions(commands.Cog):
     @app_commands.autocomplete(case_id=warn_autocomplete)
     @app_commands.describe(new_reason="New reason for the case")
     @transform_context
-    async def editreason(self, ctx: GIRContext, member: ModsAndAboveMember, case_id: str, new_reason: str) -> None:
+    async def editreason(self, ctx: GIRContext, member: ModsAndAboveMemberOrUser, case_id: str, new_reason: str) -> None:
         # retrieve user's case with given ID
         cases = user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
