@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import re
 
@@ -311,6 +312,22 @@ class Genius(commands.Cog):
 
         await channel.send(content=body, file=f)
         await ctx.send_success("Posted subreddit news post!", delete_after=5, followup=True)
+
+    @genius_or_submod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Close a forum thread")
+    @transform_context
+    async def solved(self, ctx: GIRContext):
+        if not isinstance(ctx.channel, discord.Thread) or not isinstance(ctx.channel.parent, discord.ForumChannel):
+            raise commands.BadArgument("This command can only be called in a forum thread!")
+
+        if ctx.channel.owner.top_role >= ctx.guild.me.top_role:
+            raise commands.BadArgument("Your top role must be higher than the thread owner!")
+
+        await ctx.send_success("This thread has been marked as solved. Archiving this channel!")
+        await asyncio.sleep(5)
+
+        await ctx.channel.edit(archived=True)
 
 
 async def setup(bot):
