@@ -8,7 +8,7 @@ from data.services import guild_service
 from discord.ext import commands
 from utils import GIRContext, cfg
 from utils.context import transform_context
-from utils.framework import genius_or_submod_and_up, whisper_in_general, submod_or_admin_and_up, ImageAttachment
+from utils.framework import genius_or_submod_and_up, whisper_in_general, submod_or_admin_and_up, ImageAttachment, gatekeeper
 from utils.views import CommonIssueModal, EditCommonIssue, issue_autocomplete, GenericDescriptionModal
 
 
@@ -321,7 +321,7 @@ class Genius(commands.Cog):
         if not isinstance(ctx.channel, discord.Thread) or not isinstance(ctx.channel.parent, discord.ForumChannel):
             raise commands.BadArgument("This command can only be called in a forum thread!")
 
-        if ctx.channel.owner.top_role >= ctx.guild.me.top_role:
+        if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.owner.top_role >= ctx.guild.me.top_role:
             raise commands.BadArgument("Your top role must be higher than the thread owner!")
 
         await ctx.send_success("This thread has been marked as solved. Archiving this channel!")
