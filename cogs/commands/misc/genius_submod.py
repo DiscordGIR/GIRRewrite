@@ -315,14 +315,17 @@ class Genius(commands.Cog):
 
     @genius_or_submod_and_up()
     @app_commands.guilds(cfg.guild_id)
-    @app_commands.command(description="Close a forum thread")
+    @app_commands.command(description="Close a forum thread, usable by OP and Geniuses")
     @transform_context
     async def solved(self, ctx: GIRContext):
         if not isinstance(ctx.channel, discord.Thread) or not isinstance(ctx.channel.parent, discord.ForumChannel):
             raise commands.BadArgument("This command can only be called in a forum thread!")
 
-        if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.owner.top_role >= ctx.guild.me.top_role:
-            raise commands.BadArgument("Your top role must be higher than the thread owner!")
+        if ctx.author != ctx.channel.owner: # let OP delete their own thread
+            if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.owner.top_role >= ctx.guild.me.top_role: 
+                # otherwise, only allow if the thread owner is a Genius or higher
+                # as long as their role is higher than OP
+                raise commands.BadArgument("Your top role must be higher than the thread owner!")
 
         await ctx.send_success("This thread has been marked as solved. Archiving this channel!")
         await asyncio.sleep(5)
