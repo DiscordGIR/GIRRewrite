@@ -22,7 +22,7 @@ def format_meme_page(_, entries, current_page, all_pages):
     embed = discord.Embed(
         title=f'All memes', color=discord.Color.blurple())
     for meme in entries:
-        desc = f"Added by: {meme.added_by_tag}\nUsed {format_number(meme.use_coun)} {'time' if meme.use_count == 1 else 'times'}"
+        desc = f"Added by: {meme.added_by_tag}\nUsed {format_number(meme.use_count)} {'time' if meme.use_count == 1 else 'times'}"
         if meme.image.read() is not None:
             desc += "\nHas image attachment"
         embed.add_field(name=meme.name, value=desc)

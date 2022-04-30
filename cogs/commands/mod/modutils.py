@@ -11,6 +11,7 @@ from discord.utils import format_dt
 from utils import GIRContext, cfg, transform_context
 from utils.framework import (ModsAndAboveMember, admin_and_up, always_whisper,
                              guild_owner_and_up, mod_and_up)
+from utils.framework.transformers import ImageAttachment
 from utils.views import (MONTH_MAPPING, command_list_autocomplete,
                          date_autocompleter)
 
@@ -261,17 +262,26 @@ class ModUtils(commands.Cog):
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Sayyyy")
     @app_commands.describe(message="The message to say")
+    @app_commands.describe(image="Image to attach")
     @app_commands.describe(channel="The channel to say it in")
     @transform_context
     @always_whisper
-    async def say(self, ctx: GIRContext, message: str, channel: discord.TextChannel = None):
+    async def say(self, ctx: GIRContext, message: str, image: ImageAttachment = None, channel: discord.TextChannel = None):
         if channel is None:
             channel = ctx.channel
 
-        await channel.send(message)
+        if image is not None:
+            if image.size > 8_000_000:
+                raise commands.BadArgument("Image is too big!")
+
+            await channel.send(message, file=await image.to_file())
+        else:
+            await channel.send(message)
         await ctx.send_success("Done!")
+
         logging_channel = ctx.guild.get_channel(
             guild_service.get_guild().channel_private)
+
         embed = discord.Embed(color=discord.Color.gold(), title="Someone abused me :(",
                               description=f"In {ctx.channel.mention} {ctx.author.mention} said:\n\n{message}")
         await logging_channel.send(embed=embed)

@@ -15,6 +15,7 @@ from utils import (GIRContext, cfg, get_dstatus_components,
                    get_dstatus_incidents, transform_context)
 from utils.framework import (MONTH_MAPPING, Duration, gatekeeper,
                              give_user_birthday_role, mod_and_up, whisper)
+from utils.framework.transformers import ImageAttachment
 from utils.views import (PFPButton, PFPView, date_autocompleter,
                          rule_autocomplete)
 
@@ -220,9 +221,10 @@ class Misc(commands.Cog):
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Start a poll")
     @app_commands.describe(question="Question to ask")
+    @app_commands.describe(image="Image to attach to poll")
     @app_commands.describe(channel="Channel to post the poll in")
     @transform_context
-    async def poll(self, ctx: GIRContext, question: str, channel: discord.TextChannel = None):
+    async def poll(self, ctx: GIRContext, question: str, image: ImageAttachment = None, channel: discord.TextChannel = None):
         if channel is None:
             channel = ctx.channel
 
@@ -230,7 +232,15 @@ class Misc(commands.Cog):
                               color=discord.Color.random())
         embed.timestamp = datetime.datetime.now()
         embed.set_footer(text=f"Poll started by {ctx.author}")
-        message = await channel.send(embed=embed)
+
+        if image is not None:
+            if image.size > 8_000_000:
+                raise commands.BadArgument("Image is too large!")
+
+            embed.set_image(url=f"attachment://{image.filename}")
+            message = await channel.send(embed=embed, file=await image.to_file())
+        else:
+            message = await channel.send(embed=embed)
 
         emojis = ['⬆️', '⬇️']
 
