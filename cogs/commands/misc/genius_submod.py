@@ -332,6 +332,16 @@ class Genius(commands.Cog):
 
         await ctx.channel.edit(archived=True)
 
+    @commands.Cog.listener()
+    async def on_thread_create(self, thread: discord.Thread):
+        if thread.guild.id != cfg.guild_id:
+            return
+
+        if not isinstance(thread.parent, discord.ForumChannel):
+            return
+
+        await thread.send(f"{thread.owner.mention} thanks for creating a new thread!\n\n**Please use `/solved` to delete this thread when you're done.**")
+
 
 async def setup(bot):
     await bot.add_cog(Genius(bot))
