@@ -230,7 +230,7 @@ class Filter(commands.Cog):
     async def ratelimit(self, message: discord.Message):
         current = message.created_at.replace(tzinfo=timezone.utc).timestamp()
         bucket = self.spam_cooldown.get_bucket(message)
-        if bucket.update_rate_limit(current) and not message.author.timed_out:
+        if bucket.update_rate_limit(current) and not message.author.is_timed_out():
             try:
                 ctx = await self.bot.get_context(message)
                 await mute(ctx, message.author, mod=ctx.guild.me, dur_seconds=15*60, reason="Filter spam")
