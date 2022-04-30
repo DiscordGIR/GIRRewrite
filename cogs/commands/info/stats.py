@@ -153,7 +153,7 @@ class Stats(commands.Cog):
                     string += f"**{reason}**: {count}\n"
 
             embed.add_field(name="Cases found by keyword", value=f"**{keyword}** was found in **{total_count}** of {mod.mention}'s cases", inline=False)
-            embed.add_field(name="Case reasons", value=string, inline=False)
+            embed.add_field(name="Case reasons", value=string[:1000] or "No cases", inline=False)
         
         embed.set_footer(text=f"{cases.get('total')} total cases")
         await ctx.respond_or_edit(embed=embed)
@@ -177,8 +177,7 @@ class Stats(commands.Cog):
         for reason, count in cases.get("counts")[:10]:
             string += f"**{reason}**: {count}\n"
 
-        if string:
-            embed.add_field(name="Moderators", value=string[:1000], inline=False)
+        embed.add_field(name="Moderators", value=string[:1000] if string else "No cases", inline=False)
 
         embed.set_footer(text=f"{cases.get('total')} total cases")
         await ctx.respond_or_edit(embed=embed)
