@@ -152,7 +152,7 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
         _id=db_guild.case_id,
         _type="WARN",
         mod_id=mod.id,
-        mod_tag=str(mod.id),
+        mod_tag=str(mod),
         reason=reason,
         punishment=str(points)
     )
