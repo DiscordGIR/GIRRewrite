@@ -191,16 +191,36 @@ class UserService:
         values["total"] = 0
         cases = list(cases.all())
         final_cases = []
-        for case in cases:
-            for c in case.cases:
-                final_cases.append(c)
-                values["total"] += 1
- 
+        for target in cases:
+            for case in target.cases:
+                if str(case.mod_id) == str(_id):
+                    final_cases.append(case)
+                    values["total"] += 1
+
         def get_case_reason(reason):
             string = reason.lower()
             return ''.join(e for e in string if e.isalnum() or e == " ").strip()
+
         case_reasons = [get_case_reason(case.reason) for case in final_cases if get_case_reason(case.reason) != "temporary mute expired"]
         values["counts"] = sorted(Counter(case_reasons).items(), key=lambda item: item[1])
+        values["counts"].reverse()
+        return values
+
+    def fetch_cases_by_keyword(self, keyword):
+        values = {}
+        cases = Cases.objects(cases__reason__contains=keyword)
+        cases = list(cases.all())
+        values["total"] = 0
+        final_cases = []
+
+        for target in cases:
+            for case in target.cases:
+                if keyword.lower() in case.reason:
+                    values["total"] += 1
+                    final_cases.append(case)
+
+        case_mods = [case.mod_tag for case in final_cases]
+        values["counts"] = sorted(Counter(case_mods).items(), key=lambda item: item[1])
         values["counts"].reverse()
         return values
 

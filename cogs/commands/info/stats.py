@@ -118,13 +118,16 @@ class Stats(commands.Cog):
                         value=f"{total}", inline=False)
         await ctx.respond_or_edit(embed=embed, ephemeral=ctx.whisper)
 
+    casestats = app_commands.Group(
+        name="casestats", description="Interact with casestats", guild_ids=[cfg.guild_id])
+
     @mod_and_up()
-    @app_commands.guilds(cfg.guild_id)
-    @app_commands.command(description="Present statistics on cases by each mod.")
+    @casestats.command(description="Present statistics on cases by each mod.")
     @app_commands.describe(mod="Moderator to view statistics of")
+    @app_commands.describe(keyword="Keyword to search for")
     @transform_context
     @whisper
-    async def casestats(self, ctx: GIRContext, mod: discord.Member = None) -> None:
+    async def mod(self, ctx: GIRContext, mod: discord.Member = None, keyword: str = None) -> None:
         if mod is None:
             mod = ctx.author
 
@@ -132,16 +135,52 @@ class Stats(commands.Cog):
         embed.set_author(name=f"{mod}'s case statistics",
                          icon_url=mod.display_avatar)
 
-        raids = user_service.fetch_cases_by_mod(mod.id)
-        embed.add_field(name="Total cases", value=raids.get("total"))
+        cases = user_service.fetch_cases_by_mod(mod.id)
+        if keyword is None:
+            string = ""
+            for reason, count in cases.get("counts")[:5]:
+                string += f"**{reason}**: {count}\n"
 
+            if string:
+                embed.add_field(name="Top reasons", value=string, inline=False)
+        else:
+            keyword = keyword.lower()
+            total_count = 0
+            string = ""
+            for reason, count in cases.get("counts"):
+                if keyword in reason:
+                    total_count += count
+                    string += f"**{reason}**: {count}\n"
+
+            embed.add_field(name="Cases found by keyword", value=f"**{keyword}** was found in **{total_count}** of {mod.mention}'s cases", inline=False)
+            embed.add_field(name="Case reasons", value=string, inline=False)
+        
+        embed.set_footer(text=f"{cases.get('total')} total cases")
+        await ctx.respond_or_edit(embed=embed)
+
+    @mod_and_up()
+    @casestats.command(description="Present statistics of cases for all mods.")
+    @app_commands.describe(keyword="Keyword to search for")
+    @transform_context
+    @whisper
+    async def keyword(self, ctx: GIRContext, keyword: str) -> None:
+        embed = discord.Embed(color=discord.Color.blurple())
+        embed.set_author(name=f"Case keyword statistics",
+                         icon_url=ctx.guild.icon.url)
+
+        cases = user_service.fetch_cases_by_keyword(keyword)
+
+        keyword = keyword.lower()
+
+        embed.add_field(name="Keyword", value=keyword, inline=False)
         string = ""
-        for reason, count in raids.get("counts")[:5]:
+        for reason, count in cases.get("counts")[:10]:
             string += f"**{reason}**: {count}\n"
 
         if string:
-            embed.add_field(name="Top reasons", value=string, inline=False)
+            embed.add_field(name="Moderators", value=string[:1000], inline=False)
 
+        embed.set_footer(text=f"{cases.get('total')} total cases")
         await ctx.respond_or_edit(embed=embed)
 
 

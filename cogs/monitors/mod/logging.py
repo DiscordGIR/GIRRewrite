@@ -69,7 +69,7 @@ class Logging(commands.Cog):
                 await self.on_member_kick(action, channel)
                 return
 
-        embed = discord.Embed(title="Member left")
+        embed = discord.Embed(title="Member Left")
         embed.color = discord.Color.purple()
         embed.set_thumbnail(url=member.display_avatar)
         embed.add_field(
