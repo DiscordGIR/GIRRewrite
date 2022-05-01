@@ -126,21 +126,21 @@ class Canister(commands.Cog):
             if repo in this_repo:
                 [view.add_item(item) for item in [
                     discord.ui.Button(label='Cannot add default repo', emoji="<:Sileo:959128883498729482>",
-                                      url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={this_repo}', disabled=True, style=discord.ButtonStyle.url, row=1),
+                                      url=f'https://repos.slim.rocks/repo/?repoUrl={this_repo}&manager=sileo', disabled=True, style=discord.ButtonStyle.url, row=1),
                     discord.ui.Button(label='Cannot add default repo', emoji="<:Zeeb:959129860603801630>",
-                                      url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={this_repo}', disabled=True, style=discord.ButtonStyle.url, row=1),
+                                      url=f'https://repos.slim.rocks/repo/?repoUrl={this_repo}&manager=zebra', disabled=True, style=discord.ButtonStyle.url, row=1),
                     discord.ui.Button(label='Cannot add default repo', emoji="<:Add:947354227171262534>",
-                                      url=f'https://sharerepo.stkc.win/?repo={this_repo}', style=discord.ButtonStyle.url, disabled=True, row=1)
+                                      url=f'https://repos.slim.rocks/repo/?repoUrl={this_repo}', style=discord.ButtonStyle.url, disabled=True, row=1)
                 ]]
                 break
         if not view.children:
             [view.add_item(item) for item in [
                 discord.ui.Button(label='Add Repo to Sileo', emoji="<:Sileo:959128883498729482>",
-                                  url=f'https://sharerepo.stkc.win/v2/?pkgman=sileo&repo={this_repo}', style=discord.ButtonStyle.url, row=1),
+                                  url=f'https://repos.slim.rocks/repo/?repoUrl={this_repo}&manager=sileo', style=discord.ButtonStyle.url, row=1),
                 discord.ui.Button(label='Add Repo to Zebra', emoji="<:Zeeb:959129860603801630>",
-                                  url=f'https://sharerepo.stkc.win/v2/?pkgman=zebra&repo={this_repo}', style=discord.ButtonStyle.url, row=1),
+                                  url=f'https://repos.slim.rocks/repo/?repoUrl={this_repo}&manager=zebra', style=discord.ButtonStyle.url, row=1),
                 discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
-                                  url=f'https://sharerepo.stkc.win/?repo={this_repo}', style=discord.ButtonStyle.url, row=1)
+                                  url=f'https://repos.slim.rocks/repo/?repoUrl={this_repo}', style=discord.ButtonStyle.url, row=1)
             ]]
 
         await ctx.respond(embed=embed, ephemeral=ctx.whisper, view=view)
