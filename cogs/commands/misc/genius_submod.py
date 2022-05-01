@@ -313,7 +313,6 @@ class Genius(commands.Cog):
         await channel.send(content=body, file=f)
         await ctx.send_success("Posted subreddit news post!", delete_after=5, followup=True)
 
-    @genius_or_submod_and_up()
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Close a forum thread, usable by OP and Geniuses")
     @transform_context
@@ -321,7 +320,10 @@ class Genius(commands.Cog):
         if not isinstance(ctx.channel, discord.Thread) or not isinstance(ctx.channel.parent, discord.ForumChannel):
             raise commands.BadArgument("This command can only be called in a forum thread!")
 
-        if ctx.author != ctx.channel.owner: # let OP delete their own thread
+        if ctx.author != ctx.channel.owner: # let OP delete their own thread and geniuses and up
+            if not gatekeeper.has(ctx.guild, ctx.author, 4):
+                raise commands.BadArgument("You do not have permission to run that command.")
+
             if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.owner.top_role >= ctx.guild.me.top_role: 
                 # otherwise, only allow if the thread owner is a Genius or higher
                 # as long as their role is higher than OP
