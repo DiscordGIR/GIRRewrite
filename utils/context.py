@@ -12,8 +12,9 @@ from .jobs import Tasks
 
 def transform_context(func: discord.app_commands.Command):
     @functools.wraps(func)
-    async def decorator(self, interaction, *args, **kwargs):
-        ctx = GIRContext(interaction)
+    async def decorator(self, interaction: discord.Interaction, *args, **kwargs):
+        # ctx = GIRContext(interaction)
+        ctx = await commands.Context.from_interaction(interaction, cls=GIRContext)
         return await func(self, ctx, *args, **kwargs)
 
     return decorator
@@ -42,53 +43,54 @@ class PromptDataReaction:
         self.raw_emoji = raw_emoji
 
 
-class GIRContext:
-    def __init__(self, interaction: discord.Interaction):
-        self.interaction: discord.Interaction = interaction
+class GIRContext(commands.Context):
+    def __init__(self, *args, **kwargs):
+        # self.interaction: discord.Interaction = interaction
+        super().__init__(*args, **kwargs)
         self.whisper = False
 
-    @property
-    def guild(self):
-        return self.interaction.guild
+    # @property
+    # def guild(self):
+    #     return self.interaction.guild
 
-    @property
-    def channel(self):
-        return self.interaction.channel
+    # @property
+    # def channel(self):
+    #     return self.interaction.channel
 
-    @property
-    def author(self):
-        return self.interaction.user
+    # @property
+    # def author(self):
+    #     return self.interaction.user
 
-    @property
-    def respond(self):
-        if self.interaction.response.is_done():
-            return self.interaction.followup.send
-        else:
-            return self.interaction.response.send_message
+    # @property
+    # def respond(self):
+    #     if self.interaction.response.is_done():
+    #         return self.interaction.followup.send
+    #     else:
+    #         return self.interaction.response.send_message
 
-    @property
-    def defer(self):
-        return self.interaction.response.defer
+    # @property
+    # def defer(self):
+    #     return self.interaction.response.defer
 
-    @property
-    def followup(self):
-        return self.interaction.followup
+    # @property
+    # def followup(self):
+    #     return self.interaction.followup
 
-    @property
-    def edit(self):
-        return self.interaction.edit_original_message
+    # @property
+    # def edit(self):
+    #     return self.interaction.edit_original_message
 
-    @property
-    def bot(self):
-        return self.interaction.client
+    # @property
+    # def bot(self):
+    #     return self.interaction.client
 
-    @property
-    def me(self):
-        return self.interaction.guild.me
+    # @property
+    # def me(self):
+    #     return self.interaction.guild.me
 
-    @property
-    def send(self):
-        return self.interaction.channel.send
+    # @property
+    # def send(self):
+    #     return self.interaction.channel.send
 
     @property
     def tasks(self) -> Tasks:
@@ -99,9 +101,53 @@ class GIRContext:
         Takes in the same args and kwargs as `respond`.
         """
 
-        # if self.interaction.response.is_done():
-        #     print("?")
-        #     if kwargs.get("followup"):
+        if self.interaction.response.is_done():
+            if kwargs.get("followup"):
+                if kwargs.get("view") is None:
+                    kwargs["view"] = discord.utils.MISSING
+                del kwargs["followup"]
+                ephemeral = kwargs.get("ephemeral")
+                if kwargs.get("ephemeral") is not None:
+                    del kwargs["ephemeral"]
+                delete_after = kwargs.get("delete_after")
+                if "delete_after" in kwargs:
+                    del kwargs["delete_after"]
+                await self.followup.send(*args, **kwargs)
+                if delete_after and not ephemeral:
+                    self.bot.loop.create_task(self.delay_delete(self.interaction, delete_after))
+
+                return
+
+            if kwargs.get("ephemeral") is not None:
+                del kwargs["ephemeral"]
+            if "delete_after" in kwargs:
+                del kwargs["delete_after"]
+            if "followup" in kwargs:
+                del kwargs["followup"]
+
+            return await self.edit(*args, **kwargs)
+        else:
+            if "followup" in kwargs:
+                del kwargs["followup"]
+
+            return await self.respond(*args, **kwargs)
+
+        # if self.interaction.response.is_done(): # we've responded to the interaction already
+        #     if not kwargs.get("followup"): # is there a message to edit and do we want to edit it?
+        #         ephemeral = kwargs.get("ephemeral")
+        #         if kwargs.get("ephemeral") is not None:
+        #             del kwargs["ephemeral"]
+        #         delete_after = kwargs.get("delete_after")
+        #         if "delete_after" in kwargs:
+        #             del kwargs["delete_after"]
+        #         if "followup" in kwargs:
+        #             del kwargs["followup"]
+        #         if kwargs.get("view") is discord.utils.MISSING:
+        #             kwargs["view"] = None
+        #         await self.edit(*args, **kwargs)
+        #         if delete_after and not ephemeral:
+        #             self.bot.loop.create_task(self.delay_delete(self.interaction, delete_after))
+        #     else: # we probably want to do a followup
         #         if kwargs.get("view") is None:
         #             kwargs["view"] = discord.utils.MISSING
 
@@ -111,76 +157,21 @@ class GIRContext:
         #         delete_after = kwargs.get("delete_after")
         #         if "delete_after" in kwargs:
         #             del kwargs["delete_after"]
-
         #         test = await self.followup.send(*args, **kwargs)
-        #         if not kwargs.get("ephemeral") and delete_after is not None:
-        #             await test.delete(delay=delete_after)
-        #         return
-
-        #     ephemeral = kwargs.get("ephemeral")
-        #     if kwargs.get("ephemeral") is not None:
-        #         del kwargs["ephemeral"]
-        #     delete_after = kwargs.get("delete_after")
-        #     if "delete_after" in kwargs:
-        #         del kwargs["delete_after"]
-        #     if "followup" in kwargs:
-        #         del kwargs["followup"]
-
-        #     await self.edit(*args, **kwargs)
-        #     if delete_after and not ephemeral:
-        #         await asyncio.sleep(delete_after)
-        #         await self.interaction.delete_original_message()
-        # else:
+        #         if delete_after is not None:
+        #             try:
+        #                 await test.delete(delay=delete_after)
+        #             except:
+        #                 pass
+        # else: #first time responding to this
         #     if "followup" in kwargs:
         #         del kwargs["followup"]
         #     delete_after = kwargs.get("delete_after")
         #     if "delete_after" in kwargs:
         #         del kwargs["delete_after"]
-        #     res = await self.respond(*args, **kwargs)
+        #     await self.respond(*args, **kwargs)
         #     if not kwargs.get("ephemeral") and delete_after is not None:
-        #         await asyncio.sleep(delete_after)
-        #         await self.interaction.delete_original_message()
-        
-        if self.interaction.response.is_done(): # we've responded to the interaction already
-            if not kwargs.get("followup"): # is there a message to edit and do we want to edit it?
-                ephemeral = kwargs.get("ephemeral")
-                if kwargs.get("ephemeral") is not None:
-                    del kwargs["ephemeral"]
-                delete_after = kwargs.get("delete_after")
-                if "delete_after" in kwargs:
-                    del kwargs["delete_after"]
-                if "followup" in kwargs:
-                    del kwargs["followup"]
-                if kwargs.get("view") is discord.utils.MISSING:
-                    kwargs["view"] = None
-                await self.edit(*args, **kwargs)
-                if delete_after and not ephemeral:
-                    self.bot.loop.create_task(self.delay_delete(self.interaction, delete_after))
-            else: # we probably want to do a followup
-                if kwargs.get("view") is None:
-                    kwargs["view"] = discord.utils.MISSING
-
-                if "followup" in kwargs:
-                    del kwargs["followup"]
-
-                delete_after = kwargs.get("delete_after")
-                if "delete_after" in kwargs:
-                    del kwargs["delete_after"]
-                test = await self.followup.send(*args, **kwargs)
-                if delete_after is not None:
-                    try:
-                        await test.delete(delay=delete_after)
-                    except:
-                        pass
-        else: #first time responding to this
-            if "followup" in kwargs:
-                del kwargs["followup"]
-            delete_after = kwargs.get("delete_after")
-            if "delete_after" in kwargs:
-                del kwargs["delete_after"]
-            await self.respond(*args, **kwargs)
-            if not kwargs.get("ephemeral") and delete_after is not None:
-                self.bot.loop.create_task(self.delay_delete(self.interaction, delete_after))
+        #         self.bot.loop.create_task(self.delay_delete(self.interaction, delete_after))
 
     async def delay_delete(self, ctx: discord.Interaction, delay: int):
         try:
@@ -188,6 +179,18 @@ class GIRContext:
             await ctx.delete_original_message()
         except:
             pass
+
+    @property
+    def respond(self):
+        return self.send
+
+    @property
+    def followup(self):
+        return self.interaction.followup
+
+    @property
+    def edit(self):
+        return self.interaction.edit_original_message
 
     async def send_followup(self, *args, **kwargs):
         delete_after = kwargs.get("delete_after")

@@ -104,7 +104,8 @@ bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions, tree_c
 
 @bot.tree.error
 async def app_command_error(interaction: discord.Interaction, error: AppCommandError):
-    ctx = GIRContext(interaction)
+    # ctx = GIRContext(interaction)
+    ctx = await interaction.client.get_context(interaction, cls=GIRContext)
     ctx.whisper = True
     if isinstance(error, CommandInvokeError):
         error = error.original
