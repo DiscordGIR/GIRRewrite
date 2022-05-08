@@ -42,6 +42,7 @@ class Memes(commands.Cog):
             1, 45, MessageTextBucket.custom)
         self.meme_phrases = ["{user}, have a look at this funny meme! LOL!", "Hey, {user}. Have a look at this knee-slapper!",
                              "{user}, look at this meme! Just don't show Aaron.", "{user} 😂😂😂😂😭😭😭😭"]
+        self.snipe_cache = {}
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Display a meme.")
@@ -480,6 +481,61 @@ class Memes(commands.Cog):
                     await ctx.respond(embed=embed)
                 else:
                     raise commands.BadArgument("An OpenAI API error occured.")
+
+    @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Post edited or deleted message")
+    @transform_context
+    @whisper
+    async def snipe(self, ctx: GIRContext):
+        last_message: discord.Message = self.snipe_cache.get(ctx.channel.id)
+        if last_message is None:
+            raise commands.BadArgument("Nothing found in this channel.")
+
+        content_added = False
+        embed = discord.Embed(color=discord.Color.random())
+        embed.set_author(name=f"{last_message.author.display_name} {'edited' if last_message.edited_at == True else 'deleted'} a message", icon_url=last_message.author.display_avatar.url)
+        if last_message.content:
+            embed.description = last_message.content[:2000] + "..." if len(last_message.content) > 2000 else last_message.content
+            content_added = True
+
+        if last_message.attachments:
+            first_attachment = last_message.attachments[0]
+            if first_attachment.content_type.startswith("image/"):
+                embed.set_image(url=first_attachment.url)
+                content_added = True
+
+        if not content_added:
+            raise commands.BadArgument("No suitable message content to send (text or image).")
+
+        embed.timestamp = last_message.created_at
+        embed.set_footer(text=f"Message ID: {last_message.id}")
+
+        await ctx.respond(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message: discord.Message):
+        if message.guild is None:
+            return
+        if message.guild.id != cfg.guild_id:
+            return
+        if message.channel.type != discord.ChannelType.text:
+            return
+
+        self.snipe_cache[message.channel.id] = message
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+        if before.guild is None:
+            return
+        if before.guild.id != cfg.guild_id:
+            return
+        if before.channel.type != discord.ChannelType.text:
+            return
+
+        before._edited_timestamp = True
+        self.snipe_cache[before.channel.id] = before
+
 
 
 async def setup(bot):
