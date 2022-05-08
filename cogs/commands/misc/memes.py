@@ -519,6 +519,8 @@ class Memes(commands.Cog):
             return
         if message.guild.id != cfg.guild_id:
             return
+        if message.author.bot:
+            return
         if message.channel.type != discord.ChannelType.text:
             return
 
@@ -529,6 +531,8 @@ class Memes(commands.Cog):
         if before.guild is None:
             return
         if before.guild.id != cfg.guild_id:
+            return
+        if before.author.bot:
             return
         if before.channel.type != discord.ChannelType.text:
             return
