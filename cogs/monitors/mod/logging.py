@@ -481,10 +481,12 @@ class Logging(commands.Cog):
         elif before.channel is not None and after.channel is None:
             embed.title = "Member VC Left"
             embed.add_field(name="Left", value=before.channel.mention, inline=True)
-        else:
+        elif before.channel.id != after.channel.id:
             embed.title = "Member VC Moved"
             embed.add_field(name="Left", value=before.channel.mention, inline=True)
             embed.add_field(name="Joined", value=after.channel.mention, inline=True)
+        else:
+            return
 
         embed.timestamp = datetime.now()
         embed.set_footer(text=member.id)
