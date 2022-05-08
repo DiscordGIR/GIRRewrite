@@ -172,7 +172,7 @@ class Misc(commands.Cog):
             view = PFPView(ctx, embed)
             view.add_item(PFPButton(ctx, user))
 
-        view.message = await ctx.respond(embed=embed, ephemeral=ctx.whisper, view=view)
+        await ctx.respond(embed=embed, ephemeral=ctx.whisper, view=view)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Post the embed for one of the rules")
