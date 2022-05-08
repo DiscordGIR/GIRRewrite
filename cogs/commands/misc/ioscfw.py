@@ -275,7 +275,7 @@ class iOSCFW(commands.Cog):
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Get info about an Apple device.")
-    @app_commands.describe(device="Name or board identifier")
+    @app_commands.describe(device="Name or device identifier")
     @app_commands.autocomplete(device=device_autocomplete)
     @transform_context
     @whisper_in_general
@@ -336,7 +336,7 @@ class iOSCFW(commands.Cog):
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Find out if you can jailbreak your device")
-    @app_commands.describe(device="Name or board identifier of the device")
+    @app_commands.describe(device="Name or device identifier of the device")
     @app_commands.autocomplete(device=jailbreakable_device_autocomplete)
     @app_commands.describe(version="Version of iOS you want to jailbreak")
     @app_commands.autocomplete(version=ios_on_device_autocomplete)
