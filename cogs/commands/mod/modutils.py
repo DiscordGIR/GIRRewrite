@@ -11,7 +11,7 @@ from discord.utils import format_dt
 from utils import GIRContext, cfg, transform_context
 from utils.framework import (ModsAndAboveMember, admin_and_up, always_whisper,
                              guild_owner_and_up, mod_and_up)
-from utils.framework.transformers import ImageAttachment
+from utils.framework.transformers import ImageAttachment, ModsAndAboveMemberOrUser
 from utils.views import (MONTH_MAPPING, command_list_autocomplete,
                          date_autocompleter)
 
@@ -34,7 +34,7 @@ class ModUtils(commands.Cog):
     @app_commands.describe(old_member="The user to transfer data from")
     @app_commands.describe(new_member="The user to transfer data to")
     @transform_context
-    async def transferprofile(self, ctx: GIRContext, old_member: discord.Member, new_member: discord.Member):
+    async def transferprofile(self, ctx: GIRContext, old_member: ModsAndAboveMemberOrUser, new_member: ModsAndAboveMemberOrUser):
         if isinstance(old_member, int):
             try:
                 old_member = await self.bot.fetch_user(old_member)
