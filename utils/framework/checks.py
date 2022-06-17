@@ -40,6 +40,19 @@ def whisper_in_general(func: discord.app_commands.Command):
     return decorator
 
 
+def whisper_outside_jb_and_geniusbar_unless_genius(func: discord.app_commands.Command):
+    """If the user is not a Genius and the invoked channel is not #jailbreak, #genius-bar, #bot-commands, send the response to the command ephemerally"""
+    @functools.wraps(func)
+    async def decorator(self, ctx: GIRContext, *args, **kwargs):
+        db_guild = guild_service.get_guild()
+        if not gatekeeper.has(ctx.guild, ctx.author, 4) and ctx.channel.id not in [db_guild.channel_jailbreak, db_guild.channel_genius_bar, db_guild.channel_botspam]:
+            ctx.whisper = True
+        else:
+            ctx.whisper = False
+        await func(self, ctx, *args, **kwargs)
+
+    return decorator
+
 def always_whisper(func: discord.app_commands.Command):
     """Always respond ephemerally"""
     @functools.wraps(func)

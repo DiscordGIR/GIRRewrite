@@ -27,6 +27,7 @@ class Guild(mongoengine.Document):
     channel_development       = mongoengine.IntField()
     channel_emoji_log         = mongoengine.IntField()
     channel_general           = mongoengine.IntField()
+    channel_genius_bar        = mongoengine.IntField()
     channel_jailbreak         = mongoengine.IntField()
     channel_private           = mongoengine.IntField()
     channel_public            = mongoengine.IntField()

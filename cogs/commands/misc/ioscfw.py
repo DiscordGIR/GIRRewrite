@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from utils import (GIRContext, cfg, get_ios_cfw, get_ipsw_firmware_info,
                    transform_context, transform_groups)
-from utils.framework import whisper, whisper_in_general
+from utils.framework import whisper, whisper_in_general, whisper_outside_jb_and_geniusbar_unless_genius
 from utils.framework.transformers import (DeviceTransformer,
                                           VersionOnDevice)
 from utils.views import (BypassMenu, CIJMenu, bypass_autocomplete,
@@ -94,7 +94,7 @@ class iOSCFW(commands.Cog):
     @app_commands.autocomplete(name=jb_autocomplete)
     @app_commands.describe(user_to_mention="User to ping in response")
     @transform_context
-    @whisper_in_general
+    @whisper_outside_jb_and_geniusbar_unless_genius
     async def jailbreak(self, ctx: GIRContext, name: str, user_to_mention: discord.Member = None) -> None:
         response = await get_ios_cfw()
 
