@@ -314,7 +314,7 @@ class iOSCFW(commands.Cog):
         ios = response.get("ios")
         ios = [i for _, i in ios.items()]
         supported_firmwares = [firmware for firmware in ios if model_number.get(
-            "identifier") in firmware.get("devices")]
+            "key") in firmware.get("devices")]
         supported_firmwares.sort(key=lambda x: x.get("released") or "")
 
         if supported_firmwares:
@@ -322,9 +322,19 @@ class iOSCFW(commands.Cog):
             if latest_firmware:
                 embed.add_field(name="Latest firmware",
                                 value=f"{latest_firmware.get('version')} (`{latest_firmware.get('uniqueBuild')}`)", inline=True)
-        embed.add_field(
-            name="SoC", value=f"{models[0].get('soc')} chip ({models[0].get('arch')})", inline=True)
-        embed.set_thumbnail(url=f"https://img.appledb.dev/device@512/{model_number.get('identifier').replace(' ', '%20')}/0.png")
+        
+        soc_string = ""
+        if models[0].get('soc'):
+            soc_string += models[0].get('soc')
+
+        if models[0].get('arch'):
+            soc_string += f" ({models[0].get('arch')})"
+
+        if soc_string:
+            embed.add_field(
+                name="SoC", value=f"{models[0].get('soc')} chip ({models[0].get('arch')})", inline=True)
+
+        embed.set_thumbnail(url=f"https://img.appledb.dev/device@512/{model_number.get('key').replace(' ', '%20')}/0.png")
 
         embed.set_footer(text="Powered by https://appledb.dev")
 
@@ -353,7 +363,7 @@ class iOSCFW(commands.Cog):
 
             potential_version = None
             for jb_version in jb.get("compatibility"):
-                if any(d in jb_version.get("devices") for d in device.get("devices")) and version.get("uniqueBuild") in jb_version.get("firmwares"):
+                if any(d in jb_version.get("devices") for d in device.get("devices")) and version.get("build") in jb_version.get("firmwares"):
                     if potential_version is None:
                         potential_version = jb_version
                     elif potential_version.get("priority") is None and jb_version.get("priority") is not None:
@@ -371,7 +381,7 @@ class iOSCFW(commands.Cog):
             await ctx.respond_or_edit(embed=embed, ephemeral=ctx.whisper)
         else:
             ctx.device = device.get("name")
-            ctx.device_id = device.get("identifier")
+            ctx.device_id = device.get("key")
             ctx.version = f'{version.get("osStr")} {version.get("version")}'
             ctx.build = version.get("uniqueBuild")
 

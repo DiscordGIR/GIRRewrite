@@ -119,6 +119,20 @@ async def device_autocomplete(_: discord.Interaction, current: str) -> List[app_
         if len(devices) >= 25:
             break
 
+    all_devices = res.get("device")
+    for device in devices:
+        ident = device.get("devices")[0]
+        detailed = all_devices.get(ident)
+        if detailed:
+            released = detailed.get('released') or '-1'
+            if isinstance(released, list):
+                released = released[0]
+            device['released'] = str(released)
+
+        else:
+            device['released'] = "-1"
+
+    devices.sort(key=lambda x: x.get('released'), reverse=True)
     return [app_commands.Choice(name=device.get('name'), value=device.get("devices")[0] if device.get("devices") else device.get("name")) for device in devices][:25]
 
 
@@ -145,6 +159,22 @@ async def jailbreakable_device_autocomplete(_: discord.Interaction, current: str
 
         if len(devices) >= 25:
             break
+
+    all_devices = res.get("device")
+    for device in devices:
+        ident = device.get("devices")[0]
+        detailed = all_devices.get(ident)
+        if detailed:
+            released = detailed.get('released') or '-1'
+            if isinstance(released, list):
+                released = released[0]
+            device['released'] = str(released)
+
+        else:
+            device['released'] = "-1"
+
+    devices.sort(key=lambda x: x.get('released'), reverse=True)
+    print(devices)
 
     return [app_commands.Choice(name=device.get('name'), value=device.get("devices")[0] if device.get("devices") else device.get("name")) for device in devices][:25]
 
