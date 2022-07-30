@@ -85,36 +85,6 @@ class Devices(commands.Cog):
         await ctx.author.edit(nick=new_nick)
         await ctx.send_success("Removed device from your nickname!")
 
-    @device.command(name="list", description="List all devices you can set your nickname to")
-    @transform_context
-    @whisper
-    async def _list(self, ctx: GIRContext) -> None:
-        devices_dict = defaultdict(list)
-
-        response = await get_ios_cfw()
-        devices = response.get("group")
-        devices_transformed = transform_groups(devices)
-
-        for device in devices_transformed:
-            device_type = device.get("type")
-            if device_type == "TV":
-                devices_dict['Apple TV'].append(device)
-            elif device_type == "Watch":
-                devices_dict['Apple Watch'].append(device)
-            else:
-                devices_dict[device_type].append(device)
-
-        embed = discord.Embed(title="Devices list")
-        embed.color = discord.Color.blurple()
-        for key, devices in devices_dict.items():
-            devices.sort(key=lambda x: x.get('order'))
-            devices = [device.get("name") for device in devices]
-            embed.add_field(name=key, value=', '.join(
-                devices), inline=False)
-
-        embed.set_footer(text="Powered by https://ios.cfw.guide")
-        await ctx.respond(embed=embed, ephemeral=ctx.whisper)
-
 
 async def setup(bot):
     await bot.add_cog(Devices(bot))
