@@ -43,7 +43,7 @@ class VersionOnDevice(app_commands.Transformer):
 
         ios = response.get("ios")
 
-        ios = [i for _, i in ios.items()]
+        # ios = [i for _, i in ios.items()]
         version = value
         for os_version in ["iOS", "tvOS", "watchOS"]:
             version = version.replace(os_version + " ", "")

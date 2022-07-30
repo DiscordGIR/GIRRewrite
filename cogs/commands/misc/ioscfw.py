@@ -180,7 +180,7 @@ class iOSCFW(commands.Cog):
         for os_version in ["iOS", "tvOS", "watchOS", "audioOS"]:
             version = version.replace(os_version + " ", "")
         ios = response.get("ios")
-        ios = [i for _, i in ios.items()]
+        # ios = [i for _, i in ios.items()]
 
         ios = [ios for ios in ios if f"{ios.get('osStr')} {ios.get('version')} ({ios.get('build')})" == og_version or ios.get(
             'uniqueBuild').lower() == version.lower() or ios.get('version').lower() == version.lower()]
@@ -204,7 +204,7 @@ class iOSCFW(commands.Cog):
         for os_version in ["iOS", "tvOS", "watchOS", "audioOS"]:
             version = version.replace(os_version + " ", "")
         ios = response.get("ios")
-        ios = [i for _, i in ios.items()]
+        # ios = [i for _, i in ios.items()]
         ios = [ios for ios in ios if (f"{ios.get('osStr')} {ios.get('version')} ({ios.get('build')})" == og_version or ios.get(
             'uniqueBuild').lower() == version.lower() or ios.get('version').lower() == version.lower()) and ios.get('beta')]
 
@@ -296,8 +296,8 @@ class iOSCFW(commands.Cog):
 
         real = response.get("device")
         models = [
-            real.get(dev) for dev in real if dev in matching_device_group.get("devices")]
-
+            dev for dev in real if dev.get('identifier') in matching_device_group.get("devices")]
+        
         model_numbers = []
         model_names = ""
         for model_number in models:
@@ -312,7 +312,7 @@ class iOSCFW(commands.Cog):
                         "`, `".join(model_numbers) + "`", inline=True)
 
         ios = response.get("ios")
-        ios = [i for _, i in ios.items()]
+        # ios = [i for _, i in ios.items()]
         supported_firmwares = [firmware for firmware in ios if model_number.get(
             "key") in firmware.get("devices")]
         supported_firmwares.sort(key=lambda x: x.get("released") or "")
@@ -356,7 +356,7 @@ class iOSCFW(commands.Cog):
         response = await get_ios_cfw()
         found_jbs = []
         jailbreaks = response.get("jailbreak")
-        jailbreaks = [jb for _, jb in jailbreaks.items()]
+        # jailbreaks = [jb for _, jb in jailbreaks.items()]
         for jb in jailbreaks:
             if jb.get("compatibility") is None:
                 continue

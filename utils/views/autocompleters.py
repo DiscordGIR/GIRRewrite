@@ -51,9 +51,9 @@ async def ios_version_autocomplete(_: discord.Interaction, current: str) -> List
         return []
 
     versions = versions.get("ios")
-    versions = [v for _, v in versions.items()]
-    versions.sort(key=lambda x: x.get("released")
-                  or "1970-01-01", reverse=True)
+    # versions = [v for _, v in versions.items()]
+    versions.sort(key=lambda x: str(x.get("released")
+                  or "1970-01-01"), reverse=True)
     return [app_commands.Choice(name=f"{v['osStr']} {v['version']} ({v['build']})", value=v["uniqueBuild"]) for v in versions if (current.lower() in v['version'].lower() or current.lower() in v['build'].lower()) and not v['beta']][:25]
 
 
@@ -63,7 +63,7 @@ async def ios_beta_version_autocomplete(_: discord.Interaction, current: str) ->
         return []
 
     versions = versions.get("ios")
-    versions = [v for _, v in versions.items()]
+    # versions = [v for _, v in versions.items()]
     versions.sort(key=lambda x: x.get("released")
                   or "1970-01-01", reverse=True)
     return [app_commands.Choice(name=f"{v['osStr']} {v['version']} ({v['build']})", value=v["uniqueBuild"]) for v in versions if (current.lower() in v['version'].lower() or current.lower() in v['build'].lower()) and v['beta']][:25]
@@ -75,7 +75,7 @@ async def ios_on_device_autocomplete(interaction: discord.Interaction, current: 
         return []
 
     ios = cfw.get("ios")
-    ios = [i for _, i in ios.items()]
+    # ios = [i for _, i in ios.items()]
     devices = cfw.get("group")
     transformed_devices = transform_groups(devices)
     selected_device = interaction.namespace["device"]
@@ -119,8 +119,10 @@ async def device_autocomplete(_: discord.Interaction, current: str) -> List[app_
     all_devices = res.get("device")
     for device in devices:
         ident = device.get("devices")[0]
-        detailed = all_devices.get(ident)
+        # detailed = all_devices.get(ident)
+        detailed = [ td for td in all_devices if td.get('identifer') == ident ]
         if detailed:
+            detailed = detailed[0]
             released = detailed.get('released') or '-1'
             if isinstance(released, list):
                 released = released[0]
@@ -156,8 +158,10 @@ async def jailbreakable_device_autocomplete(_: discord.Interaction, current: str
     all_devices = res.get("device")
     for device in devices:
         ident = device.get("devices")[0]
-        detailed = all_devices.get(ident)
+        # detailed = all_devices.get(ident)
+        detailed = [ td for td in all_devices if td.get('identifer') == ident ]
         if detailed:
+            detailed = detailed[0]
             released = detailed.get('released') or '-1'
             if isinstance(released, list):
                 released = released[0]
@@ -176,7 +180,7 @@ async def jb_autocomplete(_: discord.Interaction, current: str) -> List[app_comm
         return []
 
     apps = apps.get("jailbreak")
-    apps = [jb for _, jb in apps.items()]
+    # apps = [jb for _, jb in apps.items()]
     apps.sort(key=lambda x: x["name"].lower())
     return [app_commands.Choice(name=app["name"], value=app["name"]) for app in apps if app["name"].lower().startswith(current.lower())][:25]
 

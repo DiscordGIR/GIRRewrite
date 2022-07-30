@@ -1,6 +1,6 @@
 def transform_groups(groups):
     final_groups = []
-    groups = [g for _, g in groups.items()]
+    # groups = [g for _, g in groups.items()]
     for group in groups:
         if group.get("subgroup") is not None:
             for subgroup in group.get("subgroup"):

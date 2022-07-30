@@ -11,6 +11,7 @@ from utils.framework import (DeviceTransformer, VersionOnDevice,
                              ensure_invokee_role_lower_than_bot, whisper)
 from utils.views import (Confirm, device_autocomplete,
                          ios_on_device_autocomplete)
+from utils.views.autocompleters import jailbreakable_device_autocomplete
 
 
 class Devices(commands.Cog):
@@ -25,7 +26,7 @@ class Devices(commands.Cog):
     @ensure_invokee_role_lower_than_bot()
     @device.command(description="Add device to nickname")
     @app_commands.describe(device="Name of your device")
-    @app_commands.autocomplete(device=device_autocomplete)
+    @app_commands.autocomplete(device=jailbreakable_device_autocomplete)
     @app_commands.describe(version="Device OS version")
     @app_commands.autocomplete(version=ios_on_device_autocomplete)
     @transform_context
