@@ -148,7 +148,6 @@ class UserInfo(commands.Cog):
     @app_commands.command(description="Show your or another user's XP")
     @app_commands.describe(member="Memebr to get XP of")
     @transform_context
-    @whisper
     async def xp(self, ctx: GIRContext, member: discord.Member = None) -> None:
         if member is None:
             member = ctx.author
@@ -166,7 +165,7 @@ class UserInfo(commands.Cog):
         embed.add_field(
             name="Rank", value=f"{rank}/{overall}" if not results.is_clem else f"{overall}/{overall}", inline=True)
 
-        await ctx.respond(embed=embed, ephemeral=ctx.whisper)
+        await ctx.respond(embed=embed)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Show your or another member's warnpoints")

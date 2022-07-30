@@ -89,7 +89,6 @@ class Timezones(commands.Cog):
     @timezone.command(name="view", description="View the local time in someone else's timezone")
     @app_commands.describe(member="Member to view time of")
     @transform_context
-    @whisper
     async def view(self, ctx: GIRContext, member: discord.Member):
         db_user = user_service.get_user(member.id)
         if db_user.timezone is None:
@@ -100,7 +99,7 @@ class Timezones(commands.Cog):
         if country_code is not None:
             flaggy = country_code_to_emoji(country_code)
 
-        await ctx.send_success(description=f"{member.mention}'s timezone is `{db_user.timezone}` {flaggy}\nIt is currently `{datetime.datetime.now(pytz.timezone(db_user.timezone)).strftime('%I:%M %p %Z')}`", ephemeral=ctx.whisper)
+        await ctx.send_success(description=f"{member.mention}'s timezone is `{db_user.timezone}` {flaggy}\nIt is currently `{datetime.datetime.now(pytz.timezone(db_user.timezone)).strftime('%I:%M %p %Z')}`")
 
     @timezone.command(name="list", description="View a list of all timezones or timezones in your country")
     @app_commands.autocomplete(country_code=timezone_country_autocomplete)
