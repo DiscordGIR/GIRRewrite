@@ -256,6 +256,7 @@ class GIRContext:
 
         embed = discord.Embed(
             title=title, description=description,  color=discord.Color.red())
+        embed.set_footer(text="Note: The bot maintainer will be pinged about this error automatically.")
         return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper or whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
     async def prompt(self, info: PromptData):

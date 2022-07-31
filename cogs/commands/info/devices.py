@@ -57,8 +57,8 @@ class Devices(commands.Cog):
         # change the user's nickname!
         firmware = version.get("version")
         firmware = re.sub(r' beta (\d+)', r'b\1', firmware)
-        detailed_device = response.get("device").get(
-            device.get("devices")[0])
+        device_id = device.get("devices")[0]
+        detailed_device = [ d for d in response.get("device") if d.get('identifier') == device_id ][0]
         name = detailed_device["soc"]
         new_nick = f"{new_nick} [{name}, {firmware}]"
 

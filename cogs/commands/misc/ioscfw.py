@@ -98,8 +98,7 @@ class iOSCFW(commands.Cog):
     async def jailbreak(self, ctx: GIRContext, name: str, user_to_mention: discord.Member = None) -> None:
         response = await get_ios_cfw()
 
-        jbs = [jb for _, jb in response.get(
-            "jailbreak").items()]
+        jbs = response.get("jailbreak")
         matching_jbs = [jb for jb in jbs if jb.get(
             "name").lower() == name.lower()]
         if not matching_jbs:
