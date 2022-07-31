@@ -253,7 +253,7 @@ class iOSCFW(commands.Cog):
             return embed, view
 
         filtered_firmwares = [firmware for firmware in ipsw_me_firmwares if firmware.get(
-            'buildid').lower() == matching_ios.get('uniqueBuild').lower()]
+            'buildid').lower() == matching_ios.get('build').lower()]
         signed_firmwares = [
             firmware for firmware in filtered_firmwares if firmware.get('signed')]
 
