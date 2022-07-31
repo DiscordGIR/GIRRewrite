@@ -219,7 +219,7 @@ class iOSCFW(commands.Cog):
         embed = discord.Embed(
             title=f"{matching_ios.get('osStr')} {matching_ios.get('version')}")
         embed.add_field(name="Build number",
-                        value=matching_ios.get("uniqueBuild"), inline=True)
+                        value=matching_ios.get("build"), inline=True)
 
         embed.add_field(name="Supported devices", value=len(
             matching_ios.get("devices")) or "None found", inline=True)
@@ -296,8 +296,7 @@ class iOSCFW(commands.Cog):
 
         real = response.get("device")
         models = [
-            dev for dev in real if dev.get('identifier') in matching_device_group.get("devices")]
-        
+            dev for dev in real if dev.get('key') in matching_device_group.get("devices")]
         model_numbers = []
         model_names = ""
         for model_number in models:
@@ -321,7 +320,7 @@ class iOSCFW(commands.Cog):
             latest_firmware = supported_firmwares[-1]
             if latest_firmware:
                 embed.add_field(name="Latest firmware",
-                                value=f"{latest_firmware.get('version')} (`{latest_firmware.get('uniqueBuild')}`)", inline=True)
+                                value=f"{latest_firmware.get('version')} (`{latest_firmware.get('build')}`)", inline=True)
         
         soc_string = ""
         if models[0].get('soc'):
@@ -409,8 +408,7 @@ class iOSCFW(commands.Cog):
     async def bypass(self, ctx: GIRContext, app: str):
         data = await get_ios_cfw()
         bypasses = data.get('bypass')
-        matching_apps = [body for _, body in bypasses.items(
-        ) if app.lower() in body.get("name").lower() or app.lower() in body.get("bundleId").lower()]
+        matching_apps = [body for body in bypasses if app.lower() in body.get("name").lower() or app.lower() in body.get("bundleId").lower()]
 
         if not matching_apps:
             raise commands.BadArgument(

@@ -187,8 +187,8 @@ async def jb_autocomplete(_: discord.Interaction, current: str) -> List[app_comm
 
 async def bypass_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     data = await get_ios_cfw()
-    bypasses = data.get("bypass")
-    apps = [app for _, app in bypasses.items()]
+    apps = data.get("bypass")
+    # apps = [app for _, app in bypasses.items()]
     apps.sort(key=lambda x: x.get("name").lower())
     return [app_commands.Choice(name=app.get("name"), value=app.get("bundleId")) for app in apps if current.lower() in app.get("name").lower()][:25]
 
