@@ -166,9 +166,6 @@ class UserInfo(commands.Cog):
         embed.add_field(
             name="Rank", value=f"{rank}/{overall}" if not results.is_clem else f"{overall}/{overall}", inline=True)
 
-        if ctx.whisper and member.id == ctx.author.id:
-            ctx.whisper = False
-
         await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
     @app_commands.guilds(cfg.guild_id)
