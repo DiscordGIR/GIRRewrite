@@ -332,7 +332,7 @@ class iOSCFW(commands.Cog):
             embed.add_field(
                 name="SoC", value=f"{models[0].get('soc')} chip ({models[0].get('arch')})", inline=True)
 
-        embed.set_thumbnail(url=f"https://img.appledb.dev/device@512/{model_number.get('key').replace(' ', '%20')}/0.png")
+        embed.set_thumbnail(url=f"https://img.appledb.dev/device@512/{model_number.get('key').replace(' ', '%20')}/0.webp")
 
         embed.set_footer(text="Powered by https://appledb.dev")
 
