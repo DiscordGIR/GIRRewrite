@@ -287,14 +287,14 @@ class Misc(commands.Cog):
             'incidents')[0].get('updated_at'), "%Y-%m-%dT%H:%M:%S.%f%z")
         last_impact = incidents.get('incidents')[0].get('impact')
 
-        online = '<:status_online:959131664880132117>'
-        offline = '<:status_dnd:959131662569050122>'
+        online = '🟢'
+        offline = '🔴'
 
-        incident_icons = {'none': '<:status_offline:958778810566860851>',
-                          'maintenance': '<:status_total:959131666390085662>',
-                          'minor': '<:status_idle:959131663626043463>',
-                          'major': '<:status_dnd:959131662569050122>',
-                          'critical': '<:status_dnd:959131662569050122>'}
+        incident_icons = {'none': '⚫',
+                          'maintenance': '🟡',
+                          'minor': '🟡',
+                          'major': '🔴,
+                          'critical': '🔴'}
 
         embed = discord.Embed(title=title, description=f"""
 {online if api_status == 'Operational' else offline} **API:** {api_status}
