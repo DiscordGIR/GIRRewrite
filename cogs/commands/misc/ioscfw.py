@@ -305,7 +305,7 @@ class iOSCFW(commands.Cog):
         model_numbers.sort()
 
         embed.add_field(name="All brand names",
-                        value=model_names, inline=False)
+                        value="`, `".join(model_names), inline=False)
         embed.add_field(name="Model(s)", value='`' +
                         "`, `".join(model_numbers) + "`", inline=True)
 
