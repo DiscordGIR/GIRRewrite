@@ -300,12 +300,12 @@ class iOSCFW(commands.Cog):
         model_names = ""
         for model_number in models:
             model_numbers.extend(model_number.get("model"))
-            model_names += f"{model_number.get('name')} (`{model_number.get('identifier')}`)\n"
+            model_names += f"{model_number.get('name')} (`{'`, `'.join(model_number.get('identifier'))}`)\n"
 
         model_numbers.sort()
 
         embed.add_field(name="All brand names",
-                        value="`, `".join(model_names), inline=False)
+                        value=model_names, inline=False)
         embed.add_field(name="Model(s)", value='`' +
                         "`, `".join(model_numbers) + "`", inline=True)
 
