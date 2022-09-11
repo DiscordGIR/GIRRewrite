@@ -293,7 +293,7 @@ class Misc(commands.Cog):
         incident_icons = {'none': '⚫',
                           'maintenance': '🟡',
                           'minor': '🟡',
-                          'major': '🔴,
+                          'major': '🔴',
                           'critical': '🔴'}
 
         embed = discord.Embed(title=title, description=f"""
