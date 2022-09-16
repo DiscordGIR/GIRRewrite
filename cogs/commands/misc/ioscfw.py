@@ -300,7 +300,7 @@ class iOSCFW(commands.Cog):
         model_names = ""
         for model_number in models:
             model_numbers.extend(model_number.get("model"))
-            model_names += f"{model_number.get('name')"
+            model_names += f"{model_number.get('name')}"
 
             if len(model_number.get('identifier')) > 0:
               model_names += f" (`{'`, `'.join(model_number.get('identifier'))}`)"
