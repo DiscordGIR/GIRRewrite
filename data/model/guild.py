@@ -15,6 +15,7 @@ class Guild(mongoengine.Document):
     role_memberedition        = mongoengine.IntField()
     role_memberplus           = mongoengine.IntField()
     role_memberpro            = mongoengine.IntField()
+    role_memberultra          = mongoengine.IntField()
     role_moderator            = mongoengine.IntField()
     role_mute                 = mongoengine.IntField()
     role_sub_mod              = mongoengine.IntField()

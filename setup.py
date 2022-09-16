@@ -30,6 +30,7 @@ async def setup():
     guild.role_memberedition = 123  # put in the role IDs for your server here
     guild.role_memberpro     = 123  # put in the role IDs for your server here
     guild.role_memberplus    = 123  # put in the role IDs for your server here
+    guild.role_memberultra   = 123  # put in the role IDs for your server here
 
     # not required if you don't want the /subnews command
     guild.role_sub_news      = 123  # put in the role IDs for your server here
