@@ -58,7 +58,7 @@ class Devices(commands.Cog):
         firmware = version.get("version")
         firmware = re.sub(r' beta (\d+)', r'b\1', firmware)
         device_id = device.get("devices")[0]
-        detailed_device = [ d for d in response.get("device") if d.get('identifier') == device_id ][0]
+        detailed_device = [ d for d in response.get("device") if d.get('key') == device_id ][0]
         name = detailed_device["soc"]
         new_nick = f"{new_nick} [{name}, {firmware}]"
 
