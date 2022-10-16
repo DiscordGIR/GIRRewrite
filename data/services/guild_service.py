@@ -188,6 +188,22 @@ class GuildService:
             return True
         return False
 
+    def add_ignored_channel_logging(self, id: int):
+        g = Guild.objects(_id=cfg.guild_id)
+        g2 = g.first()
+        if id not in g2.logging_excluded_channels:
+            g.update_one(push__logging_excluded_channels=id)
+            return True
+        return False
+
+    def remove_ignored_channel_logging(self, id: int):
+        g = Guild.objects(_id=cfg.guild_id)
+        g2 = g.first()
+        if id in g2.logging_excluded_channels:
+            g.update_one(pull__logging_excluded_channels=id)
+            return True
+        return False
+
     def get_locked_channels(self):
         return self.get_guild().locked_channels
 

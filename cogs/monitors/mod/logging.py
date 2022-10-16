@@ -135,6 +135,9 @@ class Logging(commands.Cog):
             return
 
         db_guild = guild_service.get_guild()
+        if before.channel.id in db_guild.logging_excluded_channels:
+            return
+
         channel = before.guild.get_channel(db_guild.channel_private)
 
         embed = discord.Embed(title="Message Updated")
@@ -180,6 +183,9 @@ class Logging(commands.Cog):
             return
 
         db_guild = guild_service.get_guild()
+        if message.channel.id in db_guild.logging_excluded_channels:
+            return
+
         channel = message.guild.get_channel(db_guild.channel_private)
 
         embed = discord.Embed(title="Message Deleted")
@@ -219,6 +225,9 @@ class Logging(commands.Cog):
 
         members = set()
         db_guild = guild_service.get_guild()
+        if message[0].channel.id in db_guild.logging_excluded_channels:
+            return
+
         channel = messages[0].guild.get_channel(db_guild.channel_private)
         output = BytesIO()
         for message in messages:

@@ -196,6 +196,28 @@ class Filters(commands.Cog):
             await ctx.send_success(f"Resumed filtering in {channel.mention}.")
         else:
             await ctx.send_warning("That channel is not already ignored.", delete_after=5)
+   
+    @admin_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Ignore channel in logs")
+    @app_commands.describe(channel="Channel to ignore")
+    @transform_context
+    async def ignorechannellogs(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
+        if guild_service.add_ignored_channel_logging(channel.id):
+            await ctx.send_success(f"{channel.mention} will no longer be logged.")
+        else:
+            await ctx.send_warning("That channel is already ignored.", delete_after=5)
+
+    @admin_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Ungnore channel in logs")
+    @app_commands.describe(channel="Channel to unignore")
+    @transform_context
+    async def unignorechannellogs(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
+        if guild_service.remove_ignored_channel_logging(channel.id):
+            await ctx.send_success(f"Resumed logging in {channel.mention}.")
+        else:
+            await ctx.send_warning("That channel is not already ignored.", delete_after=5)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
