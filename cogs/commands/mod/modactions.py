@@ -34,6 +34,7 @@ class ModActions(commands.Cog):
         if points < 1:  # can't warn for negative/0 points
             raise commands.BadArgument(message="Points can't be lower than 1.")
 
+        await ctx.defer(ephemeral=False)
         await warn(ctx, target_member=user, mod=ctx.author, points=points, reason=reason)
 
     @mod_and_up()
@@ -51,6 +52,7 @@ class ModActions(commands.Cog):
         log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
         await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
 
+        await ctx.defer(ephemeral=False)
         await member.kick(reason=reason)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
@@ -69,6 +71,7 @@ class ModActions(commands.Cog):
         log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
         await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
 
+        await ctx.defer(ephemeral=False)
         await member.kick(reason=reason)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
@@ -94,6 +97,7 @@ class ModActions(commands.Cog):
         if member.is_timed_out():
             raise commands.BadArgument("This user is already muted.")
 
+        await ctx.defer(ephemeral=False)
         time = now + timedelta(seconds=delta)
         if time > now + timedelta(days=14):
             raise commands.BadArgument("Mutes can't be longer than 14 days!")
@@ -143,6 +147,7 @@ class ModActions(commands.Cog):
         if not member.is_timed_out():
             raise commands.BadArgument("This user is not muted.")
 
+        await ctx.defer(ephemeral=False)
         await member.edit(timed_out_until=None)
 
         try:
@@ -185,6 +190,7 @@ class ModActions(commands.Cog):
             if self.bot.ban_cache.is_banned(user.id):
                 raise commands.BadArgument("That user is already banned!")
 
+        await ctx.defer(ephemeral=False)
         self.bot.ban_cache.ban(user.id)
         log = await add_ban_case(user, ctx.author, reason, db_guild)
 
@@ -265,6 +271,7 @@ class ModActions(commands.Cog):
         if not self.bot.ban_cache.is_banned(user.id):
             raise commands.BadArgument("That user isn't banned!")
 
+        await ctx.defer(ephemeral=False)
         try:
             await ctx.guild.unban(discord.Object(id=user.id), reason=reason)
         except discord.NotFound:
