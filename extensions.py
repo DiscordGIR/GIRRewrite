@@ -19,6 +19,7 @@ initial_extensions = [
     "cogs.monitors.misc.boosteremojis",
     "cogs.monitors.misc.role_assignment_buttons",
     "cogs.monitors.misc.songs",
+    "cogs.monitors.misc.tiktoks",
     "cogs.monitors.mod.antiraid",
     "cogs.monitors.mod.blootooth",
     "cogs.monitors.mod.logging",
