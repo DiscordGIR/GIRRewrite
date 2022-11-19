@@ -34,8 +34,8 @@ class TikToks(commands.Cog):
         # remove host from link
         link = link.replace("www.", "")
         link = link.replace("vm.tiktok.com/", "vm.dstn.to/")
+        link = link.replace("vt.tiktok.com/", "vm.dstn.to/")
         link = link.replace("tiktok.com/", "vm.dstn.to/")
-        link = link.replace("vt.tiktok.com/", "v.dstn.to/")
         
         # get video id from link
         await message.edit(suppress=True)
