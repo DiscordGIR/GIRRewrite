@@ -341,8 +341,15 @@ class Genius(commands.Cog):
 
         if not isinstance(thread.parent, discord.ForumChannel):
             return
+        
+        parent = thread.parent
+        existing_threads_by_author = [t for t in parent.threads if t.owner.id == thread.owner.id and not t.archived and t.id != thread.id]
 
-        await thread.send(f"{thread.owner.mention} thanks for creating a new thread!\n\n**Please use `/solved` to delete this thread when you're done.**")
+        if not existing_threads_by_author:
+            await thread.send(f"{thread.owner.mention} thanks for creating a new thread!\n\n**Please use `/solved` to delete this thread when you're done.**")
+        else:
+            await thread.send(f"{thread.owner.mention} you already have an open thread in this category. Please use `/solved` to close that thread before creating a new one.")
+            await thread.edit(archived=True)
 
 
 async def setup(bot):
