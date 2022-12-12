@@ -88,7 +88,7 @@ class ModUtils(commands.Cog):
         results.save()
 
         case = Case(
-            _id=guild_service.get_guild().case_id,
+            _id=(await guild_service.get_guild()).case_id,
             _type="CLEM",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
@@ -131,7 +131,7 @@ class ModUtils(commands.Cog):
         results.save()
 
         birthday_role = ctx.guild.get_role(
-            guild_service.get_guild().role_birthday)
+            (await guild_service.get_guild()).role_birthday)
         if birthday_role is None:
             return
 
@@ -160,7 +160,7 @@ class ModUtils(commands.Cog):
             pass
 
         birthday_role = ctx.guild.get_role(
-            guild_service.get_guild().role_birthday)
+            (await guild_service.get_guild()).role_birthday)
         if birthday_role is None:
             return
 
@@ -207,7 +207,7 @@ class ModUtils(commands.Cog):
         today = datetime.datetime.today().astimezone(eastern)
         if today.month == month and today.day == date:
             birthday_role = ctx.guild.get_role(
-                guild_service.get_guild().role_birthday)
+                (await guild_service.get_guild()).role_birthday)
             if birthday_role is None:
                 return
             if birthday_role in member.roles:
@@ -280,7 +280,7 @@ class ModUtils(commands.Cog):
         await ctx.send_success("Done!")
 
         logging_channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_private)
+            (await guild_service.get_guild()).channel_private)
 
         embed = discord.Embed(color=discord.Color.gold(), title="Someone abused me :(",
                               description=f"In {ctx.channel.mention} {ctx.author.mention} said:\n\n{message}")

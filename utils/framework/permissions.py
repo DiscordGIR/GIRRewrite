@@ -1,3 +1,4 @@
+import asyncio
 import discord
 # from discord.commands.permissions import CommandPermission
 
@@ -20,19 +21,8 @@ class Permissions:
 
     """
 
-    def __init__(self):
-        """Initialize Permissions.
-
-        Parameters
-        ----------
-        bot : discord.Client
-            Instance of Discord client to look up a user's roles, permissions, etc.
-        settings : Settings
-            State of the bot
-            
-        """
-
-        the_guild: Guild = guild_service.get_guild()
+    async def _init(self):
+        the_guild: Guild = await guild_service.get_guild()
         roles_to_check = [
             "role_memberplus",
             "role_memberpro",

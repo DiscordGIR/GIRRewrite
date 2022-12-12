@@ -44,7 +44,7 @@ class IssueCache():
             return
 
         channel = guild.get_channel(
-            guild_service.get_guild().channel_common_issues)
+            (await guild_service.get_guild()).channel_common_issues)
         if channel is None:
             logger.warn("#rules-and-info channel not found! The /issue command will not work! Make sure to set `channel_common_issues` in the database if you want it.")
             return
@@ -76,7 +76,7 @@ class RuleCache():
             return
 
         channel = guild.get_channel(
-            guild_service.get_guild().channel_rules)
+            (await guild_service.get_guild()).channel_rules)
         if channel is None:
             logger.warn("#rules-and-info channel not found! The /rule command will not work! Make sure to set `channel_rules` in the database if you want it.")
             return

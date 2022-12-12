@@ -12,7 +12,7 @@ from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
 from utils import GIRContext, cfg, format_number, transform_context
 from utils.framework import (ImageAttachment, MessageTextBucket,
-                             find_triggered_filters,
+                            find_triggered_filters,
                              find_triggered_raid_phrases, gatekeeper,
                              memed_and_up, mempro_and_up, mod_and_up, whisper)
 from utils.views import GenericDescriptionModal, Menu, memes_autocomplete
@@ -60,7 +60,7 @@ class Memes(commands.Cog):
         bucket = self.meme_cooldown.get_bucket(meme.name)
         current = datetime.now().timestamp()
         # ratelimit only if the invoker is not a moderator
-        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(guild_service.get_guild().role_sub_mod) in ctx.author.roles):
+        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role((await guild_service.get_guild()).role_sub_mod) in ctx.author.roles):
             raise commands.BadArgument("That meme is on cooldown.")
 
         # if the Meme has an image, add it to the embed
@@ -82,7 +82,7 @@ class Memes(commands.Cog):
     @transform_context
     @whisper
     async def memelist(self, ctx: GIRContext):
-        memes = sorted(guild_service.get_guild().memes,
+        memes = sorted((await guild_service.get_guild()).memes,
                        key=lambda meme: meme.name)
 
         if len(memes) == 0:
@@ -272,7 +272,7 @@ class Memes(commands.Cog):
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
         if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
@@ -341,7 +341,7 @@ class Memes(commands.Cog):
             raise commands.BadArgument(
                 "Bottom text can't have weird characters.")
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
         if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
@@ -395,7 +395,7 @@ class Memes(commands.Cog):
             raise commands.BadArgument(
                 "Bottom text can't have weird characters.")
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
         if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
@@ -440,7 +440,7 @@ class Memes(commands.Cog):
         if cfg.open_ai_token is None:
             raise commands.BadArgument("This command is disabled.")
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
         if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
@@ -467,7 +467,7 @@ class Memes(commands.Cog):
                     data = await resp.json()
                     text = data.get("choices")[0].get("text")
                     text = discord.utils.escape_markdown(text)
-                    if find_triggered_filters(text, ctx.author) or find_triggered_raid_phrases(text, ctx.author):
+                    if await find_triggered_filters(text, ctx.author) or await find_triggered_raid_phrases(text, ctx.author):
                         text = "A filter was triggered by this response. Please try a different prompt."
 
                     embed = discord.Embed(color=discord.Color.random())

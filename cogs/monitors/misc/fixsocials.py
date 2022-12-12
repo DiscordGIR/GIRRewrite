@@ -29,7 +29,7 @@ class FixSocials(commands.Cog):
             return
         if message.author.bot:
             return
-        if message.channel.id != guild_service.get_guild().channel_general:
+        if message.channel.id != (await guild_service.get_guild()).channel_general:
             return
 
         message_content = message.content.strip("<>")

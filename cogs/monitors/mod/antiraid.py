@@ -122,7 +122,7 @@ class AntiRaidMonitor(commands.Cog):
         # this setting disables the filter for accounts created from "Today"
         # useful when we get alot of new users, for example when a new Jailbreak is released.
         # this setting is controlled using !spammode
-        if not guild_service.get_guild().ban_today_spam_accounts:
+        if not (await guild_service.get_guild()).ban_today_spam_accounts:
             now = datetime.today()
             now = [now.year, now.month, now.day]
             member_now = [member.created_at.year,
@@ -301,7 +301,7 @@ class AntiRaidMonitor(commands.Cog):
         if gatekeeper.has(message.guild, message.author, 2):
             return False
 
-        if find_triggered_raid_phrases(message.content, message.author) is not None:
+        if await find_triggered_raid_phrases(message.content, message.author) is not None:
             await self.raid_ban(message.author)
             return True
 
@@ -340,7 +340,7 @@ class AntiRaidMonitor(commands.Cog):
             else:
                 self.bot.ban_cache.ban(user.id)
 
-            db_guild = guild_service.get_guild()
+            db_guild = await guild_service.get_guild()
 
             case = Case(
                 _id=db_guild.case_id,
@@ -378,7 +378,7 @@ class AntiRaidMonitor(commands.Cog):
         """Freeze all channels marked as freezeable during a raid, meaning only people with the Member+ role and up
         can talk (temporarily lock out whitenames during a raid)"""
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         for channel in db_guild.locked_channels:
             channel = guild.get_channel(channel)

@@ -37,7 +37,7 @@ class Utilities(commands.Cog):
                 is_admin = gatekeeper.has(ctx.guild, ctx.author, 6)
                 is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
                 is_genius = gatekeeper.has(ctx.guild, ctx.author, 4)
-                submod = ctx.guild.get_role(guild_service.get_guild().role_sub_mod)
+                submod = ctx.guild.get_role((await guild_service.get_guild()).role_sub_mod)
 
                 if not cog.__cog_app_commands__:
                     continue

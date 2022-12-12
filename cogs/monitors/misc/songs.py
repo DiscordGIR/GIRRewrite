@@ -46,7 +46,7 @@ class Songs(commands.Cog):
             return
         if message.author.bot:
             return
-        if message.channel.id != guild_service.get_guild().channel_general:
+        if message.channel.id != (await guild_service.get_guild()).channel_general:
             return
 
         match = self.pattern.search(message.content.strip("<>"))
@@ -75,7 +75,7 @@ class Songs(commands.Cog):
             title = discord.utils.escape_markdown(title)
             title = discord.utils.escape_mentions(title)
 
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             title, message.author)
 
         if triggered_words:

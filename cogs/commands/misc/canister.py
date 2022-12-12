@@ -24,7 +24,7 @@ class Canister(commands.Cog):
         if author is None:
             return
 
-        if not gatekeeper.has(message.guild, author, 5) and message.channel.id == guild_service.get_guild().channel_general:
+        if not gatekeeper.has(message.guild, author, 5) and message.channel.id == (await guild_service.get_guild()).channel_general:
             return
 
         pattern = re.compile(
@@ -71,7 +71,7 @@ class Canister(commands.Cog):
             raise commands.BadArgument("Please enter a longer query.")
 
         should_whisper = False
-        if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id == guild_service.get_guild().channel_general:
+        if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id == (await guild_service.get_guild()).channel_general:
             should_whisper = True
 
         await ctx.defer(ephemeral=should_whisper)

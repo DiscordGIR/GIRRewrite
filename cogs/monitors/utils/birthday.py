@@ -35,7 +35,7 @@ class Birthday(commands.Cog):
         if not guild:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         birthday_role = guild.get_role(db_guild.role_birthday)
         if not birthday_role:
             return

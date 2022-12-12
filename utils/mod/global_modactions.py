@@ -38,7 +38,7 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     else:
         time = now + timedelta(days=14)
 
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
     case = Case(
         _id=db_guild.case_id,
         _type="MUTE",
@@ -89,7 +89,7 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
     """
 
     await target_member.edit(timed_out_until=None)
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
 
     try:
         if isinstance(ctx, discord.Interaction):
@@ -118,7 +118,7 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
 
 
 async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: discord.Member, reason="No reason."):
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
 
     member_is_external = isinstance(target_member, discord.User)
     log = await add_ban_case(target_member, mod, reason, db_guild)
@@ -143,7 +143,7 @@ async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: disc
 
 
 async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, reason):
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
 
     reason = escape_markdown(reason)
 

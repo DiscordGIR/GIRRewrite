@@ -97,7 +97,7 @@ class Filters(commands.Cog):
     @_filter.command(description="List filtered words", name="list")
     @transform_context
     async def _list(self, ctx: GIRContext):
-        filters = guild_service.get_guild().filter_words
+        filters = (await guild_service.get_guild()).filter_words
         if len(filters) == 0:
             raise commands.BadArgument(
                 "The filterlist is currently empty. Please add a word using `/filter`.")
@@ -115,7 +115,7 @@ class Filters(commands.Cog):
     async def piracy(self, ctx: GIRContext, word: str):
         word = word.lower()
 
-        words = guild_service.get_guild().filter_words
+        words = (await guild_service.get_guild()).filter_words
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
@@ -134,7 +134,7 @@ class Filters(commands.Cog):
     async def remove(self, ctx: GIRContext, word: str):
         word = word.lower()
 
-        words = guild_service.get_guild().filter_words
+        words = (await guild_service.get_guild()).filter_words
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
@@ -228,7 +228,7 @@ class Filters(commands.Cog):
     async def falsepositive(self, ctx: GIRContext, *, word: str):
         word = word.lower()
 
-        words = guild_service.get_guild().filter_words
+        words = (await guild_service.get_guild()).filter_words
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:

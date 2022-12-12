@@ -44,7 +44,7 @@ class AntiRaid(commands.Cog):
         phrases = [phrase.strip() for phrase in phrases if phrase.strip()]
 
         phrases_contenders = set(phrases)
-        phrases_already_in_db = set([phrase.word for phrase in guild_service.get_guild().raid_phrases])
+        phrases_already_in_db = set([phrase.word for phrase in (await guild_service.get_guild()).raid_phrases])
 
         duplicate_count = len(phrases_already_in_db & phrases_contenders) # count how many duplicates we have
         new_phrases = list(phrases_contenders - phrases_already_in_db)
@@ -84,7 +84,7 @@ class AntiRaid(commands.Cog):
     async def removeraid(self, ctx: GIRContext, phrase: str) -> None:
         word = phrase.lower()
 
-        words = guild_service.get_guild().raid_phrases
+        words = (await guild_service.get_guild()).raid_phrases
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
@@ -100,7 +100,7 @@ class AntiRaid(commands.Cog):
     @transform_context
     async def spammode(self, ctx: GIRContext, mode: bool = None) -> None:
         if mode is None:
-            mode = not guild_service.get_guild().ban_today_spam_accounts
+            mode = not (await guild_service.get_guild()).ban_today_spam_accounts
 
         guild_service.set_spam_mode(mode)
         await ctx.send_success(description=f"We {'**will ban**' if mode else 'will **not ban**'} accounts created today in join spam filter.")
@@ -223,7 +223,7 @@ class AntiRaid(commands.Cog):
             raise commands.BadArgument("Server is already unlocked or my permissions are wrong.")
 
     async def lock_unlock_channel(self,  ctx: GIRContext, channel, lock=None):
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         
         default_role = ctx.guild.default_role
         member_plus = ctx.guild.get_role(db_guild.role_memberplus)   

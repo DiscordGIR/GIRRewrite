@@ -1,8 +1,9 @@
+from io import BytesIO
 from data.model import FilterWord, Guild, Tag, Giveaway
 from utils import cfg
 
 class GuildService:
-    def get_guild(self) -> Guild:
+    async def get_guild(self) -> Guild:
         """Returns the state of the main guild from the database.
 
         Returns
@@ -11,30 +12,50 @@ class GuildService:
             The Guild document object that holds information about the main guild.
         """
 
-        return Guild.objects(_id=cfg.guild_id).first()
+        return await Guild.find_one(Guild.id == cfg.guild_id)
     
-    def add_tag(self, tag: Tag) -> None:
-        Guild.objects(_id=cfg.guild_id).update_one(push__tags=tag)
+    async def add_tag(self, tag: Tag) -> None:
+        # Guild.find(Guild.id == cfg.guild_id)
+        await Guild.find(Guild.id == cfg.guild_id).update({ "$push": tag })
 
-    def remove_tag(self, tag: str):
-        return Guild.objects(_id=cfg.guild_id).update_one(pull__tags__name=Tag(name=tag).name)
+    async def remove_tag(self, tag: str):
+        # return Guild.find(Guild.id == cfg.guild_id).update_one(pull__tags__name=Tag(name=tag).name)
+        return await Guild.find(Guild.id == cfg.guild_id).update({ "$pull": { "tags": { "name": tag } } })
 
-    def edit_tag(self, tag):
-        return Guild.objects(_id=cfg.guild_id, tags__name=tag.name).update_one(set__tags__S=tag)
+    async def edit_tag(self, tag):
+        # return Guild.objects(_id=cfg.guild_id, tags__name=tag.name).update_one(set__tags__S=tag)
+        return await Guild.find(Guild.id == cfg.guild_id).update({ "$set": { "tags.$[elem]": tag } }, array_filters=[ { "elem.name": tag.name } ])
 
-    def get_tag(self, name: str):
-        tag = Guild.objects.get(_id=cfg.guild_id).tags.filter(name=name).first()
-        if tag is None:
-            return
-        tag.use_count += 1
-        self.edit_tag(tag)
-        return tag
+    async def get_tag(self, name: str):
+        # tag = Guild.objects.get(_id=cfg.guild_id).tags.filter(name=name).first()
+        # if tag is None:
+        #     return
+        # tag.use_count += 1
+        # self.edit_tag(tag)
+        # return tag
+        
+        g = await Guild.find_one(Guild.id == cfg.guild_id)
+        tag = [tag for tag in g.tags if tag.name == name]
+        print(tag)
+        return tag[0] if len(tag) > 0 else None
+
+    async def read_tag_image(self, image_id):
+        from utils import db
+        
+        cursor = db.fs.find({"_id": image_id})
+        while (await cursor.fetch_next):
+            grid_out = cursor.next_object()
+            return grid_out
+        # temp = BytesIO()
+        # await db.fs.download_to_stream(image_id, temp)
+        # temp.seek(0)
+        # return temp
 
     def add_meme(self, meme: Tag) -> None:
-        Guild.objects(_id=cfg.guild_id).update_one(push__memes=meme)
+        Guild.find(Guild.id == cfg.guild_id).update_one(push__memes=meme)
 
     def remove_meme(self, meme: str):
-        return Guild.objects(_id=cfg.guild_id).update_one(pull__memes__name=Tag(name=meme).name)
+        return Guild.find(Guild.id == cfg.guild_id).update_one(pull__memes__name=Tag(name=meme).name)
 
     def edit_meme(self, meme):
         return Guild.objects(_id=cfg.guild_id, memes__name=meme.name).update_one(set__memes__S=meme)
@@ -52,37 +73,37 @@ class GuildService:
         use for a case.
         """
 
-        Guild.objects(_id=cfg.guild_id).update_one(inc__case_id=1)
+        Guild.find(Guild.id == cfg.guild_id).update_one(inc__case_id=1)
 
-    def all_rero_mappings(self):
-        g = self.get_guild()
+    async def all_rero_mappings(self):
+        g = await self.get_guild()
         current = g.reaction_role_mapping
         return current
 
-    def add_rero_mapping(self, mapping):
-        g = self.get_guild()
+    async def add_rero_mapping(self, mapping):
+        g = await self.get_guild()
         current = g.reaction_role_mapping
         the_key = list(mapping.keys())[0]
         current[str(the_key)] = mapping[the_key]
         g.reaction_role_mapping = current
         g.save()
 
-    def append_rero_mapping(self, message_id, mapping):
-        g = self.get_guild()
+    async def append_rero_mapping(self, message_id, mapping):
+        g = await self.get_guild()
         current = g.reaction_role_mapping
         current[str(message_id)] = current[str(message_id)] | mapping
         g.reaction_role_mapping = current
         g.save()
 
-    def get_rero_mapping(self, id):
-        g = self.get_guild()
+    async def get_rero_mapping(self, id):
+        g = await self.get_guild()
         if id in g.reaction_role_mapping:
             return g.reaction_role_mapping[id]
         else:
             return None
 
-    def delete_rero_mapping(self, id):
-        g = self.get_guild()
+    async def delete_rero_mapping(self, id):
+        g = await self.get_guild()
         if str(id) in g.reaction_role_mapping.keys():
             g.reaction_role_mapping.pop(str(id))
             g.save()
@@ -129,35 +150,35 @@ class GuildService:
         giveaway.previous_winners = prev_winners
         giveaway.save()
         
-    def add_raid_phrase(self, phrase: str) -> bool:
-        existing = self.get_guild().raid_phrases.filter(word=phrase)
+    async def add_raid_phrase(self, phrase: str) -> bool:
+        existing = await self.get_guild().raid_phrases.filter(word=phrase)
         if(len(existing) > 0):
             return False
-        Guild.objects(_id=cfg.guild_id).update_one(push__raid_phrases=FilterWord(word=phrase, bypass=5, notify=True))
+        Guild.find(Guild.id == cfg.guild_id).update_one(push__raid_phrases=FilterWord(word=phrase, bypass=5, notify=True))
         return True
     
     def remove_raid_phrase(self, phrase: str):
-        Guild.objects(_id=cfg.guild_id).update_one(pull__raid_phrases__word=FilterWord(word=phrase).word)
+        Guild.find(Guild.id == cfg.guild_id).update_one(pull__raid_phrases__word=FilterWord(word=phrase).word)
 
     def set_spam_mode(self, mode) -> None:
-        Guild.objects(_id=cfg.guild_id).update_one(set__ban_today_spam_accounts=mode)
+        Guild.find(Guild.id == cfg.guild_id).update_one(set__ban_today_spam_accounts=mode)
 
-    def add_filtered_word(self, fw: FilterWord) -> None:
-        existing = self.get_guild().filter_words.filter(word=fw.word)
+    async def add_filtered_word(self, fw: FilterWord) -> None:
+        existing = await self.get_guild().filter_words.filter(word=fw.word)
         if(len(existing) > 0):
             return False
 
-        Guild.objects(_id=cfg.guild_id).update_one(push__filter_words=fw)
+        Guild.find(Guild.id == cfg.guild_id).update_one(push__filter_words=fw)
         return True
 
     def remove_filtered_word(self, word: str):
-        return Guild.objects(_id=cfg.guild_id).update_one(pull__filter_words__word=FilterWord(word=word).word)
+        return Guild.find(Guild.id == cfg.guild_id).update_one(pull__filter_words__word=FilterWord(word=word).word)
 
     def update_filtered_word(self, word: FilterWord):
         return Guild.objects(_id=cfg.guild_id, filter_words__word=word.word).update_one(set__filter_words__S=word)
 
     def add_whitelisted_guild(self, id: int):
-        g = Guild.objects(_id=cfg.guild_id)
+        g = Guild.find(Guild.id == cfg.guild_id)
         g2 = g.first()
         if id not in g2.filter_excluded_guilds:
             g.update_one(push__filter_excluded_guilds=id)
@@ -165,7 +186,7 @@ class GuildService:
         return False
 
     def remove_whitelisted_guild(self, id: int):
-        g = Guild.objects(_id=cfg.guild_id)
+        g = Guild.find(Guild.id == cfg.guild_id)
         g2 = g.first()
         if id in g2.filter_excluded_guilds:
             g.update_one(pull__filter_excluded_guilds=id)
@@ -173,7 +194,7 @@ class GuildService:
         return False
 
     def add_ignored_channel(self, id: int):
-        g = Guild.objects(_id=cfg.guild_id)
+        g = Guild.find(Guild.id == cfg.guild_id)
         g2 = g.first()
         if id not in g2.filter_excluded_channels:
             g.update_one(push__filter_excluded_channels=id)
@@ -181,7 +202,7 @@ class GuildService:
         return False
 
     def remove_ignored_channel(self, id: int):
-        g = Guild.objects(_id=cfg.guild_id)
+        g = Guild.find(Guild.id == cfg.guild_id)
         g2 = g.first()
         if id in g2.filter_excluded_channels:
             g.update_one(pull__filter_excluded_channels=id)
@@ -189,7 +210,7 @@ class GuildService:
         return False
 
     def add_ignored_channel_logging(self, id: int):
-        g = Guild.objects(_id=cfg.guild_id)
+        g = Guild.find(Guild.id == cfg.guild_id)
         g2 = g.first()
         if id not in g2.logging_excluded_channels:
             g.update_one(push__logging_excluded_channels=id)
@@ -197,24 +218,24 @@ class GuildService:
         return False
 
     def remove_ignored_channel_logging(self, id: int):
-        g = Guild.objects(_id=cfg.guild_id)
+        g = Guild.find(Guild.id == cfg.guild_id)
         g2 = g.first()
         if id in g2.logging_excluded_channels:
             g.update_one(pull__logging_excluded_channels=id)
             return True
         return False
 
-    def get_locked_channels(self):
-        return self.get_guild().locked_channels
+    async def get_locked_channels(self):
+        return await self.get_guild().locked_channels
 
     def add_locked_channels(self, channel):
-        Guild.objects(_id=cfg.guild_id).update_one(push__locked_channels=channel)
+        Guild.find(Guild.id == cfg.guild_id).update_one(push__locked_channels=channel)
 
     def remove_locked_channels(self, channel):
-        Guild.objects(_id=cfg.guild_id).update_one(pull__locked_channels=channel)
+        Guild.find(Guild.id == cfg.guild_id).update_one(pull__locked_channels=channel)
 
     def set_nsa_mapping(self, channel_id, webhooks):
-        guild = Guild.objects(_id=cfg.guild_id).first()
+        guild = Guild.find(Guild.id == cfg.guild_id).first()
         guild.nsa_mapping[str(channel_id)] = webhooks
         guild.save()
 

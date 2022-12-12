@@ -47,7 +47,7 @@ class ModActions(commands.Cog):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
         await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
@@ -66,7 +66,7 @@ class ModActions(commands.Cog):
     async def roblox(self, ctx: GIRContext, member: ModsAndAboveMember) -> None:
         reason = "This Discord server is for iOS jailbreaking, not Roblox. Please join https://discord.gg/jailbreak instead, thank you!"
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
         await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
@@ -102,7 +102,7 @@ class ModActions(commands.Cog):
         if time > now + timedelta(days=14):
             raise commands.BadArgument("Mutes can't be longer than 14 days!")
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         case = Case(
             _id=db_guild.case_id,
             _type="MUTE",
@@ -142,7 +142,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(reason="Reason for unmuting")
     @transform_context
     async def unmute(self, ctx: GIRContext, member: ModsAndAboveMember, reason: str) -> None:
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         if not member.is_timed_out():
             raise commands.BadArgument("This user is not muted.")
@@ -181,7 +181,7 @@ class ModActions(commands.Cog):
     async def ban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         member_is_external = isinstance(user, discord.User)
 
@@ -217,7 +217,7 @@ class ModActions(commands.Cog):
     async def staffban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         member_is_external = isinstance(user, discord.User)
 
@@ -279,7 +279,7 @@ class ModActions(commands.Cog):
 
         self.bot.ban_cache.unban(user.id)
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         case = Case(
             _id=db_guild.case_id,
             _type="UNBAN",
@@ -358,7 +358,7 @@ class ModActions(commands.Cog):
         dmed = await notify_user(member, f"Your warn has been lifted in {ctx.guild}.", log)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, guild_service.get_guild(), member, log, dmed)
+        await submit_public_log(ctx, await guild_service.get_guild(), member, log, dmed)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -392,7 +392,7 @@ class ModActions(commands.Cog):
         dmed = await notify_user(member, f"Your case was updated in {ctx.guild.name}.", log)
 
         public_chan = ctx.guild.get_channel(
-            guild_service.get_guild().channel_public)
+            (await guild_service.get_guild()).channel_public)
 
         found = False
         async for message in public_chan.history(limit=200):
@@ -445,7 +445,7 @@ class ModActions(commands.Cog):
         # remove the warn points from the user in DB
         user_service.inc_points(member.id, -1 * points)
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         case = Case(
             _id=db_guild.case_id,
             _type="REMOVEPOINTS",

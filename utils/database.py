@@ -1,9 +1,8 @@
 import asyncio
-from io import BytesIO
+# from io import BytesIO
 import os
 from beanie import init_beanie
-# import mongoengine
-# from data.model import Guild
+from data.model import Guild
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 
 from data.model.guild import Guild
@@ -12,20 +11,18 @@ from .logging import logger
 
 class Database:
     client: AsyncIOMotorClient
+    fs: AsyncIOMotorGridFSBucket
     
     def __init__(self):
         logger.info("Starting database...")
         if os.environ.get("DB_CONNECTION_STRING") is None:
-            # mongoengine.register_connection(
-            #     host=os.environ.get("DB_HOST"), port=int(os.environ.get("DB_PORT")), alias="default", name="botty")
             self.client = AsyncIOMotorClient(f"mongodb://{os.environ.get('DB_HOST')}:{os.environ.get('DB_PORT')}")
         else:
             self.client = AsyncIOMotorClient(os.environ.get("DB_CONNECTION_STRING"))
-            
-        asyncio.run(self.init_db())
-        
+
     async def init_db(self):
         await init_beanie(database=self.client.botty, document_models=[Guild])
+        self.fs = AsyncIOMotorGridFSBucket(self.client.botty)
         logger.info("Database connected and loaded successfully!")
         
         # guild = await Guild.find_one(Guild.id == cfg.guild_id)

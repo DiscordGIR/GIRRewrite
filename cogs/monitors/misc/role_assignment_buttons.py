@@ -18,7 +18,7 @@ class RoleAssignButtons(commands.Cog):
         # this function is run when the bot is started.
         # we recreate the view as we did in the /post command
         guild = self.bot.get_guild(cfg.guild_id)
-        rero_mappings = guild_service.all_rero_mappings()
+        rero_mappings = await guild_service.all_rero_mappings()
         for _, mapping in rero_mappings.items():
             view = discord.ui.View(timeout=None)
             for emoji, role in mapping.items():
@@ -36,7 +36,7 @@ class RoleAssignButtons(commands.Cog):
     async def post_message(self, ctx: GIRContext):
         # timeout is None because we want this view to be persistent
         channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_reaction_roles)
+            (await guild_service.get_guild()).channel_reaction_roles)
         if channel is None:
             raise commands.BadArgument("Role assignment channel not found!")
 
@@ -52,7 +52,7 @@ class RoleAssignButtons(commands.Cog):
     async def _set(self, ctx: GIRContext, message_id: str):
         message_id = int(message_id)
         request_role_channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_reaction_roles)
+            (await guild_service.get_guild()).channel_reaction_roles)
 
         if request_role_channel is None:
             return
@@ -112,7 +112,7 @@ class RoleAssignButtons(commands.Cog):
             raise commands.BadArgument("Message ID must be an int")
 
         channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_reaction_roles)
+            (await guild_service.get_guild()).channel_reaction_roles)
 
         if channel is None:
             return
@@ -212,7 +212,7 @@ class RoleAssignButtons(commands.Cog):
             raise commands.BadArgument("I can't move to the same message.")
 
         channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_reaction_roles)
+            (await guild_service.get_guild()).channel_reaction_roles)
 
         if channel is None:
             return
@@ -255,7 +255,7 @@ class RoleAssignButtons(commands.Cog):
     @transform_context
     async def repost(self, ctx: GIRContext):
         channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_reaction_roles)
+            (await guild_service.get_guild()).channel_reaction_roles)
 
         if channel is None:
             return

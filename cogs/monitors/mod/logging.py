@@ -30,7 +30,7 @@ class Logging(commands.Cog):
             return
 
         db_user = user_service.get_user(member.id)
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         channel = member.guild.get_channel(db_guild.channel_private)
 
         embed = discord.Embed(title="Member joined")
@@ -61,7 +61,7 @@ class Logging(commands.Cog):
         if member.guild.id != cfg.guild_id:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         channel = member.guild.get_channel(db_guild.channel_private)
 
         async for action in member.guild.audit_logs(limit=1, action=discord.AuditLogAction.kick):
@@ -91,7 +91,7 @@ class Logging(commands.Cog):
         if reaction.message.channel.is_news():
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         webhook = db_guild.emoji_logging_webhook
         if webhook is None:
@@ -134,7 +134,7 @@ class Logging(commands.Cog):
         if not before.content or not after.content or before.content == after.content:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         if before.channel.id in db_guild.logging_excluded_channels:
             return
 
@@ -182,7 +182,7 @@ class Logging(commands.Cog):
         if message.content == "" or not message.content:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         if message.channel.id in db_guild.logging_excluded_channels:
             return
 
@@ -224,7 +224,7 @@ class Logging(commands.Cog):
             return
 
         members = set()
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         if message[0].channel.id in db_guild.logging_excluded_channels:
             return
 
@@ -266,7 +266,7 @@ class Logging(commands.Cog):
         if not guild.id == cfg.guild_id:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         channel = guild.get_channel(db_guild.channel_private)
 
         embed = discord.Embed(title="Member Banned")
@@ -292,7 +292,7 @@ class Logging(commands.Cog):
         if not guild.id == cfg.guild_id:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         channel = guild.get_channel(db_guild.channel_private)
 
         embed = discord.Embed(title="User Unbanned")
@@ -327,7 +327,7 @@ class Logging(commands.Cog):
         if before.name == after.name and before.discriminator == after.discriminator:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         guild = self.bot.get_guild(cfg.guild_id)
         channel = guild.get_channel(db_guild.channel_private)
 
@@ -379,7 +379,7 @@ class Logging(commands.Cog):
         embed.timestamp = datetime.now()
         embed.set_footer(text=after.id)
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         private = after.guild.get_channel(db_guild.channel_private)
         if private:
             await private.send(embed=embed)
@@ -406,7 +406,7 @@ class Logging(commands.Cog):
                 embed.add_field(
                     name="Updated by", value=f'{action.user} ({action.user.mention})', inline=False)
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         private = member.guild.get_channel(db_guild.channel_private)
         if private:
             await private.send(embed=embed)
@@ -429,7 +429,7 @@ class Logging(commands.Cog):
             name="Member", value=f'{member} ({member.mention})', inline=True)
         embed.timestamp = datetime.now()
         embed.set_footer(text=member.id)
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         private = member.guild.get_channel(db_guild.channel_private)
         if private:
             await private.send(embed=embed)
@@ -455,7 +455,7 @@ class Logging(commands.Cog):
             else:
                 message_content += f"{option.get('name')}: {option.get('value')} "
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         private = interaction.guild.get_channel(db_guild.channel_private)
 
         embed = discord.Embed(title="Member Used Command",
@@ -500,7 +500,7 @@ class Logging(commands.Cog):
         embed.timestamp = datetime.now()
         embed.set_footer(text=member.id)
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         private = member.guild.get_channel(db_guild.channel_private)
         if private:
             await private.send(embed=embed)

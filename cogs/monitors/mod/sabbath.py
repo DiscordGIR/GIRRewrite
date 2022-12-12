@@ -25,7 +25,7 @@ class Sabbath(commands.Cog):
         if not (cfg.aaron_id in message.raw_mentions or cfg.aaron_role in message.raw_role_mentions):
             return
 
-        if not guild_service.get_guild().sabbath_mode:
+        if not (await guild_service.get_guild()).sabbath_mode:
             return
 
         if gatekeeper.has(message.guild, message.author, 5):

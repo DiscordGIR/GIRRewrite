@@ -17,20 +17,23 @@ from utils.views import PFPButton, PFPView
 from utils.views.menus.report import manual_report
 from utils.views.menus.report_action import WarnView
 
-support_tags = [tag.name for tag in guild_service.get_guild(
-).tags if "support" in tag.name]
+# support_tags = [tag.name for tag in await guild_service.get_guild(
+# ).tags if "support" in tag.name]
 
 tag_cooldown = CooldownMapping.from_cooldown(
     1, 5, MessageTextBucket.custom)
 
 
-def whisper(ctx: GIRContext):
-    if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != guild_service.get_guild().channel_botspam:
+async def whisper(ctx: GIRContext):
+    if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != (await guild_service.get_guild()).channel_botspam:
         ctx.whisper = True
     else:
         ctx.whisper = False
 
 async def handle_support_tag(ctx: GIRContext, member: discord.Member) -> None:
+    support_tags = [tag.name for tag in await guild_service.get_guild(
+        ).tags if "support" in tag.name]
+
     if not support_tags:
         raise commands.BadArgument("No support tags found.")
 
@@ -44,7 +47,7 @@ async def handle_support_tag(ctx: GIRContext, member: discord.Member) -> None:
     bucket = tag_cooldown.get_bucket(tag.name)
     current = datetime.now().timestamp()
     # ratelimit only if the invoker is not a moderator
-    if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(guild_service.get_guild().role_sub_mod) in ctx.author.roles):
+    if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role((await guild_service.get_guild()).role_sub_mod) in ctx.author.roles):
         raise commands.BadArgument("That tag is on cooldown.")
 
     # if the Tag has an image, add it to the embed
@@ -96,13 +99,13 @@ def setup_context_commands(bot: commands.Bot):
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="View avatar")
     async def avatar_rc(interaction: discord.Interaction, member: discord.Member):
         ctx = GIRContext(interaction)
-        whisper(ctx)
+        await whisper(ctx)
         await handle_avatar(ctx, member)
 
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="View avatar")
     async def avatar_msg(interaction: discord.Interaction, message: discord.Message):
         ctx = GIRContext(interaction)
-        whisper(ctx)
+        await whisper(ctx)
         await handle_avatar(ctx, message.author)
 
     @mod_and_up()
@@ -144,11 +147,11 @@ def setup_context_commands(bot: commands.Bot):
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Userinfo")
     async def userinfo_rc(interaction: discord.Interaction, user: discord.Member) -> None:
         ctx = GIRContext(interaction)
-        whisper(ctx)
+        await whisper(ctx)
         await handle_userinfo(ctx, user)
 
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Userinfo")
     async def userinfo_msg(interaction: discord.Interaction, message: discord.Message) -> None:
         ctx = GIRContext(interaction)
-        whisper(ctx)
+        await whisper(ctx)
         await handle_userinfo(ctx, message.author)

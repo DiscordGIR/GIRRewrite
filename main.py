@@ -7,8 +7,8 @@ from discord import app_commands
 from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError, TransformerError
 from extensions import initial_extensions
 from utils import cfg, db, logger, GIRContext, BanCache, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
-# from utils.framework import PermissionsFailure, gatekeeper, find_triggered_filters
-# from cogs.commands.context_commands import setup_context_commands
+from utils.framework import PermissionsFailure, gatekeeper, find_triggered_filters
+from cogs.commands.context_commands import setup_context_commands
 
 from typing import Union
 from data.services.user_service import user_service
@@ -32,15 +32,15 @@ class Bot(commands.Bot):
         self.rule_cache = RuleCache(self)
 
         # force the config object and database connection to be loaded
-        # if cfg and db and gatekeeper:
-        #     logger.info("Presetup phase completed! Connecting to Discord...")
+        if cfg and db and gatekeeper:
+            logger.info("Presetup phase completed! Connecting to Discord...")
 
     async def setup_hook(self):
         bot.remove_command("help")
-        # for extension in initial_extensions:
-        #     await self.load_extension(extension)
+        for extension in initial_extensions:
+            await self.load_extension(extension)
 
-        # setup_context_commands(self)
+        setup_context_commands(self)
 
         self.tasks = Tasks(self)
         await init_client_session()
@@ -89,7 +89,7 @@ class MyTree(app_commands.CommandTree):
             else:
                 message_content += str(option.get("value")) + " "
 
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             message_content, interaction.user)
 
         if triggered_words:
@@ -113,30 +113,30 @@ async def app_command_error(interaction: discord.Interaction, error: AppCommandE
         await ctx.channel.send(embed=discord.Embed(color=discord.Color.red(), title=":(\nYour command ran into a problem.", description=f"Sorry {interaction.user.mention}, it looks like I took too long to respond to you! If I didn't do what you wanted in time, please try again."), delete_after=7)
         return
 
-    # if (isinstance(error, commands.MissingRequiredArgument)
-    #         or isinstance(error, PermissionsFailure)
-    #         or isinstance(error, TransformerError)
-    #         or isinstance(error, commands.BadArgument)
-    #         or isinstance(error, commands.BadUnionArgument)
-    #         or isinstance(error, commands.MissingPermissions)
-    #         or isinstance(error, commands.BotMissingPermissions)
-    #         or isinstance(error, commands.MaxConcurrencyReached)
-    #         or isinstance(error, commands.NoPrivateMessage)):
-    #     await ctx.send_error(error, followup=True, whisper=True, delete_after=5)
-    # else:
-    #     try:
-    #         raise error
-    #     except:
-    #         tb = traceback.format_exc()
-    #         logger.error(tb)
-    #         if len(tb.split('\n')) > 8:
-    #             tb = '\n'.join(tb.split('\n')[-8:])
+    if (isinstance(error, commands.MissingRequiredArgument)
+            or isinstance(error, PermissionsFailure)
+            or isinstance(error, TransformerError)
+            or isinstance(error, commands.BadArgument)
+            or isinstance(error, commands.BadUnionArgument)
+            or isinstance(error, commands.MissingPermissions)
+            or isinstance(error, commands.BotMissingPermissions)
+            or isinstance(error, commands.MaxConcurrencyReached)
+            or isinstance(error, commands.NoPrivateMessage)):
+        await ctx.send_error(error, followup=True, whisper=True, delete_after=5)
+    else:
+        try:
+            raise error
+        except:
+            tb = traceback.format_exc()
+            logger.error(tb)
+            if len(tb.split('\n')) > 8:
+                tb = '\n'.join(tb.split('\n')[-8:])
 
-    #         tb_formatted = tb
-    #         if len(tb_formatted) > 1000:
-    #             tb_formatted = "...\n" + tb_formatted[-1000:]
+            tb_formatted = tb
+            if len(tb_formatted) > 1000:
+                tb_formatted = "...\n" + tb_formatted[-1000:]
 
-    #         await ctx.send_error(description=f"`{error}`\n```{tb_formatted}```", followup=True, whisper=True, delete_after=5)
+            await ctx.send_error(description=f"`{error}`\n```{tb_formatted}```", followup=True, whisper=True, delete_after=5)
 
 
 @bot.event
@@ -163,6 +163,8 @@ async def on_ready():
 
 
 async def main():
+    await db.init_db()
+    await gatekeeper._init()
     async with bot:
         await bot.start(os.environ.get("GIR_TOKEN"), reconnect=True)
 

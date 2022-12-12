@@ -29,7 +29,7 @@ async def report(bot: discord.Client, message: discord.Message, word: str, invit
         "Was the filtered word an invite?"
 
     """
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
     channel = message.guild.get_channel(db_guild.channel_reports)
 
     ping_string = prepare_ping_string(db_guild, message)
@@ -56,7 +56,7 @@ async def manual_report(mod: discord.Member, target: Union[discord.Message, disc
         "The moderator that started this report
 
     """
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
     channel = target.guild.get_channel(db_guild.channel_reports)
 
     ping_string = f"{mod.mention} reported a member"
@@ -84,7 +84,7 @@ async def report_raid_phrase(bot: discord.Client, message: discord.Message, doma
         "Was the filtered word an invite?"
 
     """
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
     channel = message.guild.get_channel(db_guild.channel_reports)
 
     ping_string = prepare_ping_string(db_guild, message)
@@ -96,7 +96,7 @@ async def report_raid_phrase(bot: discord.Client, message: discord.Message, doma
 
 
 async def report_spam(bot, msg, user, title):
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
     channel = msg.guild.get_channel(db_guild.channel_reports)
     ping_string = prepare_ping_string(db_guild, msg)
 
@@ -116,7 +116,7 @@ async def report_raid(user, msg=None):
     if msg is not None:
         embed.add_field(name="Message", value=msg.content, inline=False)
 
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
     reports_channel = user.guild.get_channel(db_guild.channel_reports)
     await reports_channel.send(f"<@&{db_guild.role_moderator}>", embed=embed, allowed_mentions=discord.AllowedMentions(roles=True))
 

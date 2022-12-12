@@ -8,7 +8,7 @@ from fold_to_ascii import fold
 from utils.framework import gatekeeper
 
 
-def find_triggered_filters(input, member: discord.Member) -> List[FilterWord]:
+async def find_triggered_filters(input, member: discord.Member) -> List[FilterWord]:
     """
     BAD WORD FILTER
     """
@@ -22,7 +22,7 @@ def find_triggered_filters(input, member: discord.Member) -> List[FilterWord]:
     folded_without_spaces_and_punctuation = folded_without_spaces.translate(
         str.maketrans('', '', string.punctuation))
 
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
 
     if not input_lowercase:
         return []
@@ -50,7 +50,7 @@ def find_triggered_filters(input, member: discord.Member) -> List[FilterWord]:
     return words_found
 
 
-def find_triggered_raid_phrases(input, member):
+async def find_triggered_raid_phrases(input, member):
     symbols = (u"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
                u"abBrdeex3nnKnmHonpcTyoxu4wwbbbeoRABBrDEEX3NNKNMHONPCTyOXU4WWbbbEOR")
 
@@ -62,7 +62,7 @@ def find_triggered_raid_phrases(input, member):
         str.maketrans('', '', string.punctuation))
 
     if folded_message:
-        for word in guild_service.get_guild().raid_phrases:
+        for word in (await guild_service.get_guild()).raid_phrases:
             if not gatekeeper.has(member.guild, member, word.bypass):
                 if (word.word.lower() in folded_message) or \
                     (not word.false_positive and word.word.lower() in folded_without_spaces) or \

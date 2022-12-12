@@ -181,7 +181,7 @@ async def remove_timeout(id: int) -> None:
 
     """
 
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
 
     case = Case(
         _id=db_guild.case_id,
@@ -247,7 +247,7 @@ async def remind(id, reminder):
         await member.send(embed=embed)
     except Exception:
         channel = guild.get_channel(
-            guild_service.get_guild().channel_botspam)
+            (await guild_service.get_guild()).channel_botspam)
         await channel.send(member.mention, embed=embed)
 
 
@@ -275,7 +275,7 @@ async def remove_bday(id: int) -> None:
 
     """
 
-    db_guild = guild_service.get_guild()
+    db_guild = await guild_service.get_guild()
     guild = BOT_GLOBAL.get_guild(cfg.guild_id)
     if guild is None:
         return

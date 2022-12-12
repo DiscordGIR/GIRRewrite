@@ -69,7 +69,7 @@ class Filter(commands.Cog):
             return
         if gatekeeper.has(message.guild, message.author, 7):
             return
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         role_submod = message.guild.get_role(db_guild.role_sub_mod)
         if role_submod is not None and role_submod in message.author.roles:
             return
@@ -95,7 +95,7 @@ class Filter(commands.Cog):
         await self.detect_cij_or_eta(message, db_guild)
 
     async def nick_filter(self, member):
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             member.display_name, member)
 
         if not triggered_words:
@@ -111,7 +111,7 @@ class Filter(commands.Cog):
             pass
 
     async def bad_word_filter(self, message, db_guild) -> bool:
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             message.content, message.author)
         if not triggered_words:
             return
@@ -264,7 +264,7 @@ class Filter(commands.Cog):
         log_embed.set_footer(text=message.author.id)
 
         log_channel = message.guild.get_channel(
-            guild_service.get_guild().channel_private)
+            (await guild_service.get_guild()).channel_private)
         if log_channel is not None:
             await log_channel.send(embed=log_embed)
 
@@ -309,7 +309,7 @@ class Filter(commands.Cog):
         intent_news_triggered = any(intent in text for intent in intent_news)
         intent_cij_triggered = any(intent in text for intent in intent_cij)
         
-        if (intent_news_triggered or intent_cij_triggered) and subject_and_word_in_message and message.channel.id == guild_service.get_guild().channel_general:
+        if (intent_news_triggered or intent_cij_triggered) and subject_and_word_in_message and message.channel.id == (await guild_service.get_guild()).channel_general:
             view = discord.ui.View()
             embed = discord.Embed(color=discord.Color.orange())
             embed.description = f"Please keep support or jailbreak related messages in the appropriate channels. Thanks!"

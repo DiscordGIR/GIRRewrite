@@ -18,7 +18,7 @@ def whisper(func: discord.app_commands.Command):
 
     @functools.wraps(func)
     async def decorator(self, ctx: GIRContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != guild_service.get_guild().channel_botspam:
+        if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != (await guild_service.get_guild()).channel_botspam:
             ctx.whisper = True
         else:
             ctx.whisper = False
@@ -31,7 +31,7 @@ def whisper_in_general(func: discord.app_commands.Command):
     """If the user is not a moderator and the invoked channel is #general, send the response to the command ephemerally"""
     @functools.wraps(func)
     async def decorator(self, ctx: GIRContext, *args, **kwargs):
-        if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id == guild_service.get_guild().channel_general:
+        if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id == (await guild_service.get_guild()).channel_general:
             ctx.whisper = True
         else:
             ctx.whisper = False
@@ -44,7 +44,7 @@ def whisper_outside_jb_and_geniusbar_unless_genius(func: discord.app_commands.Co
     """If the user is not a Genius and the invoked channel is not #jailbreak, #genius-bar, #bot-commands, send the response to the command ephemerally"""
     @functools.wraps(func)
     async def decorator(self, ctx: GIRContext, *args, **kwargs):
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         if not gatekeeper.has(ctx.guild, ctx.author, 4) and ctx.channel.id not in [db_guild.channel_jailbreak, db_guild.channel_genius_bar, db_guild.channel_botspam]:
             ctx.whisper = True
         else:
@@ -114,7 +114,7 @@ def genius_and_up():
 def submod_or_admin_and_up():
     """If the user is not a submod OR is not at least an Administrator, deny command access"""
     async def predicate(interaction: Interaction):
-        db = guild_service.get_guild()
+        db = await guild_service.get_guild()
         submod = interaction.guild.get_role(db.role_sub_mod)
         if not submod:
             return
@@ -130,7 +130,7 @@ def submod_or_admin_and_up():
 def genius_or_submod_and_up():
     """If the user is not at least a Genius™️ or a submod, deny command access"""
     async def predicate(interaction: Interaction):
-        db = guild_service.get_guild()
+        db = await guild_service.get_guild()
         submod = interaction.guild.get_role(db.role_sub_mod)
         if not submod:
             return
