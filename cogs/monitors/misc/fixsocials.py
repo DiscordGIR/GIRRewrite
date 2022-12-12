@@ -50,11 +50,13 @@ class FixSocials(commands.Cog):
                 redirected_url = str(response).split("Location': \'")[1].split("\'")[0]
         
         redirected_url = redirected_url.replace('www.tiktok.com', 'vxtiktok.com')
-
-        if tracking_id_index := redirected_url.index('?') is not None:
+        print(redirected_url)
+        if (tracking_id_index := redirected_url.index('?')) is not None:
             # remove everything after the question mark (tracking ID)
+            print(tracking_id_index)
             redirected_url = redirected_url[:tracking_id_index]
 
+        print(redirected_url)
         return redirected_url
 
     async def fix_tiktok(self, message: discord.Message, link: str):
