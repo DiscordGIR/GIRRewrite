@@ -1,17 +1,18 @@
-import mongoengine
+from datetime import datetime
+from typing import List
+from beanie import Document
+from pydantic import Field
 
-class Giveaway(mongoengine.Document):
-    _id              = mongoengine.IntField(required=True)
-    is_ended         = mongoengine.BooleanField(default=False)
-    end_time         = mongoengine.DateTimeField()
-    channel          = mongoengine.IntField()
-    name             = mongoengine.StringField()
-    entries          = mongoengine.ListField(mongoengine.IntField(), default=[])
-    previous_winners = mongoengine.ListField(mongoengine.IntField(), default=[])
-    sponsor          = mongoengine.IntField()
-    winners          = mongoengine.IntField()
+class Giveaway(Document):
+    _id: int = Field(default_factory=int)
+    is_ended: bool = False
+    end_time: datetime
+    channel: int
+    name: str
+    entries: List[int] = Field(default_factory=list)
+    previous_winners: List[int] = Field(default_factory=list)
+    sponsor: int
+    winners: int
 
-    meta = {
-        'db_alias': 'default',
-        'collection': 'giveaways'
-    }
+    class Settings:
+        name = "giveaways"

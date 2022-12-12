@@ -1,8 +1,6 @@
 import asyncio
-import gzip
 from io import BytesIO
 import os
-import tempfile
 from beanie import init_beanie
 # import mongoengine
 # from data.model import Guild
@@ -44,8 +42,8 @@ class Database:
         #         fs = AsyncIOMotorGridFSBucket(self.client.botty)
         #         await fs.download_to_stream(uploaded, file)
 
-        # if not Guild.objects(_id=cfg.guild_id):
-        #     raise Exception(f"The database has not been set up for guild {cfg.guild_id}! Please refer to README.md.")
+        if not await Guild.find_one(Guild.id == cfg.guild_id):
+            raise Exception(f"The database has not been set up for guild {cfg.guild_id}! Please refer to README.md.")
 
 
 db = Database()

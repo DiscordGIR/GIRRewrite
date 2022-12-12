@@ -1,28 +1,31 @@
-import mongoengine
 
-class User(mongoengine.Document):
-    _id                 = mongoengine.IntField(required=True)
-    is_clem             = mongoengine.BooleanField(default=False, required=True)
-    is_xp_frozen        = mongoengine.BooleanField(default=False, required=True)
-    is_muted            = mongoengine.BooleanField(default=False, required=True)
-    is_music_banned     = mongoengine.BooleanField(default=False, required=True)
-    was_warn_kicked     = mongoengine.BooleanField(default=False, required=True)
-    birthday_excluded   = mongoengine.BooleanField(default=False, required=True)
-    raid_verified       = mongoengine.BooleanField(default=False, required=True)
+
+from typing import Dict, List, Optional
+from beanie import Document
+from pydantic import Field
+
+
+class User(Document):
+    _id: int = Field(default_factory=int)
+    is_clem: bool = False
+    is_xp_frozen: bool = False
+    is_muted: bool = False
+    is_music_banned: bool = False
+    was_warn_kicked: bool = False
+    birthday_excluded: bool = False
+    raid_verified: bool = False
     
-    xp                  = mongoengine.IntField(default=0, required=True)
-    trivia_points       = mongoengine.IntField(default=0, required=True)
-    level               = mongoengine.IntField(default=0, required=True)
-    warn_points         = mongoengine.IntField(default=0, required=True)
+    xp: int = 0
+    trivia_points: int = 0
+    level: int = 0
+    warn_points: int = 0
 
-    offline_report_ping = mongoengine.BooleanField(default=False, required=True)
+    offline_report_ping: bool = False
     
-    timezone            = mongoengine.StringField(default=None)
-    birthday            = mongoengine.ListField(default=[])
-    sticky_roles        = mongoengine.ListField(default=[])
-    command_bans        = mongoengine.DictField(default={})
+    timezone: Optional[str] = None
+    birthday: List[int] = Field(default_factory=list)
+    sticky_roles: List[int] = Field(default_factory=list)
+    command_bans: Dict = Field(default_factory=dict)
 
-    meta = {
-        'db_alias': 'default',
-        'collection': 'users'
-    }
+    class Settings:
+        name = "users"

@@ -1,17 +1,19 @@
-import mongoengine
-import datetime
+from datetime import datetime
+from typing import Optional
 
-class Case(mongoengine.EmbeddedDocument):
-    _id               = mongoengine.IntField(required=True)
-    _type             = mongoengine.StringField(required=True)
-    date              = mongoengine.DateTimeField(default=datetime.datetime.now, required=True)
-    until             = mongoengine.DateTimeField(default=None)
-    mod_id            = mongoengine.IntField(required=True)
-    mod_tag           = mongoengine.StringField(required=True)
-    reason            = mongoengine.StringField(required=True)
-    punishment        = mongoengine.StringField()
-    lifted            = mongoengine.BooleanField(default=False)
-    lifted_by_tag     = mongoengine.StringField()
-    lifted_by_id      = mongoengine.IntField()
-    lifted_reason     = mongoengine.StringField()
-    lifted_date       = mongoengine.DateField()
+from pydantic import BaseModel, Field
+
+class Case(BaseModel):
+    _id: int
+    _type: str
+    date: datetime = Field(default_factory=datetime.now)
+    until: Optional[datetime] = None
+    mod_id: int
+    mod_tag: str
+    reason: str
+    punishment: str
+    lifted: bool = False
+    lifted_by_tag: Optional[str] = None
+    lifted_by_id: Optional[int] = None
+    lifted_reason: Optional[str] = None
+    lifted_date: Optional[datetime] = None
