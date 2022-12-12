@@ -1,5 +1,7 @@
 import asyncio
 import re
+from aiocache import cached
+import aiohttp
 
 import discord
 from data.services import guild_service
@@ -38,14 +40,28 @@ class FixSocials(commands.Cog):
             link = instagram_match.group(0)
             await self.fix_instagram(message, link)
 
-    async def fix_tiktok(self, message: discord.Message, link: str):
-        link = link.replace("www.", "")
-        link = link.replace("vm.tiktok.com/", "vm.dstn.to/")
-        link = link.replace("vt.tiktok.com/", "vm.dstn.to/")
-        link = link.replace("tiktok.com/", "vm.dstn.to/")
+    @cached(ttl=3600)
+    async def get_tiktok_redirect(self, link: str):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(link, allow_redirects=False) as response:
+                if response.status != 301:
+                    return
+            
+                redirected_url = str(response).split("Location': \'")[1].split("\'")[0]
+        
+        redirected_url = redirected_url.replace('www.tiktok.com', 'vxtiktok.com')
+        if (tracking_id_index := redirected_url.index('?')) is not None:
+            # remove everything after the question mark (tracking ID)
+            redirected_url = redirected_url[:tracking_id_index]
 
-        # get video id from link
-        await message.reply(f"I hate tiktok but here you go {link}")
+        return redirected_url
+
+    async def fix_tiktok(self, message: discord.Message, link: str):
+        redirected_url = await self.get_tiktok_redirect(link)
+        if redirected_url is None:
+            return
+
+        await message.reply(f"I hate tiktok but here you go {redirected_url}")
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 
