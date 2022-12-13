@@ -1,6 +1,6 @@
 from typing import Dict, List
-from beanie import Document
-from pydantic import Field
+from beanie import Document, Link
+from pydantic import BaseModel, Field
 from .filterword import FilterWord
 from .tag import Tag
 
@@ -57,3 +57,6 @@ class Guild(Document):
 
     class Settings:
         name = "guilds"
+
+class TagView(BaseModel):
+    tags: List[Tag] = Field(default_factory=list)

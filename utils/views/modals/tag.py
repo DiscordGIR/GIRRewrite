@@ -76,12 +76,13 @@ class TagModal(discord.ui.Modal):
                     return
 
         # prepare tag data for database
-        tag = Tag()
-        tag.name = self.tag_name.lower()
-        tag.content = description
-        tag.added_by_id = self.author.id
-        tag.added_by_tag = str(self.author)
-        tag.button_links = buttons
+        tag = Tag(
+            name = self.tag_name.lower(),
+            content = description,
+            added_by_id = self.author.id,
+            added_by_tag = str(self.author),
+            button_links = buttons
+        )
 
         self.tag = tag
         self.stop()

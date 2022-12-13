@@ -1,6 +1,8 @@
 from io import BytesIO
 from data.model import FilterWord, Guild, Tag, Giveaway
+from data.model.guild import TagView
 from utils import cfg
+from beanie.odm.operators.update.array import Push, Pull
 
 class GuildService:
     async def get_guild(self) -> Guild:
@@ -15,42 +17,49 @@ class GuildService:
         return await Guild.find_one(Guild.id == cfg.guild_id)
     
     async def add_tag(self, tag: Tag) -> None:
-        # Guild.find(Guild.id == cfg.guild_id)
-        await Guild.find(Guild.id == cfg.guild_id).update({ "$push": tag })
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.tags: tag}))
 
     async def remove_tag(self, tag: str):
-        # return Guild.find(Guild.id == cfg.guild_id).update_one(pull__tags__name=Tag(name=tag).name)
-        return await Guild.find(Guild.id == cfg.guild_id).update({ "$pull": { "tags": { "name": tag } } })
+        return await Guild.find(Guild.id == cfg.guild_id).update(Pull({ Guild.tags: { "name": tag } }))
 
     async def edit_tag(self, tag):
-        # return Guild.objects(_id=cfg.guild_id, tags__name=tag.name).update_one(set__tags__S=tag)
         return await Guild.find(Guild.id == cfg.guild_id).update({ "$set": { "tags.$[elem]": tag } }, array_filters=[ { "elem.name": tag.name } ])
 
+    async def all_tags(self):
+        tags = await Guild.find(Guild.id == cfg.guild_id).project(TagView).first_or_none()
+        return tags.tags
+
     async def get_tag(self, name: str):
-        # tag = Guild.objects.get(_id=cfg.guild_id).tags.filter(name=name).first()
-        # if tag is None:
-        #     return
-        # tag.use_count += 1
-        # self.edit_tag(tag)
-        # return tag
-        
-        g = await Guild.find_one(Guild.id == cfg.guild_id)
-        tag = [tag for tag in g.tags if tag.name == name]
-        print(tag)
-        return tag[0] if len(tag) > 0 else None
+        tags = await self.all_tags()
+        tags = list(filter(lambda tag: tag.name == name, tags))
+        if not tags:
+            return
 
-    async def read_tag_image(self, image_id):
+        tag = tags[0]
+        tag.use_count += 1
+        await self.edit_tag(tag)
+        return tag
+
+    async def read_image(self, image_id):
         from utils import db
-        
-        cursor = db.fs.find({"_id": image_id})
-        while (await cursor.fetch_next):
-            grid_out = cursor.next_object()
-            return grid_out
-        # temp = BytesIO()
-        # await db.fs.download_to_stream(image_id, temp)
-        # temp.seek(0)
-        # return temp
 
+        image = await db.fs.open_download_stream(image_id)
+        return image
+
+    async def delete_image(self, image_id):
+        from utils import db
+        await db.fs.delete(image_id)
+
+    async def save_image(self, image_buffer, filename, content_type):
+        from utils import db
+
+        async with db.fs.open_upload_stream(filename=filename) as stream:
+            await stream.write(image_buffer)
+            await stream.set("contentType", content_type)
+            _id = stream._id
+
+        return _id
+        
     def add_meme(self, meme: Tag) -> None:
         Guild.find(Guild.id == cfg.guild_id).update_one(push__memes=meme)
 

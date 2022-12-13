@@ -34,7 +34,7 @@ async def command_list_autocomplete(interaction: discord.Interaction, current: s
 
 
 async def tags_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-    tags = [tag.name.lower() for tag in (await guild_service.get_guild()).tags]
+    tags = [tag.name.lower() for tag in await guild_service.all_tags()]
     tags.sort()
     return [app_commands.Choice(name=tag, value=tag) for tag in tags if current.lower() in tag.lower()][:25]
 

@@ -105,11 +105,12 @@ class Tags(commands.Cog):
         _file = tag.image
         content_type = None
         if _file is not None:
-            tag_image = await guild_service.read_tag_image(tag.image)
+            tag_image = await guild_service.read_image(tag.image)
             _file = BytesIO(await tag_image.read())
             _file = discord.File(
                 _file, filename="image.gif" if tag_image.content_type == "image/gif" else "image.png")
             content_type = tag_image.content_type
+            print(content_type)
         else:
             _file = discord.utils.MISSING
 
@@ -140,7 +141,7 @@ class Tags(commands.Cog):
         content_type = None
         # if the Tag has an image, add it to the embed
         if _file is not None:
-            tag_image = await guild_service.read_tag_image(tag.image)
+            tag_image = await guild_service.read_image(tag.image)
             content_type = tag_image.content_type
             _file = BytesIO(await tag_image.read())
             _file = discord.File(
@@ -186,11 +187,13 @@ class Tags(commands.Cog):
             raise commands.BadArgument("Tag with that name already exists.")
 
         content_type = None
+        filename = None
         if image is not None:
             content_type = image.content_type
             if image.size > 8_000_000:
                 raise commands.BadArgument("That image is too big!")
 
+            filename = image.filename
             image = await image.read()
 
         modal = TagModal(bot=self.bot, tag_name=name, author=ctx.author)
@@ -203,17 +206,18 @@ class Tags(commands.Cog):
 
         # did the user want to attach an image to this tag?
         if image is not None:
-            tag.image.put(image, content_type=content_type)
+            # tag.image.put(image, content_type=content_type)
+            image_id = await guild_service.save_image(image, filename, content_type)
+            tag.image = image_id
 
         # store tag in database
         await guild_service.add_tag(tag)
 
-        _file = tag.image.read()
-        if _file is not None:
-            _file = discord.File(BytesIO(
-                _file), filename="image.gif" if tag.image.content_type == "image/gif" else "image.png")
+        if image is not None:
+            image = discord.File(BytesIO(
+                image), filename="image.gif" if content_type == "image/gif" else "image.png")
 
-        await ctx.send_followup(f"Added new tag!", file=_file or discord.utils.MISSING, embed=prepare_tag_embed(tag) or discord.utils.MISSING, view=prepare_tag_view(tag) or discord.utils.MISSING, delete_after=5)
+        await ctx.send_followup(f"Added new tag!", file=image or discord.utils.MISSING, embed=prepare_tag_embed(tag, content_type) or discord.utils.MISSING, view=prepare_tag_view(tag) or discord.utils.MISSING, delete_after=5)
 
     @genius_or_submod_and_up()
     @tags.command(description="Edit an existing tag")
@@ -281,7 +285,7 @@ class Tags(commands.Cog):
             raise commands.BadArgument("That tag does not exist.")
 
         if tag.image is not None:
-            tag.image.delete()
+            await guild_service.delete_image(tag.image)
 
         await guild_service.remove_tag(name)
         await ctx.send_warning(f"Deleted tag `{tag.name}`.", delete_after=5)
