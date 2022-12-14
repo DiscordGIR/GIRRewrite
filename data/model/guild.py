@@ -77,6 +77,8 @@ class ChannelsView(BaseModel):
     channel_subnews: int
     channel_music: int
 
+    emoji_logging_webhook: str
+    logging_excluded_channels: List[int] = Field(default_factory=list)
 
 class RolesView(BaseModel):
     role_administrator: int
@@ -96,7 +98,7 @@ class RolesView(BaseModel):
 
 
 class RolesAndChannelsView(ChannelsView, RolesView):
-    pass
+    filter_excluded_guilds: List[int] = Field(default_factory=list)
 
 
 class TagView(BaseModel):
@@ -117,7 +119,16 @@ class MetaProperties(BaseModel):
     nsa_guild_id: int
     nsa_mapping: Dict = Field(default_factory=dict)
     emoji_logging_webhook: str
+    logging_excluded_channels: List[int] = Field(default_factory=list)
     locked_channels: List[int] = Field(default_factory=list)
     filter_excluded_channels: List[int] = Field(default_factory=list)
     filter_excluded_guilds: List[int] = Field(default_factory=list)
     reaction_role_mapping: Dict = Field(default_factory=dict)
+
+
+class RaidPhraseView(BaseModel):
+    raid_phrases: List[FilterWord] = Field(default_factory=list)
+
+
+class FilterWordView(BaseModel):
+    filter_words: List[FilterWord] = Field(default_factory=list)

@@ -59,7 +59,7 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     except Exception:
         return
 
-    guild_service.inc_caseid()
+    await guild_service.inc_case_id()
     user_service.add_case(target_member.id, case)
 
     log = prepare_mute_log(mod, target_member, case)
@@ -105,7 +105,7 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
         reason=reason,
     )
 
-    guild_service.inc_caseid()
+    await guild_service.inc_case_id()
     user_service.add_case(target_member.id, case)
 
     log = prepare_unmute_log(mod, target_member, case)
@@ -152,7 +152,7 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     )
 
     # increment case ID in database for next available case ID
-    guild_service.inc_caseid()
+    await guild_service.inc_case_id()
     # add new case to DB
     user_service.add_case(target_member.id, case)
     # add warnpoints to the user in DB

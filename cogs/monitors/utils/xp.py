@@ -25,7 +25,7 @@ class Xp(commands.Cog):
             return
 
         level = user.level
-        db_guild = await guild_service.get_guild()
+        db_guild = await guild_service.get_roles()
 
         roles_to_add = self.assess_new_roles(level, db_guild)
         await self.add_new_roles(member, roles_to_add)
@@ -39,7 +39,7 @@ class Xp(commands.Cog):
         if message.author.bot:
             return
 
-        db_guild = await guild_service.get_guild()
+        db_guild = await guild_service.get_roles_and_channels()
         if message.channel.id == db_guild.channel_botspam:
             return
 

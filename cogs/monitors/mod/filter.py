@@ -69,7 +69,7 @@ class Filter(commands.Cog):
             return
         if gatekeeper.has(message.guild, message.author, 7):
             return
-        db_guild = await guild_service.get_guild()
+        db_guild = await guild_service.get_roles_and_channels()
         role_submod = message.guild.get_role(db_guild.role_sub_mod)
         if role_submod is not None and role_submod in message.author.roles:
             return

@@ -22,7 +22,7 @@ class Permissions:
     """
 
     async def _init(self):
-        the_guild: Guild = await guild_service.get_guild()
+        the_guild: Guild = await guild_service.get_roles()
         roles_to_check = [
             "role_memberplus",
             "role_memberpro",

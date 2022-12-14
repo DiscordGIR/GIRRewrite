@@ -35,11 +35,6 @@ class Birthday(commands.Cog):
         if not guild:
             return
 
-        db_guild = await guild_service.get_guild()
-        birthday_role = guild.get_role(db_guild.role_birthday)
-        if not birthday_role:
-            return
-
         # give each user whose birthday it is today the birthday role
         for person in birthdays:
             if person.birthday_excluded:
@@ -49,7 +44,7 @@ class Birthday(commands.Cog):
             if user is None:
                 return
 
-            await give_user_birthday_role(self.bot, db_guild, user, guild)
+            await give_user_birthday_role(self.bot, user, guild)
 
 
 async def setup(bot):

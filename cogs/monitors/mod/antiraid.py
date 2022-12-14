@@ -122,7 +122,7 @@ class AntiRaidMonitor(commands.Cog):
         # this setting disables the filter for accounts created from "Today"
         # useful when we get alot of new users, for example when a new Jailbreak is released.
         # this setting is controlled using !spammode
-        if not (await guild_service.get_guild()).ban_today_spam_accounts:
+        if not (await guild_service.get_meta_properties()).ban_today_spam_accounts:
             now = datetime.today()
             now = [now.year, now.month, now.day]
             member_now = [member.created_at.year,
@@ -340,10 +340,8 @@ class AntiRaidMonitor(commands.Cog):
             else:
                 self.bot.ban_cache.ban(user.id)
 
-            db_guild = await guild_service.get_guild()
-
             case = Case(
-                _id=db_guild.case_id,
+                _id=await guild_service.get_new_case_id(),
                 _type="BAN",
                 date=datetime.now(),
                 mod_id=self.bot.user.id,
@@ -352,7 +350,7 @@ class AntiRaidMonitor(commands.Cog):
                 reason=reason
             )
 
-            guild_service.inc_caseid()
+            await guild_service.inc_case_id()
             user_service.add_case(user.id, case)
 
             log = prepare_ban_log(self.bot.user, user, case)
@@ -368,7 +366,7 @@ class AntiRaidMonitor(commands.Cog):
             else:
                 await user.guild.ban(discord.Object(id=user.id), reason="Raid")
 
-            public_logs = user.guild.get_channel(db_guild.channel_public)
+            public_logs = user.guild.get_channel((await guild_service.get_channels()).channel_public)
             if public_logs:
                 log.remove_author()
                 log.set_thumbnail(url=user.display_avatar)
@@ -378,15 +376,14 @@ class AntiRaidMonitor(commands.Cog):
         """Freeze all channels marked as freezeable during a raid, meaning only people with the Member+ role and up
         can talk (temporarily lock out whitenames during a raid)"""
 
-        db_guild = await guild_service.get_guild()
-
+        db_guild = await guild_service.get_meta_properties()
         for channel in db_guild.locked_channels:
             channel = guild.get_channel(channel)
             if channel is None:
                 continue
 
             default_role = guild.default_role
-            member_plus = guild.get_role(db_guild.role_memberplus)
+            member_plus = guild.get_role((await guild_service.get_roles()).role_memberplus)
 
             default_perms = channel.overwrites_for(default_role)
             memberplus_perms = channel.overwrites_for(member_plus)

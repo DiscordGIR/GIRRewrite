@@ -22,14 +22,14 @@ async def find_triggered_filters(input, member: discord.Member) -> List[FilterWo
     folded_without_spaces_and_punctuation = folded_without_spaces.translate(
         str.maketrans('', '', string.punctuation))
 
-    db_guild = await guild_service.get_guild()
+    filter_words = await guild_service.get_filter_words()
 
     if not input_lowercase:
         return []
     # reported = False
 
     words_found = []
-    for word in db_guild.filter_words:
+    for word in filter_words:
         if gatekeeper.has(member.guild, member, word.bypass):
             continue
 
@@ -62,7 +62,7 @@ async def find_triggered_raid_phrases(input, member):
         str.maketrans('', '', string.punctuation))
 
     if folded_message:
-        for word in (await guild_service.get_guild()).raid_phrases:
+        for word in await guild_service.get_raid_phrases():
             if not gatekeeper.has(member.guild, member, word.bypass):
                 if (word.word.lower() in folded_message) or \
                     (not word.false_positive and word.word.lower() in folded_without_spaces) or \

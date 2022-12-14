@@ -181,16 +181,14 @@ async def remove_timeout(id: int) -> None:
 
     """
 
-    db_guild = await guild_service.get_guild()
-
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.get_new_case_id(),
         _type="UNMUTE",
         mod_id=BOT_GLOBAL.user.id,
         mod_tag=str(BOT_GLOBAL.user),
         reason="Temporary mute expired.",
     )
-    guild_service.inc_caseid()
+    await guild_service.inc_case_id()
     user_service.add_case(id, case)
 
     guild = BOT_GLOBAL.get_guild(cfg.guild_id)
@@ -207,7 +205,7 @@ async def remove_timeout(id: int) -> None:
     log.set_thumbnail(url=user.display_avatar)
 
     public_chan = guild.get_channel(
-        db_guild.channel_public)
+        (await guild_service.get_channels()).channel_public)
 
     dmed = True
     try:
@@ -275,7 +273,7 @@ async def remove_bday(id: int) -> None:
 
     """
 
-    db_guild = await guild_service.get_guild()
+    db_guild = await guild_service.get_roles()
     guild = BOT_GLOBAL.get_guild(cfg.guild_id)
     if guild is None:
         return

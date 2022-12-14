@@ -1,11 +1,12 @@
+from aiocache import cached
 import time
-from typing import Optional
+from typing import List, Optional
 from data.model import FilterWord, Guild, Tag, Giveaway
-from data.model.guild import CaseIdView, ChannelsView, MemeView, MetaProperties, RolesAndChannelsView, RolesView, TagView
+from data.model.guild import CaseIdView, ChannelsView, FilterWordView, MemeView, MetaProperties, RaidPhraseView, RolesAndChannelsView, RolesView, TagView
 from utils import cfg
 from utils.database import db
 from beanie.odm.operators.update.array import Push, Pull
-from beanie.odm.operators.update.general import Set
+from beanie.odm.operators.update.general import Set, Inc
 
 class GuildService:
     async def get_guild(self) -> Guild:
@@ -19,12 +20,15 @@ class GuildService:
 
         return await Guild.find_one(Guild.id == cfg.guild_id)
 
+    @cached(ttl=3600)
     async def get_channels(self) -> ChannelsView:
         return await Guild.find_one(Guild.id == cfg.guild_id).project(ChannelsView)
 
+    @cached(ttl=3600)
     async def get_roles(self) -> RolesView:
         return await Guild.find_one(Guild.id == cfg.guild_id).project(RolesView)
 
+    @cached(ttl=3600)
     async def get_roles_and_channels(self) -> RolesAndChannelsView:
         return await Guild.find_one(Guild.id == cfg.guild_id).project(RolesAndChannelsView)
 
@@ -33,6 +37,12 @@ class GuildService:
 
     async def get_meta_properties(self) -> MetaProperties:
         return await Guild.find_one(Guild.id == cfg.guild_id).project(MetaProperties)
+    
+    async def get_raid_phrases(self) -> List[FilterWord]:
+        return (await Guild.find_one(Guild.id == cfg.guild_id).project(RaidPhraseView)).raid_phrases
+    
+    async def get_filter_words(self) -> List[FilterWord]:
+        return (await Guild.find_one(Guild.id == cfg.guild_id).project(FilterWordView)).filter_words
 
     async def add_tag(self, tag: Tag) -> None:
         await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.tags: tag}))
@@ -101,12 +111,12 @@ class GuildService:
         await self.edit_meme(meme)
         return meme
     
-    def inc_caseid(self) -> None:
+    async def inc_case_id(self) -> None:
         """Increments Guild.case_id, which keeps track of the next available ID to
         use for a case.
         """
 
-        Guild.find(Guild.id == cfg.guild_id).update_one(inc__case_id=1)
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Inc(Guild.case_id, 1))
 
     async def all_rero_mappings(self):
         g = await self.get_guild()
@@ -190,76 +200,74 @@ class GuildService:
         Guild.find(Guild.id == cfg.guild_id).update_one(push__raid_phrases=FilterWord(word=phrase, bypass=5, notify=True))
         return True
     
-    def remove_raid_phrase(self, phrase: str):
-        Guild.find(Guild.id == cfg.guild_id).update_one(pull__raid_phrases__word=FilterWord(word=phrase).word)
+    async def remove_raid_phrase(self, phrase: str):
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.raid_phrases: { "word": phrase } }))
 
-    def set_spam_mode(self, mode) -> None:
-        Guild.find(Guild.id == cfg.guild_id).update_one(set__ban_today_spam_accounts=mode)
+    async def set_spam_mode(self, mode) -> None:
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ Guild.ban_today_spam_accounts: mode }))
 
     async def add_filtered_word(self, fw: FilterWord) -> None:
-        existing = await self.get_guild().filter_words.filter(word=fw.word)
-        if(len(existing) > 0):
+        existing = await self.get_filter_words()
+        existing = list(filter(lambda word: word.word == fw.word, existing))
+        if existing:
             return False
 
-        Guild.find(Guild.id == cfg.guild_id).update_one(push__filter_words=fw)
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.filter_words: fw }))
         return True
 
-    def remove_filtered_word(self, word: str):
-        return Guild.find(Guild.id == cfg.guild_id).update_one(pull__filter_words__word=FilterWord(word=word).word)
+    async def remove_filtered_word(self, word: str) -> None:
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.filter_words: { "word": word } }))
 
-    def update_filtered_word(self, word: FilterWord):
-        return Guild.objects(_id=cfg.guild_id, filter_words__word=word.word).update_one(set__filter_words__S=word)
+    async def update_filtered_word(self, word: FilterWord):
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ "filter_words.$[elem]": word }), array_filters=[ { "elem.word": word.word } ])
 
-    def add_whitelisted_guild(self, id: int):
-        g = Guild.find(Guild.id == cfg.guild_id)
-        g2 = g.first()
-        if id not in g2.filter_excluded_guilds:
-            g.update_one(push__filter_excluded_guilds=id)
-            return True
-        return False
+    async def add_whitelisted_guild(self, id: int):
+        if id in (await self.get_meta_properties()).filter_excluded_guilds:
+            return False
 
-    def remove_whitelisted_guild(self, id: int):
-        g = Guild.find(Guild.id == cfg.guild_id)
-        g2 = g.first()
-        if id in g2.filter_excluded_guilds:
-            g.update_one(pull__filter_excluded_guilds=id)
-            return True
-        return False
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.filter_excluded_guilds: id }))
+        return True
 
-    def add_ignored_channel(self, id: int):
-        g = Guild.find(Guild.id == cfg.guild_id)
-        g2 = g.first()
-        if id not in g2.filter_excluded_channels:
-            g.update_one(push__filter_excluded_channels=id)
-            return True
-        return False
+    async def remove_whitelisted_guild(self, id: int):
+        if id not in (await self.get_meta_properties()).filter_excluded_guilds:
+            return False
 
-    def remove_ignored_channel(self, id: int):
-        g = Guild.find(Guild.id == cfg.guild_id)
-        g2 = g.first()
-        if id in g2.filter_excluded_channels:
-            g.update_one(pull__filter_excluded_channels=id)
-            return True
-        return False
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.filter_excluded_guilds: id }))
+        return True
 
-    def add_ignored_channel_logging(self, id: int):
-        g = Guild.find(Guild.id == cfg.guild_id)
-        g2 = g.first()
-        if id not in g2.logging_excluded_channels:
-            g.update_one(push__logging_excluded_channels=id)
-            return True
-        return False
+    async def add_ignored_channel(self, id: int):
+        if id in (await self.get_meta_properties()).filter_excluded_channels:
+            return False
+        
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.filter_excluded_channels: id }))
+        return True
 
-    def remove_ignored_channel_logging(self, id: int):
-        g = Guild.find(Guild.id == cfg.guild_id)
-        g2 = g.first()
-        if id in g2.logging_excluded_channels:
-            g.update_one(pull__logging_excluded_channels=id)
-            return True
-        return False
+    async def remove_ignored_channel(self, id: int):
+        if id not in (await self.get_meta_properties()).filter_excluded_channels:
+            return False
+        
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.filter_excluded_channels: id }))
+        return True
+
+    async def add_ignored_channel_logging(self, id: int):
+        if id in (await self.get_meta_properties()).logging_excluded_channels:
+            return False
+        
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.logging_excluded_channels: id }))
+        return True
+
+    async def remove_ignored_channel_logging(self, id: int):
+        if id not in (await self.get_meta_properties()).logging_excluded_channels:
+            return False
+        
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.logging_excluded_channels: id }))
+        return True
+
+    async def set_emoji_logging_webhook(self, webhook: str):
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ Guild.emoji_logging_webhook: webhook }))
 
     async def get_locked_channels(self):
-        return await self.get_guild().locked_channels
+        return (await self.get_meta_properties()).locked_channels
 
     def add_locked_channels(self, channel):
         Guild.find(Guild.id == cfg.guild_id).update_one(push__locked_channels=channel)

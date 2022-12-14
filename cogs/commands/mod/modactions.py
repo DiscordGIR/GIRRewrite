@@ -98,9 +98,8 @@ class ModActions(commands.Cog):
         if time > now + timedelta(days=14):
             raise commands.BadArgument("Mutes can't be longer than 14 days!")
 
-        db_guild = await guild_service.get_guild()
         case = Case(
-            _id=db_guild.case_id,
+            _id=await guild_service.get_new_case_id(),
             _type="MUTE",
             date=now,
             mod_id=ctx.author.id,
@@ -119,7 +118,7 @@ class ModActions(commands.Cog):
             raise commands.BadArgument(
                 "The database thinks this user is already muted.")
 
-        guild_service.inc_caseid()
+        await guild_service.inc_case_id()
         user_service.add_case(member.id, case)
 
         log = prepare_mute_log(ctx.author, member, case)
@@ -138,8 +137,6 @@ class ModActions(commands.Cog):
     @app_commands.describe(reason="Reason for unmuting")
     @transform_context
     async def unmute(self, ctx: GIRContext, member: ModsAndAboveMember, reason: str) -> None:
-        db_guild = await guild_service.get_guild()
-
         if not member.is_timed_out():
             raise commands.BadArgument("This user is not muted.")
 
@@ -152,13 +149,13 @@ class ModActions(commands.Cog):
             pass
 
         case = Case(
-            _id=db_guild.case_id,
+            _id=await guild_service.get_new_case_id(),
             _type="UNMUTE",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
             reason=reason,
         )
-        guild_service.inc_caseid()
+        await guild_service.inc_case_id()
         user_service.add_case(member.id, case)
 
         log = prepare_unmute_log(ctx.author, member, case)
@@ -273,15 +270,14 @@ class ModActions(commands.Cog):
 
         self.bot.ban_cache.unban(user.id)
 
-        db_guild = await guild_service.get_guild()
         case = Case(
-            _id=db_guild.case_id,
+            _id=await guild_service.get_new_case_id(),
             _type="UNBAN",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
             reason=reason,
         )
-        guild_service.inc_caseid()
+        await guild_service.inc_case_id()
         user_service.add_case(user.id, case)
 
         log = prepare_unban_log(ctx.author, user, case)
@@ -439,9 +435,8 @@ class ModActions(commands.Cog):
         # remove the warn points from the user in DB
         user_service.inc_points(member.id, -1 * points)
 
-        db_guild = await guild_service.get_guild()
         case = Case(
-            _id=db_guild.case_id,
+            _id=await guild_service.get_new_case_id(),
             _type="REMOVEPOINTS",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
@@ -450,7 +445,7 @@ class ModActions(commands.Cog):
         )
 
         # increment DB's max case ID for next case
-        guild_service.inc_caseid()
+        await guild_service.inc_case_id()
         # add case to db
         user_service.add_case(member.id, case)
 

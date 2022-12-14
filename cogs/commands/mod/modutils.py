@@ -88,7 +88,7 @@ class ModUtils(commands.Cog):
         results.save()
 
         case = Case(
-            _id=(await guild_service.get_guild()).case_id,
+            _id=await guild_service.get_new_case_id(),
             _type="CLEM",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
@@ -97,7 +97,7 @@ class ModUtils(commands.Cog):
         )
 
         # incrememnt DB's max case ID for next case
-        guild_service.inc_caseid()
+        await guild_service.inc_case_id()
         # add case to db
         user_service.add_case(member.id, case)
 

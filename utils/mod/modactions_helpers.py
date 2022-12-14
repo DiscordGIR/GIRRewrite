@@ -34,7 +34,7 @@ async def add_kick_case(target_member: discord.Member, mod: discord.Member, reas
     )
 
     # increment max case ID for next case
-    guild_service.inc_caseid()
+    await guild_service.inc_case_id()
     # add new case to DB
     user_service.add_case(target_member.id, case)
 
@@ -184,7 +184,7 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
     )
 
     # increment DB's max case ID for next case
-    guild_service.inc_caseid()
+    await guild_service.inc_case_id()
     # add case to db
     user_service.add_case(target_member.id, case)
     # prepare log embed to send to #public-mod-logs, user and context

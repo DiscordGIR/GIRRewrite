@@ -80,12 +80,13 @@ class Filters(commands.Cog):
     @app_commands.describe(phrase="The word to filter")
     @transform_context
     async def add(self, ctx: GIRContext, notify: bool, bypass: int, phrase: str) -> None:
-        fw = FilterWord()
-        fw.bypass = bypass
-        fw.notify = notify
-        fw.word = phrase
+        fw = FilterWord(
+            bypass = bypass,
+            notify = notify,
+            word = phrase
+        )
 
-        if not guild_service.add_filtered_word(fw):
+        if not await guild_service.add_filtered_word(fw):
             raise commands.BadArgument("That word is already filtered!")
 
         phrase = discord.utils.escape_markdown(phrase)
@@ -97,7 +98,7 @@ class Filters(commands.Cog):
     @_filter.command(description="List filtered words", name="list")
     @transform_context
     async def _list(self, ctx: GIRContext):
-        filters = (await guild_service.get_guild()).filter_words
+        filters = await guild_service.get_filter_words()
         if len(filters) == 0:
             raise commands.BadArgument(
                 "The filterlist is currently empty. Please add a word using `/filter`.")
@@ -109,19 +110,20 @@ class Filters(commands.Cog):
         await menu.start()
 
     @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Mark word as piracy in filter")
     @app_commands.describe(word="The word to mark as piracy")
     @app_commands.autocomplete(word=filterwords_autocomplete)
     @transform_context
     async def piracy(self, ctx: GIRContext, word: str):
         word = word.lower()
 
-        words = (await guild_service.get_guild()).filter_words
+        words = await guild_service.get_filter_words()
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
             words[0].piracy = not words[0].piracy
-            guild_service.update_filtered_word(words[0])
-
+            await guild_service.update_filtered_word(words[0])
             await ctx.send_success("Marked as a piracy word!" if words[0].piracy else "Removed as a piracy word!")
         else:
             await ctx.send_warning("You must filter that word before it can be marked as piracy.", delete_after=5)
@@ -134,11 +136,11 @@ class Filters(commands.Cog):
     async def remove(self, ctx: GIRContext, word: str):
         word = word.lower()
 
-        words = (await guild_service.get_guild()).filter_words
+        words = await guild_service.get_filter_words()
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
-            guild_service.remove_filtered_word(words[0].word)
+            await guild_service.remove_filtered_word(words[0].word)
             await ctx.send_success("Deleted!")
         else:
             await ctx.send_warning("That word is not filtered.", delete_after=5)
@@ -153,8 +155,8 @@ class Filters(commands.Cog):
             guild_id = int(guild_id)
         except ValueError:
             raise commands.BadArgument("Invalid ID!")
-
-        if guild_service.add_whitelisted_guild(guild_id):
+        
+        if await guild_service.add_whitelisted_guild(guild_id):
             await ctx.send_success("Whitelisted.")
         else:
             await ctx.send_warning("That server is already whitelisted.", delete_after=5)
@@ -170,7 +172,7 @@ class Filters(commands.Cog):
         except ValueError:
             raise commands.BadArgument("Invalid ID!")
 
-        if guild_service.remove_whitelisted_guild(guild_id):
+        if await guild_service.remove_whitelisted_guild(guild_id):
             await ctx.send_success("Blacklisted.")
         else:
             await ctx.send_warning("That server is already blacklisted.", delete_after=5)
@@ -181,7 +183,7 @@ class Filters(commands.Cog):
     @app_commands.describe(channel="Channel to ignore")
     @transform_context
     async def ignorechannel(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
-        if guild_service.add_ignored_channel(channel.id):
+        if await guild_service.add_ignored_channel(channel.id):
             await ctx.send_success(f"The filter will no longer run in {channel.mention}.")
         else:
             await ctx.send_warning("That channel is already ignored.", delete_after=5)
@@ -192,7 +194,7 @@ class Filters(commands.Cog):
     @app_commands.describe(channel="Channel to unignore")
     @transform_context
     async def unignorechannel(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
-        if guild_service.remove_ignored_channel(channel.id):
+        if await guild_service.remove_ignored_channel(channel.id):
             await ctx.send_success(f"Resumed filtering in {channel.mention}.")
         else:
             await ctx.send_warning("That channel is not already ignored.", delete_after=5)
@@ -203,7 +205,7 @@ class Filters(commands.Cog):
     @app_commands.describe(channel="Channel to ignore")
     @transform_context
     async def ignorechannellogs(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
-        if guild_service.add_ignored_channel_logging(channel.id):
+        if await guild_service.add_ignored_channel_logging(channel.id):
             await ctx.send_success(f"{channel.mention} will no longer be logged.")
         else:
             await ctx.send_warning("That channel is already ignored.", delete_after=5)
@@ -214,7 +216,7 @@ class Filters(commands.Cog):
     @app_commands.describe(channel="Channel to unignore")
     @transform_context
     async def unignorechannellogs(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
-        if guild_service.remove_ignored_channel_logging(channel.id):
+        if await guild_service.remove_ignored_channel_logging(channel.id):
             await ctx.send_success(f"Resumed logging in {channel.mention}.")
         else:
             await ctx.send_warning("That channel is not already ignored.", delete_after=5)
@@ -228,16 +230,13 @@ class Filters(commands.Cog):
     async def falsepositive(self, ctx: GIRContext, *, word: str):
         word = word.lower()
 
-        words = (await guild_service.get_guild()).filter_words
+        words = await guild_service.get_filter_words()
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
             words[0].false_positive = not words[0].false_positive
-            if guild_service.update_filtered_word(words[0]):
-                await ctx.send_success("Marked as potential false positive, we won't perform the enhanced checks on it!" if words[0].false_positive else "Removed as potential false positive.")
-            else:
-                raise commands.BadArgument(
-                    "Unexpected error occured trying to mark as false positive!")
+            await guild_service.update_filtered_word(words[0])
+            await ctx.send_success("Marked as potential false positive, we won't perform the enhanced checks on it!" if words[0].false_positive else "Removed as potential false positive.")
         else:
             await ctx.send_warning("That word is not filtered.", delete_after=5)
 

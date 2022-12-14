@@ -40,7 +40,7 @@ async def tags_autocomplete(_: discord.Interaction, current: str) -> List[app_co
 
 
 async def memes_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-    meme = [meme.name.lower() for meme in (await guild_service.get_guild()).memes]
+    meme = [meme.name.lower() for meme in await guild_service.all_memes()]
     meme.sort()
     return [app_commands.Choice(name=meme, value=meme) for meme in meme if current.lower() in meme.lower()][:25]
 
@@ -238,7 +238,7 @@ async def filterwords_autocomplete(interaction: discord.Interaction, current: st
     if not gatekeeper.has(interaction.guild, interaction.user, 5):
         return []
 
-    words = [word.word for word in (await guild_service.get_guild()).filter_words]
+    words = [word.word for word in await guild_service.get_filter_words()]
     words.sort()
 
     return [app_commands.Choice(name=word, value=word) for word in words if str(word).startswith(str(current))][:25]
