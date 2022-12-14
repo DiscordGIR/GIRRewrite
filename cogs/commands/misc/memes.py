@@ -60,7 +60,7 @@ class Memes(commands.Cog):
         bucket = self.meme_cooldown.get_bucket(meme.name)
         current = datetime.now().timestamp()
         # ratelimit only if the invoker is not a moderator
-        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role((await guild_service.get_guild()).role_sub_mod) in ctx.author.roles):
+        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role((await guild_service.get_roles()).role_sub_mod) in ctx.author.roles):
             raise commands.BadArgument("That meme is on cooldown.")
 
         # if the Meme has an image, add it to the embed
@@ -272,7 +272,7 @@ class Memes(commands.Cog):
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
-        db_guild = await guild_service.get_guild()
+        db_guild = await guild_service.get_channels()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
         if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
@@ -341,7 +341,7 @@ class Memes(commands.Cog):
             raise commands.BadArgument(
                 "Bottom text can't have weird characters.")
 
-        db_guild = await guild_service.get_guild()
+        db_guild = await guild_service.get_channels()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
         if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
@@ -395,7 +395,7 @@ class Memes(commands.Cog):
             raise commands.BadArgument(
                 "Bottom text can't have weird characters.")
 
-        db_guild = await guild_service.get_guild()
+        db_guild = await guild_service.get_channels()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
         if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
@@ -431,56 +431,6 @@ class Memes(commands.Cog):
                 else:
                     raise commands.BadArgument(
                         "An error occurred generating that meme.")
-
-    @mod_and_up()
-    @memegen.command(description="AI generated text based on a prompt")
-    @app_commands.describe(prompt="Text to base results off of")
-    @transform_context
-    async def aitext(self, ctx: GIRContext, prompt: str):
-        if cfg.open_ai_token is None:
-            raise commands.BadArgument("This command is disabled.")
-
-        db_guild = await guild_service.get_guild()
-        is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
-        if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
-            raise commands.BadArgument(f"This command can't be used here.")
-
-        if not is_mod:
-            bucket = self.memegen_cooldown.get_bucket(ctx.guild.name)
-            current = datetime.now().timestamp()
-            # ratelimit only if the invoker is not a moderator
-            if bucket.update_rate_limit(current):
-                raise commands.BadArgument("That command is on cooldown.")
-
-        await ctx.defer(ephemeral=False)
-        async with aiohttp.ClientSession(headers={"Authorization": f"Bearer {cfg.open_ai_token}", "Content-Type": "application/json"}) as client:
-            async with client.post(f"https://api.openai.com/v1/engines/text-davinci-001/completions", json={
-                "prompt": prompt,
-                "temperature": 0.7,
-                "max_tokens": 64,
-                "top_p": 1,
-                "frequency_penalty": 0,
-                "presence_penalty": 0
-            }) as resp:
-
-                if resp.status == 200:
-                    data = await resp.json()
-                    text = data.get("choices")[0].get("text")
-                    text = discord.utils.escape_markdown(text)
-                    if await find_triggered_filters(text, ctx.author) or await find_triggered_raid_phrases(text, ctx.author):
-                        text = "A filter was triggered by this response. Please try a different prompt."
-
-                    embed = discord.Embed(color=discord.Color.random())
-                    prompt_formatted = discord.utils.escape_markdown(prompt)
-                    embed.add_field(name="Prompt", value=prompt_formatted[:1024] + "..." if len(
-                        prompt_formatted) > 1024 else prompt_formatted, inline=False)
-                    embed.add_field(
-                        name="Response", value=text or "API did not return a response.", inline=False)
-                    embed.set_footer(
-                        text=f"Requested by {ctx.author} • /memegen aitext")
-                    await ctx.respond(embed=embed)
-                else:
-                    raise commands.BadArgument("An OpenAI API error occured.")
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)

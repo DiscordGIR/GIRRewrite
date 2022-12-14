@@ -25,7 +25,7 @@ class RepoWatcher(commands.Cog):
             return
         if message.author.bot:
             return
-        if message.channel.id == (await guild_service.get_guild()).channel_general and not gatekeeper.has(message.guild, message.author, 5):
+        if message.channel.id == (await guild_service.get_channels()).channel_general and not gatekeeper.has(message.guild, message.author, 5):
             return
         # Stops double messages when a package and repo URL are in the same message
         if 'sileo://package/' in message.content:
@@ -103,7 +103,7 @@ class Sileo(commands.Cog):
             return
         if message.author.bot:
             return
-        if message.channel.id == (await guild_service.get_guild()).channel_general and not gatekeeper.has(message.guild, message.author, 5):
+        if message.channel.id == (await guild_service.get_channels()).channel_general and not gatekeeper.has(message.guild, message.author, 5):
             return
 
         urlscheme = re.search(

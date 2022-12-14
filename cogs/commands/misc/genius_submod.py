@@ -61,7 +61,7 @@ class Genius(commands.Cog):
     async def new(self, ctx: GIRContext, title: str,  image: ImageAttachment = None) -> None:
         # get #common-issues channel
         channel = ctx.guild.get_channel(
-            (await guild_service.get_guild()).channel_common_issues)
+            (await guild_service.get_channels()).channel_common_issues)
         if not channel:
             raise commands.BadArgument("common issues channel not found")
 
@@ -92,7 +92,7 @@ class Genius(commands.Cog):
     @transform_context
     async def edit(self, ctx: GIRContext, title: str, image: ImageAttachment = None) -> None:
         channel = ctx.guild.get_channel(
-            (await guild_service.get_guild()).channel_common_issues)
+            (await guild_service.get_channels()).channel_common_issues)
         if not channel:
             raise commands.BadArgument("common issues channel not found")
 
@@ -154,7 +154,7 @@ class Genius(commands.Cog):
     async def reindex(self, ctx: GIRContext):
         # get #common-issues channel
         channel: discord.TextChannel = ctx.guild.get_channel(
-            (await guild_service.get_guild()).channel_common_issues)
+            (await guild_service.get_channels()).channel_common_issues)
         if not channel:
             raise commands.BadArgument("common issues channel not found")
 

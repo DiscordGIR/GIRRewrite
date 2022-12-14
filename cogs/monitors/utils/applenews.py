@@ -11,7 +11,7 @@ class AppleNews(commands.Cog):
         
         if not msg.guild:
             return
-        if msg.channel.id != (await guild_service.get_guild()).channel_applenews:
+        if msg.channel.id != (await guild_service.get_channels()).channel_applenews:
             return
         if not msg.author.bot:
             return

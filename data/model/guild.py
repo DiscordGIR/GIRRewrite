@@ -58,5 +58,46 @@ class Guild(Document):
     class Settings:
         name = "guilds"
 
+
+class ChannelsView(BaseModel):
+    channel_applenews: int
+    channel_booster_emoji: int
+    channel_botspam: int
+    channel_common_issues: int
+    channel_development: int
+    channel_emoji_log: int
+    channel_general: int
+    channel_genius_bar: int
+    channel_jailbreak: int
+    channel_private: int
+    channel_public: int
+    channel_rules: int
+    channel_reaction_roles: int
+    channel_reports: int
+    channel_subnews: int
+    channel_music: int
+
+
+class RolesView(BaseModel):
+    role_administrator: int
+    role_birthday: int
+    role_dev: int
+    role_genius: int
+    role_member: int
+    role_memberone: int
+    role_memberedition: int
+    role_memberplus: int
+    role_memberpro: int
+    role_memberultra: int
+    role_moderator: int
+    role_mute: int
+    role_sub_mod: int
+    role_sub_news: int
+
+
 class TagView(BaseModel):
     tags: List[Tag] = Field(default_factory=list)
+
+
+class CaseIdView(BaseModel):
+    case_id: int = 1

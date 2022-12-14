@@ -1,6 +1,6 @@
 import time
 from data.model import FilterWord, Guild, Tag, Giveaway
-from data.model.guild import TagView
+from data.model.guild import CaseIdView, ChannelsView, RolesView, TagView
 from utils import cfg
 from utils.database import db
 from beanie.odm.operators.update.array import Push, Pull
@@ -17,7 +17,16 @@ class GuildService:
         """
 
         return await Guild.find_one(Guild.id == cfg.guild_id)
-    
+
+    async def get_channels(self) -> ChannelsView:
+        return await Guild.find_one(Guild.id == cfg.guild_id).project(ChannelsView)
+
+    async def get_roles(self) -> RolesView:
+        return await Guild.find_one(Guild.id == cfg.guild_id).project(RolesView)
+
+    async def get_latest_case_id(self) -> int:
+        return (await Guild.find_one(Guild.id == cfg.guild_id).project(CaseIdView)).case_id
+
     async def add_tag(self, tag: Tag) -> None:
         start = time.time()
         await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.tags: tag}))
