@@ -6,7 +6,7 @@ from pydantic import Field
 
 
 class User(Document):
-    _id: int = Field(default_factory=int)
+    id: int = Field(default_factory=int)
     is_clem: bool = False
     is_xp_frozen: bool = False
     is_muted: bool = False

@@ -287,7 +287,7 @@ class ModUtils(commands.Cog):
         await logging_channel.send(embed=embed)
 
     async def prepare_rundown_embed(self, ctx: GIRContext, user):
-        user_info = user_service.get_user(user.id)
+        user_info = await user_service.get_user(user.id)
         rd = user_service.rundown(user.id)
         rd_text = ""
         for r in rd:

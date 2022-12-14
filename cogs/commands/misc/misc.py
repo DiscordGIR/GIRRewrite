@@ -119,7 +119,7 @@ class Misc(commands.Cog):
             raise commands.BadArgument("You gave an invalid date.")
 
         # fetch user profile from DB
-        db_user = user_service.get_user(user.id)
+        db_user = await user_service.get_user(user.id)
 
         # mods are able to ban users from using birthdays, let's handle that
         if db_user.birthday_excluded:

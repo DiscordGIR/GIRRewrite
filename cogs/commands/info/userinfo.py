@@ -50,7 +50,7 @@ def format_xptop_page(ctx, entries, current_page, all_pages):
     return embed
 
 
-def format_cases_page(ctx, entries, current_page, all_pages):
+async def format_cases_page(ctx, entries, current_page, all_pages):
     """Formats the page for the cases embed.
 
     Parameters
@@ -71,7 +71,7 @@ def format_cases_page(ctx, entries, current_page, all_pages):
     page_count = 0
 
     user = ctx.case_user
-    u = user_service.get_user(user.id)
+    u = await user_service.get_user(user.id)
 
     for page in all_pages:
         for case in page:
@@ -301,7 +301,7 @@ async def handle_userinfo(ctx: GIRContext, user: Union[discord.Member, discord.U
         roles = "No roles."
         joined = f"User not in {ctx.guild}"
 
-    results = user_service.get_user(user.id)
+    results = await user_service.get_user(user.id)
 
     embed = discord.Embed(title=f"User Information", color=user.color)
     embed.set_author(name=user)

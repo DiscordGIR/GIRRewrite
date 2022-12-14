@@ -4,8 +4,10 @@ import os
 from beanie import init_beanie
 from data.model import Guild
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
+from data.model.cases import Cases
 
 from data.model.guild import Guild
+from data.model.user import User
 from .config import cfg
 from .logging import logger
 
@@ -21,7 +23,7 @@ class Database:
             self.client = AsyncIOMotorClient(os.environ.get("DB_CONNECTION_STRING"))
 
     async def init_db(self):
-        await init_beanie(database=self.client.botty, document_models=[Guild])
+        await init_beanie(database=self.client.botty, document_models=[Guild, User, Cases])
         self.fs = AsyncIOMotorGridFSBucket(self.client.botty)
         logger.info("Database connected and loaded successfully!")
         

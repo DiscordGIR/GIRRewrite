@@ -112,7 +112,7 @@ class AntiRaid(commands.Cog):
     @app_commands.describe(mode="True if you want to verify, false otherwise")
     @transform_context
     async def verify(self, ctx: GIRContext, user: discord.Member, mode: bool = None) -> None:
-        profile = user_service.get_user(user.id)
+        profile = await user_service.get_user(user.id)
         if mode is None:
             profile.raid_verified = not profile.raid_verified
         else:

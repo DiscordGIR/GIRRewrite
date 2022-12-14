@@ -2,7 +2,7 @@ from typing import Counter
 from data.model import Case, Cases, User
 
 class UserService:
-    def get_user(self, id: int) -> User:
+    async def get_user(self, _id: int) -> User:
         """Look up the User document of a user, whose ID is given by `id`.
         If the user doesn't have a User document in the database, first create that.
 
@@ -16,13 +16,11 @@ class UserService:
         User
             The User document we found from the database.
         """
+        user = await User.find_one(User.id == _id)
+        if user is None:
+            user = User(id=_id)
+            await user.save()
 
-        user = User.objects(_id=id).first()
-        # first we ensure this user has a User document in the database before continuing
-        if not user:
-            user = User()
-            user._id = id
-            user.save()
         return user
     
     def leaderboard(self) -> list:

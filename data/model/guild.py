@@ -1,5 +1,5 @@
 from typing import Dict, List
-from beanie import Document, Link
+from beanie import Document
 from pydantic import BaseModel, Field
 from .filterword import FilterWord
 from .tag import Tag
