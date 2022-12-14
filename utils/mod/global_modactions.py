@@ -38,9 +38,8 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     else:
         time = now + timedelta(days=14)
 
-    db_guild = await guild_service.get_guild()
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.get_new_case_id(),
         _type="MUTE",
         date=now,
         mod_id=mod.id,
@@ -69,7 +68,7 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     log.remove_author()
     log.set_thumbnail(url=target_member.display_avatar)
     dmed = await notify_user(target_member, f"You have been muted in {ctx.guild.name}", log)
-    await submit_public_log(ctx, db_guild, target_member, log, dmed)
+    await submit_public_log(ctx, target_member, log, dmed)
 
 
 async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason: str = "No reason.") -> None:
@@ -89,7 +88,6 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
     """
 
     await target_member.edit(timed_out_until=None)
-    db_guild = await guild_service.get_guild()
 
     try:
         if isinstance(ctx, discord.Interaction):
@@ -100,7 +98,7 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
         pass
 
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.get_new_case_id(),
         _type="UNMUTE",
         mod_id=mod.id,
         mod_tag=str(mod),
@@ -114,14 +112,12 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
     await response_log(ctx, log)
 
     dmed = await notify_user(target_member, f"You have been unmuted in {ctx.guild.name}", log)
-    await submit_public_log(ctx, db_guild, target_member, log, dmed)
+    await submit_public_log(ctx, target_member, log, dmed)
 
 
 async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: discord.Member, reason="No reason."):
-    db_guild = await guild_service.get_guild()
-
     member_is_external = isinstance(target_member, discord.User)
-    log = await add_ban_case(target_member, mod, reason, db_guild)
+    log = await add_ban_case(target_member, mod, reason)
 
     if not member_is_external:
         if cfg.ban_appeal_url is None:
@@ -139,17 +135,15 @@ async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: disc
     else:
         ctx.bot.ban_cache.ban(target_member.id)
     await response_log(ctx, log)
-    await submit_public_log(ctx, db_guild, target_member, log)
+    await submit_public_log(ctx, target_member, log)
 
 
 async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, reason):
-    db_guild = await guild_service.get_guild()
-
     reason = escape_markdown(reason)
 
     # prepare the case object for database
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.get_new_case_id(),
         _type="WARN",
         mod_id=mod.id,
         mod_tag=str(mod),
@@ -173,7 +167,7 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     log.add_field(name="Current points", value=cur_points, inline=True)
 
     # also send response in channel where command was called
-    dmed = await notify_user_warn(ctx, target_member, mod, db_user, db_guild, cur_points, log)
+    dmed = await notify_user_warn(ctx, target_member, mod, db_user, cur_points, log)
     await response_log(ctx, log)
-    await submit_public_log(ctx, db_guild, target_member, log, dmed)
+    await submit_public_log(ctx, target_member, log, dmed)
 

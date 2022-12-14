@@ -27,11 +27,8 @@ class Admin(commands.Cog):
     @app_commands.describe(mode="Set mode on or off")
     @transform_context
     async def sabbath(self, ctx: GIRContext, mode: bool = None):
-        g = await guild_service.get_guild()
-        g.sabbath_mode = mode if mode is not None else not g.sabbath_mode
-        g.save()
-
-        await ctx.send_success(f"Set sabbath mode to {'on' if g.sabbath_mode else 'off'}!")
+        new_mode = await guild_service.set_sabbath_mode(mode)
+        await ctx.send_success(f"Set sabbath mode to {'on' if new_mode else 'off'}!")
 
     @commands.command()
     @commands.is_owner()

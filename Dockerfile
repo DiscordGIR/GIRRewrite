@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG VARIANT=3.10-bullseye
+ARG VARIANT=3.11-bullseye
 FROM mcr.microsoft.com/vscode/devcontainers/python:${VARIANT}
 
 ARG NODE_VERSION="16"

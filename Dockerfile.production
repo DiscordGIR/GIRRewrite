@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.10.2-slim-bullseye 
+FROM python:3.11-slim-bullseye 
 WORKDIR /usr/src/app
 
 ENV VIRTUAL_ENV=/opt/venv

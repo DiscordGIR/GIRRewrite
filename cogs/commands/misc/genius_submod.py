@@ -284,7 +284,7 @@ class Genius(commands.Cog):
     @app_commands.describe(image="Image to show in embed")
     @transform_context
     async def subnews(self, ctx: GIRContext, image: ImageAttachment = None):
-        db_guild = await guild_service.get_guild()
+        db_guild = await guild_service.get_roles_and_channels()
 
         channel = ctx.guild.get_channel(db_guild.channel_subnews)
         if not channel:

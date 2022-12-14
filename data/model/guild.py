@@ -95,9 +95,29 @@ class RolesView(BaseModel):
     role_sub_news: int
 
 
+class RolesAndChannelsView(ChannelsView, RolesView):
+    pass
+
+
 class TagView(BaseModel):
     tags: List[Tag] = Field(default_factory=list)
 
 
+class MemeView(BaseModel):
+    memes: List[Tag] = Field(default_factory=list)
+
+
 class CaseIdView(BaseModel):
     case_id: int = 1
+
+
+class MetaProperties(BaseModel):
+    sabbath_mode: bool = False
+    ban_today_spam_accounts: bool = False
+    nsa_guild_id: int
+    nsa_mapping: Dict = Field(default_factory=dict)
+    emoji_logging_webhook: str
+    locked_channels: List[int] = Field(default_factory=list)
+    filter_excluded_channels: List[int] = Field(default_factory=list)
+    filter_excluded_guilds: List[int] = Field(default_factory=list)
+    reaction_role_mapping: Dict = Field(default_factory=dict)

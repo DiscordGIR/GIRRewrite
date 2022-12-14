@@ -17,8 +17,6 @@ from utils.views import PFPButton, PFPView
 from utils.views.menus.report import manual_report
 from utils.views.menus.report_action import WarnView
 
-# support_tags = [tag.name for tag in await guild_service.get_guild(
-# ).tags if "support" in tag.name]
 
 tag_cooldown = CooldownMapping.from_cooldown(
     1, 5, MessageTextBucket.custom)
@@ -31,8 +29,7 @@ async def whisper(ctx: GIRContext):
         ctx.whisper = False
 
 async def handle_support_tag(ctx: GIRContext, member: discord.Member) -> None:
-    support_tags = [tag.name for tag in await guild_service.get_guild(
-        ).tags if "support" in tag.name]
+    support_tags = [tag.name for tag in await guild_service.all_tags() if "support" in tag.name]
 
     if not support_tags:
         raise commands.BadArgument("No support tags found.")

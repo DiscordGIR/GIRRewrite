@@ -12,7 +12,7 @@ from utils.mod.mod_logs import prepare_ban_log, prepare_kick_log
 from utils.config import cfg
 
 
-def add_kick_case(target_member: discord.Member, mod: discord.Member, reason: str, db_guild):
+async def add_kick_case(target_member: discord.Member, mod: discord.Member, reason: str):
     """Adds kick case to user
 
     Parameters
@@ -23,13 +23,10 @@ def add_kick_case(target_member: discord.Member, mod: discord.Member, reason: st
         "Member that kicked"
     reason : str
         "Reason member was kicked"
-    db_guild
-        "Guild DB"
-
     """
     # prepare case for DB
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.get_new_case_id(),
         _type="KICK",
         mod_id=mod.id,
         mod_tag=str(mod),
@@ -63,7 +60,7 @@ async def notify_user(target_member, text, log):
     return True
 
 
-async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: discord.Member, db_user, db_guild, cur_points: int, log):
+async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: discord.Member, db_user, cur_points: int, log):
     """Notifies a specified user about a warn
 
     Parameters
@@ -76,8 +73,6 @@ async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: 
         "User that warned"
     db_user
         "User DB"
-    db_guild
-        "Guild DB"
     cur_points : int
         "Number of points the user currently has"
     log : discord.Embed
@@ -94,7 +89,7 @@ async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: 
         else:
             dmed = await notify_user(target_member, f"You were banned from {ctx.guild.name} for reaching 600 or more points.\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
 
-        log_kickban = await add_ban_case(target_member, mod, "600 or more warn points reached.", db_guild)
+        log_kickban = await add_ban_case(target_member, mod, "600 or more warn points reached.")
         await target_member.ban(reason="600 or more warn points reached.")
 
         if isinstance(ctx, discord.Interaction):
@@ -107,14 +102,14 @@ async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: 
         user_service.set_warn_kicked(target_member.id)
 
         dmed = await notify_user(target_member, f"You were kicked from {ctx.guild.name} for reaching 400 or more points. Please note that you will be banned at 600 points.", log)
-        log_kickban = add_kick_case(target_member, mod, "400 or more warn points reached.", db_guild)
+        log_kickban = await add_kick_case(target_member, mod, "400 or more warn points reached.")
         await target_member.kick(reason="400 or more warn points reached.")
     else:
         if isinstance(target_member, discord.Member):
             dmed = await notify_user(target_member, f"You were warned in {ctx.guild.name}. Please note that you will be kicked at 400 points and banned at 600 points.", log)
 
     if log_kickban:
-        await submit_public_log(ctx, db_guild, target_member, log_kickban)
+        await submit_public_log(ctx, target_member, log_kickban)
 
     return dmed
 
@@ -139,7 +134,7 @@ async def response_log(ctx, log):
         await ctx.send(embed=log, delete_after=10)
 
 
-async def submit_public_log(ctx: GIRContext, db_guild: Guild, user: Union[discord.Member, discord.User], log, dmed: bool = None):
+async def submit_public_log(ctx: GIRContext, user: Union[discord.Member, discord.User], log, dmed: bool = None):
     """Submits a public log
 
     Parameters
@@ -150,15 +145,13 @@ async def submit_public_log(ctx: GIRContext, db_guild: Guild, user: Union[discor
         "User to notify"
     db_user
         "User DB"
-    db_guild
-        "Guild DB"
     cur_points : int
         "Number of points the user currently has"
     log : discord.Embed
         "Embed to send"
     """
     public_chan = ctx.guild.get_channel(
-        db_guild.channel_public)
+        (await guild_service.get_channels()).channel_public)
     if public_chan:
         log.remove_author()
         log.set_thumbnail(url=user.display_avatar)
@@ -168,7 +161,7 @@ async def submit_public_log(ctx: GIRContext, db_guild: Guild, user: Union[discor
             await public_chan.send(embed=log)
 
 
-async def add_ban_case(target_member: discord.Member, mod: discord.Member, reason, db_guild: Guild = None):
+async def add_ban_case(target_member: discord.Member, mod: discord.Member, reason):
     """Adds ban case to user
 
     Parameters
@@ -179,13 +172,10 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
         "Member who was banned"
     reason : str
         "Reason member was banned"
-    db_guild
-        "Guild DB"
-
     """
     # prepare the case to store in DB
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.get_new_case_id(),
         _type="BAN",
         mod_id=mod.id,
         mod_tag=str(mod),

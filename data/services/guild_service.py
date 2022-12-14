@@ -1,6 +1,7 @@
 import time
+from typing import Optional
 from data.model import FilterWord, Guild, Tag, Giveaway
-from data.model.guild import CaseIdView, ChannelsView, RolesView, TagView
+from data.model.guild import CaseIdView, ChannelsView, MemeView, MetaProperties, RolesAndChannelsView, RolesView, TagView
 from utils import cfg
 from utils.database import db
 from beanie.odm.operators.update.array import Push, Pull
@@ -24,14 +25,17 @@ class GuildService:
     async def get_roles(self) -> RolesView:
         return await Guild.find_one(Guild.id == cfg.guild_id).project(RolesView)
 
-    async def get_latest_case_id(self) -> int:
+    async def get_roles_and_channels(self) -> RolesAndChannelsView:
+        return await Guild.find_one(Guild.id == cfg.guild_id).project(RolesAndChannelsView)
+
+    async def get_new_case_id(self) -> int:
         return (await Guild.find_one(Guild.id == cfg.guild_id).project(CaseIdView)).case_id
 
+    async def get_meta_properties(self) -> MetaProperties:
+        return await Guild.find_one(Guild.id == cfg.guild_id).project(MetaProperties)
+
     async def add_tag(self, tag: Tag) -> None:
-        start = time.time()
         await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.tags: tag}))
-        end = time.time()
-        print(end - start)
 
     async def remove_tag(self, tag: str):
         return await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.tags: { "name": tag } }))
@@ -73,21 +77,28 @@ class GuildService:
         await self.delete_image(image_id)
         return await self.save_image(image_buffer, filename, content_type)
 
-    def add_meme(self, meme: Tag) -> None:
-        Guild.find(Guild.id == cfg.guild_id).update_one(push__memes=meme)
+    async def add_meme(self, meme: Tag) -> None:
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.memes: meme}))
 
-    def remove_meme(self, meme: str):
-        return Guild.find(Guild.id == cfg.guild_id).update_one(pull__memes__name=Tag(name=meme).name)
+    async def remove_meme(self, meme: str):
+        return await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.memes: { "name": meme } }))
 
-    def edit_meme(self, meme):
-        return Guild.objects(_id=cfg.guild_id, memes__name=meme.name).update_one(set__memes__S=meme)
+    async def edit_meme(self, meme):
+        return await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ "memes.$[elem]": meme }), array_filters=[ { "elem.name": meme.name } ])
 
-    def get_meme(self, name: str):
-        meme = Guild.objects.get(_id=cfg.guild_id).memes.filter(name=name).first()
-        if meme is None:
+    async def all_memes(self) -> list[Tag]:
+        tags = await Guild.find_one(Guild.id == cfg.guild_id).project(MemeView)
+        return tags.memes
+
+    async def get_meme(self, name: str):
+        memes = await self.all_memes()
+        memes = list(filter(lambda meme: meme.name == name, memes))
+        if not memes:
             return
+
+        meme = memes[0]
         meme.use_count += 1
-        self.edit_meme(meme)
+        await self.edit_meme(meme)
         return meme
     
     def inc_caseid(self) -> None:
@@ -260,5 +271,14 @@ class GuildService:
         guild = Guild.find(Guild.id == cfg.guild_id).first()
         guild.nsa_mapping[str(channel_id)] = webhooks
         guild.save()
+
+    async def set_sabbath_mode(self, mode: Optional[bool]):
+        if mode is None:
+            current = await self.get_meta_properties()
+            mode = not current.sabbath_mode
+
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Set({Guild.sabbath_mode: mode}))
+        return mode
+
 
 guild_service = GuildService()

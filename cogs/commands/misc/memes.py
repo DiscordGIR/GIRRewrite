@@ -11,9 +11,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
 from utils import GIRContext, cfg, format_number, transform_context
-from utils.framework import (ImageAttachment, MessageTextBucket,
-                            find_triggered_filters,
-                             find_triggered_raid_phrases, gatekeeper,
+from utils.framework import (ImageAttachment, MessageTextBucket, gatekeeper,
                              memed_and_up, mempro_and_up, mod_and_up, whisper)
 from utils.views import GenericDescriptionModal, Menu, memes_autocomplete
 
@@ -23,7 +21,7 @@ def format_meme_page(_, entries, current_page, all_pages):
         title=f'All memes', color=discord.Color.blurple())
     for meme in entries:
         desc = f"Added by: {meme.added_by_tag}\nUsed {format_number(meme.use_count)} {'time' if meme.use_count == 1 else 'times'}"
-        if meme.image.read() is not None:
+        if meme.image is not None:
             desc += "\nHas image attachment"
         embed.add_field(name=meme.name, value=desc)
     embed.set_footer(
@@ -51,7 +49,7 @@ class Memes(commands.Cog):
     @transform_context
     async def meme(self, ctx: GIRContext, name: str, user_to_mention: discord.Member = None):
         name = name.lower()
-        meme = guild_service.get_meme(name)
+        meme = await guild_service.get_meme(name)
 
         if meme is None:
             raise commands.BadArgument("That meme does not exist.")
@@ -64,10 +62,14 @@ class Memes(commands.Cog):
             raise commands.BadArgument("That meme is on cooldown.")
 
         # if the Meme has an image, add it to the embed
-        file = meme.image.read()
-        if file is not None:
-            file = discord.File(BytesIO(
-                file), filename="image.gif" if meme.image.content_type == "image/gif" else "image.png")
+        image_id = meme.image
+        content_type = None
+        _file = None
+        if image_id is not None:
+            _file = await guild_service.read_image(image_id)
+            content_type = _file.content_type
+            _file = discord.File(BytesIO(
+                await _file.read()), filename="image.gif" if content_type == "image/gif" else "image.png")
 
         if user_to_mention is not None:
             title = random.choice(self.meme_phrases).format(
@@ -75,14 +77,14 @@ class Memes(commands.Cog):
         else:
             title = None
 
-        await ctx.respond(content=title, embed=await self.prepare_meme_embed(meme), file=file or discord.utils.MISSING)
+        await ctx.respond(content=title, embed=await self.prepare_meme_embed(meme, content_type), file=_file or discord.utils.MISSING)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="List all memes")
     @transform_context
     @whisper
     async def memelist(self, ctx: GIRContext):
-        memes = sorted((await guild_service.get_guild()).memes,
+        memes = sorted(await guild_service.all_memes(),
                        key=lambda meme: meme.name)
 
         if len(memes) == 0:
@@ -108,7 +110,7 @@ class Memes(commands.Cog):
             raise commands.BadArgument(
                 "Meme names can't be longer than 1 word.")
 
-        if (guild_service.get_meme(name.lower())) is not None:
+        if (await guild_service.get_meme(name.lower())) is not None:
             raise commands.BadArgument("Meme with that name already exists.")
 
         # prompt the user for common issue body
@@ -123,30 +125,32 @@ class Memes(commands.Cog):
             return
 
         # prepare meme data for database
-        meme = Tag()
-        meme.name = name.lower()
-        meme.content = description
-        meme.added_by_id = ctx.author.id
-        meme.added_by_tag = str(ctx.author)
+        meme = Tag(
+            name = name.lower(),
+            content = description,
+            added_by_id = ctx.author.id,
+            added_by_tag = str(ctx.author)
+        )
 
         # did the user want to attach an image to this meme?
+        content_type = None
         if image is not None:
-            _type = image.content_type
+            content_type = image.content_type
             if image.size > 8_000_000:
                 raise commands.BadArgument("That image is too big!")
+            filename = image.filename
             image = await image.read()
             # save image bytes
-            meme.image.put(image, content_type=_type)
+            meme.image = await guild_service.save_image(image, filename, content_type)
 
         # store meme in database
-        guild_service.add_meme(meme)
+        await guild_service.add_meme(meme)
 
-        _file = meme.image.read()
-        if _file is not None:
-            _file = discord.File(BytesIO(
-                _file), filename="image.gif" if meme.image.content_type == "image/gif" else "image.png")
+        if image is not None:
+            image = discord.File(BytesIO(
+                image), filename="image.gif" if content_type == "image/gif" else "image.png")
 
-        await ctx.respond(f"Added new meme!", file=_file or discord.utils.MISSING, embed=await self.prepare_meme_embed(meme))
+        await ctx.respond(f"Added new meme!", file=image or discord.utils.MISSING, embed=await self.prepare_meme_embed(meme, content_type))
 
     @mod_and_up()
     @memes.command(description="Edit an existing meme")
@@ -160,7 +164,7 @@ class Memes(commands.Cog):
                 "Meme names can't be longer than 1 word.")
 
         name = name.lower()
-        meme = guild_service.get_meme(name)
+        meme = await guild_service.get_meme(name)
 
         if meme is None:
             raise commands.BadArgument("That meme does not exist.")
@@ -178,29 +182,31 @@ class Memes(commands.Cog):
 
         meme.content = description
 
+        image_bytes = None
+        content_type = None
         if image is not None:
-            _type = image.content_type
+            content_type = image.content_type
             if image.size > 8_000_000:
                 raise commands.BadArgument("That image is too big!")
-            image = await image.read()
+            image_bytes = await image.read()
 
             # save image bytes
             if meme.image is not None:
-                meme.image.replace(image, content_type=_type)
+                await guild_service.update_image(meme.image, image_bytes, image.filename, content_type=content_type)
             else:
-                meme.image.put(image, content_type=_type)
+                await guild_service.save_image(image_bytes, image.filename, content_type=content_type)
         else:
-            meme.image.delete()
+            if meme.image is not None:
+                await guild_service.delete_image(meme.image)
 
-        if not guild_service.edit_meme(meme):
-            raise commands.BadArgument("An error occurred editing that meme.")
+        await guild_service.edit_meme(meme)
 
-        _file = meme.image.read()
-        if _file is not None:
+        _file = None
+        if image is not None:
             _file = discord.File(BytesIO(
-                _file), filename="image.gif" if meme.image.content_type == "image/gif" else "image.png")
+                image_bytes), filename="image.gif" if content_type == "image/gif" else "image.png")
 
-        await ctx.respond(f"Meme edited!", file=_file or discord.utils.MISSING, embed=await self.prepare_meme_embed(meme))
+        await ctx.respond(f"Meme edited!", file=_file or discord.utils.MISSING, embed=await self.prepare_meme_embed(meme, content_type))
 
     @mod_and_up()
     @memes.command(description="Delete a meme")
@@ -210,17 +216,17 @@ class Memes(commands.Cog):
     async def delete(self, ctx: GIRContext, name: str):
         name = name.lower()
 
-        meme = guild_service.get_meme(name)
+        meme = await guild_service.get_meme(name)
         if meme is None:
             raise commands.BadArgument("That meme does not exist.")
 
         if meme.image is not None:
-            meme.image.delete()
+            await guild_service.delete_image(meme.image)
 
-        guild_service.remove_meme(name)
+        await guild_service.remove_meme(name)
         await ctx.send_warning(f"Deleted meme `{meme.name}`.", delete_after=5)
 
-    async def prepare_meme_embed(self, meme):
+    async def prepare_meme_embed(self, meme, content_type = None):
         """Given a meme object, prepare the appropriate embed for it
 
         Parameters
@@ -238,8 +244,8 @@ class Memes(commands.Cog):
         embed.timestamp = meme.added_date
         embed.color = discord.Color.blue()
 
-        if meme.image.read() is not None:
-            embed.set_image(url="attachment://image.gif" if meme.image.content_type ==
+        if content_type is not None:
+            embed.set_image(url="attachment://image.gif" if content_type ==
                             "image/gif" else "attachment://image.png")
         embed.set_footer(
             text=f"Added by {meme.added_by_tag} | Used {meme.use_count} {'time' if meme.use_count == 1 else 'times'}")

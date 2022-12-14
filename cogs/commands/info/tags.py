@@ -151,7 +151,7 @@ class Tags(commands.Cog):
 
         if ctx.message.reference is not None:
             title = f"Hey {ctx.message.reference.resolved.author.mention}, have a look at this!"
-            await ctx.send(content=title, embed=prepare_tag_embed(tag), view=prepare_tag_view(tag), file=_file)
+            await ctx.send(content=title, embed=prepare_tag_embed(tag, content_type), view=prepare_tag_view(tag), file=_file)
         else:
             await ctx.message.reply(embed=prepare_tag_embed(tag, content_type), view=prepare_tag_view(tag), file=_file, mention_author=False)
 

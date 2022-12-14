@@ -47,16 +47,14 @@ class ModActions(commands.Cog):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
 
-        db_guild = await guild_service.get_guild()
-
-        log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
+        log = await add_kick_case(target_member=member, mod=ctx.author, reason=reason)
         await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
 
         await ctx.defer(ephemeral=False)
         await member.kick(reason=reason)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, member, log)
+        await submit_public_log(ctx, member, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -66,16 +64,14 @@ class ModActions(commands.Cog):
     async def roblox(self, ctx: GIRContext, member: ModsAndAboveMember) -> None:
         reason = "This Discord server is for iOS jailbreaking, not Roblox. Please join https://discord.gg/jailbreak instead, thank you!"
 
-        db_guild = await guild_service.get_guild()
-
-        log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
+        log = await add_kick_case(target_member=member, mod=ctx.author, reason=reason)
         await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
 
         await ctx.defer(ephemeral=False)
         await member.kick(reason=reason)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, member, log)
+        await submit_public_log(ctx, member, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -133,7 +129,7 @@ class ModActions(commands.Cog):
         log.set_thumbnail(url=member.display_avatar)
 
         dmed = await notify_user(member, f"You have been muted in {ctx.guild.name}", log)
-        await submit_public_log(ctx, db_guild, member, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -170,7 +166,7 @@ class ModActions(commands.Cog):
         await ctx.respond_or_edit(embed=log, delete_after=10)
 
         dmed = await notify_user(member, f"You have been unmuted in {ctx.guild.name}", log)
-        await submit_public_log(ctx, db_guild, member, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -181,7 +177,6 @@ class ModActions(commands.Cog):
     async def ban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
-        db_guild = await guild_service.get_guild()
 
         member_is_external = isinstance(user, discord.User)
 
@@ -192,7 +187,7 @@ class ModActions(commands.Cog):
 
         await ctx.defer(ephemeral=False)
         self.bot.ban_cache.ban(user.id)
-        log = await add_ban_case(user, ctx.author, reason, db_guild)
+        log = await add_ban_case(user, ctx.author, reason)
 
         if not member_is_external:
             if cfg.ban_appeal_url is None:
@@ -206,7 +201,7 @@ class ModActions(commands.Cog):
             await ctx.guild.ban(discord.Object(id=user.id))
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, user, log)
+        await submit_public_log(ctx, user, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -217,7 +212,6 @@ class ModActions(commands.Cog):
     async def staffban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
-        db_guild = await guild_service.get_guild()
 
         member_is_external = isinstance(user, discord.User)
 
@@ -236,7 +230,7 @@ class ModActions(commands.Cog):
             return
 
         self.bot.ban_cache.ban(user.id)
-        log = await add_ban_case(user, ctx.author, reason, db_guild)
+        log = await add_ban_case(user, ctx.author, reason)
 
         log.set_field_at(1, name="Mod", value=f"{ctx.guild.name} Staff")
 
@@ -252,7 +246,7 @@ class ModActions(commands.Cog):
 
         await ctx.interaction.message.delete()
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, user, log)
+        await submit_public_log(ctx, user, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -293,7 +287,7 @@ class ModActions(commands.Cog):
         log = prepare_unban_log(ctx.author, user, case)
         await ctx.respond_or_edit(embed=log, delete_after=10)
 
-        await submit_public_log(ctx, db_guild, user, log)
+        await submit_public_log(ctx, user, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -358,7 +352,7 @@ class ModActions(commands.Cog):
         dmed = await notify_user(member, f"Your warn has been lifted in {ctx.guild}.", log)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, await guild_service.get_guild(), member, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -465,7 +459,7 @@ class ModActions(commands.Cog):
         dmed = await notify_user(member, f"Your points were removed in {ctx.guild.name}.", log)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, member, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
 
 async def setup(bot):
