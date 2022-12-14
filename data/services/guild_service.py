@@ -1,8 +1,10 @@
-from io import BytesIO
+import time
 from data.model import FilterWord, Guild, Tag, Giveaway
 from data.model.guild import TagView
 from utils import cfg
+from utils.database import db
 from beanie.odm.operators.update.array import Push, Pull
+from beanie.odm.operators.update.general import Set
 
 class GuildService:
     async def get_guild(self) -> Guild:
@@ -17,16 +19,19 @@ class GuildService:
         return await Guild.find_one(Guild.id == cfg.guild_id)
     
     async def add_tag(self, tag: Tag) -> None:
+        start = time.time()
         await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.tags: tag}))
+        end = time.time()
+        print(end - start)
 
     async def remove_tag(self, tag: str):
-        return await Guild.find(Guild.id == cfg.guild_id).update(Pull({ Guild.tags: { "name": tag } }))
+        return await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.tags: { "name": tag } }))
 
     async def edit_tag(self, tag):
-        return await Guild.find(Guild.id == cfg.guild_id).update({ "$set": { "tags.$[elem]": tag } }, array_filters=[ { "elem.name": tag.name } ])
+        return await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ "tags.$[elem]": tag }), array_filters=[ { "elem.name": tag.name } ])
 
-    async def all_tags(self):
-        tags = await Guild.find(Guild.id == cfg.guild_id).project(TagView).first_or_none()
+    async def all_tags(self) -> list[Tag]:
+        tags = await Guild.find_one(Guild.id == cfg.guild_id).project(TagView)
         return tags.tags
 
     async def get_tag(self, name: str):
@@ -41,25 +46,24 @@ class GuildService:
         return tag
 
     async def read_image(self, image_id):
-        from utils import db
-
         image = await db.fs.open_download_stream(image_id)
         return image
 
     async def delete_image(self, image_id):
-        from utils import db
         await db.fs.delete(image_id)
 
     async def save_image(self, image_buffer, filename, content_type):
-        from utils import db
-
         async with db.fs.open_upload_stream(filename=filename) as stream:
             await stream.write(image_buffer)
             await stream.set("contentType", content_type)
             _id = stream._id
 
         return _id
-        
+
+    async def update_image(self, image_id, image_buffer, filename, content_type):
+        await self.delete_image(image_id)
+        return await self.save_image(image_buffer, filename, content_type)
+
     def add_meme(self, meme: Tag) -> None:
         Guild.find(Guild.id == cfg.guild_id).update_one(push__memes=meme)
 

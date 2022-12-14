@@ -160,7 +160,7 @@ class Tags(commands.Cog):
     @transform_context
     @whisper
     async def taglist(self, ctx: GIRContext):
-        _tags = sorted((await guild_service.get_guild()).tags, key=lambda tag: tag.name)
+        _tags = sorted(await guild_service.all_tags(), key=lambda tag: tag.name)
 
         if len(_tags) == 0:
             raise commands.BadArgument("There are no tags defined.")
@@ -237,20 +237,23 @@ class Tags(commands.Cog):
             raise commands.BadArgument("That tag does not exist.")
 
         content_type = None
+        image_id = None
         if image is not None:
             # ensure the attached file is an image
             content_type = image.content_type
             if image.size > 8_000_000:
                 raise commands.BadArgument("That image is too big!")
 
+            filename = image.filename
             image = await image.read()
             # save image bytes
             if tag.image is not None:
-                tag.image.replace(image, content_type=content_type)
+                await guild_service.update_image(tag.image, image, filename, content_type)
             else:
-                tag.image.put(image, content_type=content_type)
+                image_id = await guild_service.save_image(image, filename, content_type)
         else:
-            tag.image.delete()
+            if tag.image is not None:
+                await guild_service.delete_image(tag.image)
 
         modal = EditTagModal(tag=tag, author=ctx.author)
         await ctx.interaction.response.send_modal(modal)
@@ -261,16 +264,16 @@ class Tags(commands.Cog):
             return
 
         tag = modal.tag
+        tag.image = image_id
 
         # store tag in database
         await guild_service.edit_tag(tag)
 
-        _file = tag.image.read()
-        if _file is not None:
-            _file = discord.File(BytesIO(
-                _file), filename="image.gif" if tag.image.content_type == "image/gif" else "image.png")
+        _file = None
+        if image is not None:
+            _file = discord.File(BytesIO(image), filename="image.gif" if content_type == "image/gif" else "image.png")
 
-        await ctx.send_followup(f"Edited tag!", file=_file or discord.utils.MISSING, embed=prepare_tag_embed(tag), view=prepare_tag_view(tag) or discord.utils.MISSING, delete_after=5)
+        await ctx.send_followup(f"Edited tag!", file=_file or discord.utils.MISSING, embed=prepare_tag_embed(tag, content_type), view=prepare_tag_view(tag) or discord.utils.MISSING, delete_after=5)
 
     @genius_or_submod_and_up()
     @tags.command(description="Delete a tag")
