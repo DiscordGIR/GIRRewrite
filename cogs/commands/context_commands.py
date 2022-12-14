@@ -35,7 +35,7 @@ async def handle_support_tag(ctx: GIRContext, member: discord.Member) -> None:
         raise commands.BadArgument("No support tags found.")
 
     random_tag = random.choice(support_tags)
-    tag = guild_service.get_tag(random_tag)
+    tag = await guild_service.get_tag(random_tag)
 
     if tag is None:
         raise commands.BadArgument("That tag does not exist.")

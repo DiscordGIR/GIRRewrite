@@ -119,37 +119,31 @@ class GuildService:
         await Guild.find_one(Guild.id == cfg.guild_id).update(Inc(Guild.case_id, 1))
 
     async def all_rero_mappings(self):
-        g = await self.get_guild()
-        current = g.reaction_role_mapping
-        return current
+        return (await Guild.find_one(Guild.id == cfg.guild_id).project(MetaProperties)).reaction_role_mapping
 
     async def add_rero_mapping(self, mapping):
-        g = await self.get_guild()
-        current = g.reaction_role_mapping
+        current = await self.all_rero_mappings()
         the_key = list(mapping.keys())[0]
         current[str(the_key)] = mapping[the_key]
-        g.reaction_role_mapping = current
-        g.save()
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ Guild.reaction_role_mapping: current }))
 
     async def append_rero_mapping(self, message_id, mapping):
-        g = await self.get_guild()
-        current = g.reaction_role_mapping
+        current = await self.all_rero_mappings()
         current[str(message_id)] = current[str(message_id)] | mapping
-        g.reaction_role_mapping = current
-        g.save()
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ Guild.reaction_role_mapping: current }))
 
     async def get_rero_mapping(self, id):
-        g = await self.get_guild()
-        if id in g.reaction_role_mapping:
-            return g.reaction_role_mapping[id]
+        g = await self.all_rero_mappings()
+        if id in g:
+            return g[id]
         else:
             return None
 
     async def delete_rero_mapping(self, id):
-        g = await self.get_guild()
-        if str(id) in g.reaction_role_mapping.keys():
-            g.reaction_role_mapping.pop(str(id))
-            g.save()
+        g = await self.all_rero_mappings()
+        if str(id) in g.keys():
+            g.pop(str(id))
+            await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ Guild.reaction_role_mapping: g }))
     
     def get_giveaway(self, _id: int) -> Giveaway:
         """
@@ -269,16 +263,16 @@ class GuildService:
     async def get_locked_channels(self):
         return (await self.get_meta_properties()).locked_channels
 
-    def add_locked_channels(self, channel):
-        Guild.find(Guild.id == cfg.guild_id).update_one(push__locked_channels=channel)
+    async def add_locked_channels(self, channel):
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Push({ Guild.locked_channels: channel }))
 
-    def remove_locked_channels(self, channel):
-        Guild.find(Guild.id == cfg.guild_id).update_one(pull__locked_channels=channel)
+    async def remove_locked_channels(self, channel):
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Pull({ Guild.locked_channels: channel }))
 
-    def set_nsa_mapping(self, channel_id, webhooks):
-        guild = Guild.find(Guild.id == cfg.guild_id).first()
-        guild.nsa_mapping[str(channel_id)] = webhooks
-        guild.save()
+    async def set_nsa_mapping(self, channel_id, webhooks):
+        current = await self.get_meta_properties()
+        current.nsa_mapping[str(channel_id)] = webhooks
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ Guild.nsa_mapping: current }))
 
     async def set_sabbath_mode(self, mode: Optional[bool]):
         if mode is None:

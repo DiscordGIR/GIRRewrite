@@ -20,7 +20,7 @@ class AntiRaid(commands.Cog):
     async def raid(self, ctx: GIRContext, phrase: str) -> None:
         # these are phrases that when said by a whitename, automatically bans them.
         # for example: known scam URLs
-        done = guild_service.add_raid_phrase(phrase)
+        done = await guild_service.add_raid_phrase(phrase)
         if not done:
             raise commands.BadArgument("That phrase is already in the list.")
         else:
@@ -70,7 +70,7 @@ class AntiRaid(commands.Cog):
 
         if do_add:
             for phrase in new_phrases:
-                guild_service.add_raid_phrase(phrase)
+                await guild_service.add_raid_phrase(phrase)
 
             await ctx.send_success(f"Added {len(new_phrases)} phrases to the raid filter.")
         else:
@@ -158,10 +158,10 @@ class AntiRaid(commands.Cog):
     @transform_context
     async def freezeable(self,  ctx: GIRContext, channel: discord.TextChannel = None):
         channel = channel or ctx.channel
-        if channel.id in guild_service.get_locked_channels():
+        if channel.id in await guild_service.get_locked_channels():
             raise commands.BadArgument("That channel is already lockable.")
         
-        guild_service.add_locked_channels(channel.id)
+        await guild_service.add_locked_channels(channel.id)
         await ctx.send_success(f"Added {channel.mention} as lockable channel!")
 
     @admin_and_up()
@@ -171,10 +171,10 @@ class AntiRaid(commands.Cog):
     @transform_context
     async def unfreezeable(self,  ctx: GIRContext, channel: discord.TextChannel = None):
         channel = channel or ctx.channel
-        if channel.id not in guild_service.get_locked_channels():
+        if channel.id not in await guild_service.get_locked_channels():
             raise commands.BadArgument("That channel isn't already lockable.")
         
-        guild_service.remove_locked_channels(channel.id)
+        await guild_service.remove_locked_channels(channel.id)
         await ctx.send_success(f"Removed {channel.mention} as lockable channel!")
             
     @admin_and_up()
@@ -182,7 +182,7 @@ class AntiRaid(commands.Cog):
     @app_commands.command(description="Freeze all channels")
     @transform_context
     async def freeze(self, ctx):
-        channels = guild_service.get_locked_channels()
+        channels = await guild_service.get_locked_channels()
         if not channels:
             raise commands.BadArgument("No freezeable channels! Set some using `/freezeable`.")
         
@@ -205,7 +205,7 @@ class AntiRaid(commands.Cog):
     @app_commands.command(description="Unfreeze all channels")
     @transform_context
     async def unfreeze(self, ctx):
-        channels = guild_service.get_locked_channels()
+        channels = await guild_service.get_locked_channels()
         if not channels:
             raise commands.BadArgument("No unfreezeable channels! Set some using `/freezeable`.")
         

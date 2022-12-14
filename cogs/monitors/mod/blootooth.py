@@ -61,7 +61,7 @@ class Blootooth(commands.Cog):
             category = await guild.create_category(name=channel.category.name)
         blootooth_channel = await category.create_text_channel(name=channel.name)
         webhook = (await blootooth_channel.create_webhook(name=f"Webhook {blootooth_channel.name}")).url
-        guild_service.set_nsa_mapping(channel.id, webhook)
+        await guild_service.set_nsa_mapping(channel.id, webhook)
 
         logger.info(f"Added new webhook for channel {channel.name} ({channel.id}: {webhook}")
         return webhook

@@ -319,7 +319,7 @@ class RaidPhraseReportActions(ui.View):
         except Exception:
             await ctx.send_warning("I wasn't able to ban them.", delete_after=5)
 
-        done = guild_service.add_raid_phrase(self.domain)
+        done = await guild_service.add_raid_phrase(self.domain)
         if done:
             await ctx.send_success(f"{self.domain} was added to the raid phrase list.", delete_after=5)
         else:

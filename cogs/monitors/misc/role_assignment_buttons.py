@@ -88,7 +88,7 @@ class RoleAssignButtons(commands.Cog):
         if not reaction_mapping[message.id].keys():
             raise commands.BadArgument("Nothing to do.")
 
-        guild_service.add_rero_mapping(reaction_mapping)
+        await guild_service.add_rero_mapping(reaction_mapping)
 
         view = discord.ui.View(timeout=None)
         resulting_reactions_list = ""
@@ -117,7 +117,7 @@ class RoleAssignButtons(commands.Cog):
         if channel is None:
             return
 
-        current =  guild_service.get_rero_mapping(str(message_id))
+        current =  await guild_service.get_rero_mapping(str(message_id))
         if current is None:
             raise commands.BadArgument(
                 f"Message with ID {message_id} had no reactions set in database. Use `/setbuttons` first.")
@@ -158,7 +158,7 @@ class RoleAssignButtons(commands.Cog):
             reaction_mapping[str(reaction.emoji)] = role.id
             break
 
-        guild_service.append_rero_mapping(message_id, reaction_mapping)
+        await guild_service.append_rero_mapping(message_id, reaction_mapping)
 
         view = discord.ui.View(timeout=None)
         resulting_reactions_list = ""
@@ -217,7 +217,7 @@ class RoleAssignButtons(commands.Cog):
         if channel is None:
             return
 
-        rero_mapping = guild_service.get_rero_mapping(str(before))
+        rero_mapping = await guild_service.get_rero_mapping(str(before))
         if rero_mapping is None:
             raise commands.BadArgument(
                 f"Message with ID {before} had no reactions set in database.")
@@ -234,8 +234,8 @@ class RoleAssignButtons(commands.Cog):
 
         rero_mapping = {after: rero_mapping}
 
-        guild_service.add_rero_mapping(rero_mapping)
-        guild_service.delete_rero_mapping(before)
+        await guild_service.add_rero_mapping(rero_mapping)
+        await guild_service.delete_rero_mapping(before)
 
         await before_message.edit(view=None)
 
@@ -260,7 +260,7 @@ class RoleAssignButtons(commands.Cog):
         if channel is None:
             return
 
-        rero_mapping = guild_service.all_rero_mappings()
+        rero_mapping = await guild_service.all_rero_mappings()
         if rero_mapping is None or rero_mapping == {}:
             raise commands.BadArgument("Nothing to do.")
 
