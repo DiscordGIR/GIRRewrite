@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional
 from beanie import Document
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
 class User(Document):
@@ -29,3 +29,9 @@ class User(Document):
 
     class Settings:
         name = "users"
+
+class XpView(BaseModel):
+    id: int = Field(default_factory=int, alias="_id")
+    xp: int = 0
+    level: int = 0
+    is_clem: bool = False

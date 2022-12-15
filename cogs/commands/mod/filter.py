@@ -57,7 +57,7 @@ class Filters(commands.Cog):
     @transform_context
     @always_whisper
     async def offlineping(self, ctx: GIRContext, val: bool = None):
-        cur = user_service.get_user(ctx.author.id)
+        cur = await user_service.get_user(ctx.author.id)
 
         if val is None:
             val = not cur.offline_report_ping

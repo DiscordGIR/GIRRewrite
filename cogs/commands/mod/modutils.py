@@ -81,7 +81,7 @@ class ModUtils(commands.Cog):
             await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.is_clem = True
         results.is_xp_frozen = True
         results.warn_points = 599
@@ -109,7 +109,7 @@ class ModUtils(commands.Cog):
     @app_commands.describe(member="The user to freeze")
     @transform_context
     async def freezexp(self, ctx: GIRContext, member: discord.Member):
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.is_xp_frozen = not results.is_xp_frozen
         results.save()
 
@@ -125,7 +125,7 @@ class ModUtils(commands.Cog):
             await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.birthday_excluded = True
         results.birthday = None
         results.save()
@@ -150,7 +150,7 @@ class ModUtils(commands.Cog):
             await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.birthday = None
         results.save()
 
@@ -194,7 +194,7 @@ class ModUtils(commands.Cog):
         except ValueError:
             raise commands.BadArgument("You gave an invalid date.")
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.birthday = [month, date]
         results.save()
 
@@ -248,7 +248,7 @@ class ModUtils(commands.Cog):
 
             final_command += f" {sub_command.name}"
         print(final_command)
-        db_user = user_service.get_user(member.id)
+        db_user = await user_service.get_user(member.id)
         if final_command in db_user.command_bans:
             db_user.command_bans[final_command] = not db_user.command_bans[final_command]
         else:

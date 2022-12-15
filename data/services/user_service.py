@@ -1,5 +1,7 @@
 from typing import Counter
 from data.model import Case, Cases, User
+from data.model.user import XpView
+from beanie.odm.operators.update.general import Set, Inc
 
 class UserService:
     async def get_user(self, _id: int) -> User:
@@ -23,16 +25,15 @@ class UserService:
 
         return user
     
-    def leaderboard(self) -> list:
-        return User.objects[0:130].only('_id', 'xp').order_by('-xp', '-_id').select_related()
+    async def leaderboard(self) -> list:
+        return await User.find().sort(-User.xp).limit(130).project(XpView).to_list()
 
-    def leaderboard_rank(self, xp):
-        users = User.objects().only('_id', 'xp')
-        overall = users().count()
-        rank = users(xp__gte=xp).count()
-        return (rank, overall)
+    async def leaderboard_rank(self, xp):
+        rank = await User.find(User.xp >= xp).count()
+        total = await User.find().count()
+        return (rank, total)
     
-    def inc_points(self, _id: int, points: int) -> None:
+    async def inc_points(self, _id: int, points: int) -> None:
         """Increments the warnpoints by `points` of a user whose ID is given by `_id`.
         If the user doesn't have a User document in the database, first create that.
 
@@ -44,25 +45,24 @@ class UserService:
             The amount of points to increment the field by, can be negative to remove points
         """
 
-        # first we ensure this user has a User document in the database before continuing
-        self.get_user(_id)
-        User.objects(_id=_id).update_one(inc__warn_points=points)
-        
-    def inc_xp(self, id, xp):
+        await self.get_user(_id)
+        await User.find_one(User.id == _id).update(Inc(User.warn_points, points))
+
+    async def inc_xp(self, id, xp):
         """Increments user xp.
         """
 
-        self.get_user(id)
-        User.objects(_id=id).update_one(inc__xp=xp)
-        u = User.objects(_id=id).first()
+        await self.get_user(id)
+        await User.find_one(User.id == id).update(Inc({User.xp: xp}))
+        u = await User.find_one(User.id == id).project(XpView)
         return (u.xp, u.level)
 
-    def inc_level(self, id) -> None:
+    async def inc_level(self, id) -> None:
         """Increments user level.
         """
 
-        self.get_user(id)
-        User.objects(_id=id).update_one(inc__level=1)
+        await self.get_user(id)
+        await User.find_one(User.id == id).update(Inc({User.level: 1}))
     
     def get_cases(self, id: int) -> Cases:
         """Return the Document representing the cases of a user, whose ID is given by `id`
@@ -222,8 +222,8 @@ class UserService:
         values["counts"].reverse()
         return values
 
-    def set_sticky_roles(self, _id: int, roles) -> None:
-        self.get_user(_id)
-        User.objects(_id=_id).update_one(set__sticky_roles=roles)
+    async def set_sticky_roles(self, _id: int, roles) -> None:
+        await self.get_user(_id)
+        await User.find_one(User.id == _id).update(Set({User.sticky_roles: roles}))
 
 user_service = UserService()

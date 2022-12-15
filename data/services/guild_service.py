@@ -116,7 +116,7 @@ class GuildService:
         use for a case.
         """
 
-        await Guild.find_one(Guild.id == cfg.guild_id).update(Inc(Guild.case_id, 1))
+        await Guild.find_one(Guild.id == cfg.guild_id).update(Inc({Guild.case_id: 1}))
 
     async def all_rero_mappings(self):
         return (await Guild.find_one(Guild.id == cfg.guild_id).project(MetaProperties)).reaction_role_mapping

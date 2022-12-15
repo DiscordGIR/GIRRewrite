@@ -32,14 +32,14 @@ async def report(bot: discord.Client, message: discord.Message, word: str, invit
     db_guild = await guild_service.get_roles_and_channels()
     channel = message.guild.get_channel(db_guild.channel_reports)
 
-    ping_string = prepare_ping_string(db_guild, message)
+    ping_string = await prepare_ping_string(db_guild, message)
     view = ReportActions(target_member=message.author)
 
     if invite:
-        embed = prepare_embed(message, word, title="Invite filter")
+        embed = await prepare_embed(message, word, title="Invite filter")
         await channel.send(f"{ping_string}\nMessage contained invite: {invite}", embed=embed, view=view)
     else:
-        embed = prepare_embed(message, word)
+        embed = await prepare_embed(message, word)
         await channel.send(ping_string, embed=embed, view=view)
 
 
@@ -65,7 +65,7 @@ async def manual_report(mod: discord.Member, target: Union[discord.Message, disc
     else:
         view = ReportActions(target)
 
-    embed = prepare_embed(target, title="A moderator reported a member")
+    embed = await prepare_embed(target, title="A moderator reported a member")
     await channel.send(ping_string, embed=embed, view=view)
 
 
@@ -87,10 +87,10 @@ async def report_raid_phrase(bot: discord.Client, message: discord.Message, doma
     db_guild = await guild_service.get_roles_and_channels()
     channel = message.guild.get_channel(db_guild.channel_reports)
 
-    ping_string = prepare_ping_string(db_guild, message)
+    ping_string = await prepare_ping_string(db_guild, message)
     view = RaidPhraseReportActions(message.author, domain)
 
-    embed = prepare_embed(
+    embed = await prepare_embed(
         message, domain, title=f"Possible new raid phrase detected\n{domain}")
     await channel.send(ping_string, embed=embed, view=view)
 
@@ -98,10 +98,10 @@ async def report_raid_phrase(bot: discord.Client, message: discord.Message, doma
 async def report_spam(bot, msg, user, title):
     db_guild = await guild_service.get_roles_and_channels()
     channel = msg.guild.get_channel(db_guild.channel_reports)
-    ping_string = prepare_ping_string(db_guild, msg)
+    ping_string = await prepare_ping_string(db_guild, msg)
 
     view = SpamReportActions(user)
-    embed = prepare_embed(msg, title=title)
+    embed = await prepare_embed(msg, title=title)
 
     await channel.send(ping_string, embed=embed, view=view)
 
@@ -121,7 +121,7 @@ async def report_raid(user, msg=None):
     await reports_channel.send(f"<@&{db_guild.role_moderator}>", embed=embed, allowed_mentions=discord.AllowedMentions(roles=True))
 
 
-def prepare_ping_string(db_guild, message):
+async def prepare_ping_string(db_guild, message):
     """Prepares modping string
 
     Parameters
@@ -138,14 +138,14 @@ def prepare_ping_string(db_guild, message):
 
     role = message.guild.get_role(db_guild.role_moderator)
     for member in role.members:
-        offline_ping = (user_service.get_user(member.id)).offline_report_ping
+        offline_ping = (await user_service.get_user(member.id)).offline_report_ping
         if member.status == discord.Status.online or offline_ping:
             ping_string += f"{member.mention} "
 
     return ping_string
 
 
-def prepare_embed(target: Union[discord.Message, discord.Member], word: str = None, title="Word filter"):
+async def prepare_embed(target: Union[discord.Message, discord.Member], word: str = None, title="Word filter"):
     """Prepares embed
 
     Parameters
@@ -163,7 +163,7 @@ def prepare_embed(target: Union[discord.Message, discord.Member], word: str = No
     else:
         member = target
 
-    user_info = user_service.get_user(member.id)
+    user_info = await user_service.get_user(member.id)
     rd = user_service.rundown(member.id)
     rd_text = ""
     for r in rd:

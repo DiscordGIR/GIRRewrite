@@ -29,7 +29,7 @@ class Logging(commands.Cog):
         if member.guild.id != cfg.guild_id:
             return
 
-        db_user = user_service.get_user(member.id)
+        db_user = await user_service.get_user(member.id)
         db_guild = await guild_service.get_channels()
         channel = member.guild.get_channel(db_guild.channel_private)
 

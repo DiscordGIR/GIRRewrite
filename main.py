@@ -70,7 +70,7 @@ class MyTree(app_commands.CommandTree):
         else:
             command_name = command.name
 
-        db_user = user_service.get_user(interaction.user.id)
+        db_user = await user_service.get_user(interaction.user.id)
 
         if db_user.command_bans.get(command_name):
             ctx = GIRContext(interaction)

@@ -32,7 +32,7 @@ def format_xptop_page(ctx, entries, current_page, all_pages):
     """
     embed = discord.Embed(title=f'Leaderboard', color=discord.Color.blurple())
     for i, user in entries:
-        member = ctx.guild.get_member(user._id)
+        member = ctx.guild.get_member(user.id)
         trophy = ''
         if current_page == 1:
             if i == entries[0][0]:
@@ -153,8 +153,7 @@ class UserInfo(commands.Cog):
         if member is None:
             member = ctx.author
 
-        results = user_service.get_user(member.id)
-
+        results = await user_service.get_user(member.id)
         embed = discord.Embed(title="Level Statistics")
         embed.color = member.top_role.color
         embed.set_author(name=member, icon_url=member.display_avatar)
@@ -162,7 +161,7 @@ class UserInfo(commands.Cog):
             name="Level", value=results.level if not results.is_clem else "0", inline=True)
         embed.add_field(
             name="XP", value=f'{results.xp}/{xp_for_next_level(results.level)}' if not results.is_clem else "0/0", inline=True)
-        rank, overall = user_service.leaderboard_rank(results.xp)
+        rank, overall = await user_service.leaderboard_rank(results.xp)
         embed.add_field(
             name="Rank", value=f"{rank}/{overall}" if not results.is_clem else f"{overall}/{overall}", inline=True)
 
@@ -184,7 +183,7 @@ class UserInfo(commands.Cog):
                 f"You don't have permissions to check others' warnpoints.")
 
         # fetch user profile from database
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
 
         embed = discord.Embed(title="Warn Points",
                               color=discord.Color.orange())
@@ -201,9 +200,10 @@ class UserInfo(commands.Cog):
     @transform_context
     @whisper
     async def xptop(self, ctx: GIRContext):
-        results = enumerate(user_service.leaderboard())
+        results = enumerate(await user_service.leaderboard())
+
         results = [(i, m) for (i, m) in results if ctx.guild.get_member(
-            m._id) is not None][0:100]
+            m.id) is not None][0:100]
 
         menu = Menu(ctx, results, per_page=10,
                     page_formatter=format_xptop_page, whisper=ctx.whisper)

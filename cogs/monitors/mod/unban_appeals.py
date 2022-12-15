@@ -95,7 +95,7 @@ class UnbanAppeals(commands.Cog):
         await thread.send(unban_id)
 
     async def generate_userinfo(self, appealer: discord.User):
-        results = user_service.get_user(appealer.id)
+        results = await user_service.get_user(appealer.id)
 
         embed = discord.Embed(title=f"User Information",
                               color=discord.Color.blue())

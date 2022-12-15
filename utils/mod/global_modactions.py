@@ -156,10 +156,10 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     # add new case to DB
     user_service.add_case(target_member.id, case)
     # add warnpoints to the user in DB
-    user_service.inc_points(target_member.id, points)
+    await user_service.inc_points(target_member.id, points)
 
     # fetch latest document about user from DB
-    db_user = user_service.get_user(target_member.id)
+    db_user = await user_service.get_user(target_member.id)
     cur_points = db_user.warn_points
 
     # prepare log embed, send to #public-mod-logs, user, channel where invoked

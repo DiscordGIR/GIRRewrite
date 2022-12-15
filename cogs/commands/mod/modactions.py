@@ -327,7 +327,7 @@ class ModActions(commands.Cog):
             raise commands.BadArgument(
                 message=f"Case with ID {case_id} already lifted.")
 
-        u = user_service.get_user(id=member.id)
+        u = await user_service.get_user(member.id)
         if u.warn_points - int(case.punishment) < 0:
             raise commands.BadArgument(
                 message=f"Can't lift Case #{case_id} because it would make {member.mention}'s points negative.")
@@ -341,7 +341,7 @@ class ModActions(commands.Cog):
         cases.save()
 
         # remove the warn points from the user in DB
-        user_service.inc_points(member.id, -1 * int(case.punishment))
+        await user_service.inc_points(member.id, -1 * int(case.punishment))
         dmed = True
         # prepare log embed, send to #public-mod-logs, user, channel where invoked
         log = prepare_liftwarn_log(ctx.author, member, case)
@@ -426,14 +426,14 @@ class ModActions(commands.Cog):
         if points < 1:
             raise commands.BadArgument("Points can't be lower than 1.")
 
-        u = user_service.get_user(id=member.id)
+        u = await user_service.get_user(member.id)
         if u.warn_points - points < 0:
             raise commands.BadArgument(
                 message=f"Can't remove {points} points because it would make {member.mention}'s points negative.")
 
         # passed sanity checks, so update the case in DB
         # remove the warn points from the user in DB
-        user_service.inc_points(member.id, -1 * points)
+        await user_service.inc_points(member.id, -1 * points)
 
         case = Case(
             _id=await guild_service.get_new_case_id(),

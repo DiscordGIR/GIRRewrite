@@ -19,7 +19,7 @@ class Xp(commands.Cog):
         if member.guild.id != cfg.guild_id:
             return
 
-        user = user_service.get_user(id=member.id)
+        user = await user_service.get_user(member.id)
 
         if user.is_xp_frozen or user.is_clem:
             return
@@ -43,17 +43,17 @@ class Xp(commands.Cog):
         if message.channel.id == db_guild.channel_botspam:
             return
 
-        user = user_service.get_user(id=message.author.id)
+        user = await user_service.get_user(_id=message.author.id)
         if user.is_xp_frozen or user.is_clem:
             return
 
         xp_to_add = randint(0, 11)
-        new_xp, level_before = user_service.inc_xp(
+        new_xp, level_before = await user_service.inc_xp(
             message.author.id, xp_to_add)
         new_level = self.get_level(new_xp)
 
         if new_level > level_before:
-            user_service.inc_level(message.author.id)
+            await user_service.inc_level(message.author.id)
 
         roles_to_add = self.assess_new_roles(new_level, db_guild)
         await self.add_new_roles(message, roles_to_add)
@@ -105,14 +105,14 @@ class StickyRoles(commands.Cog):
 
         roles = [role.id for role in member.roles if role <
                  member.guild.me.top_role and role != member.guild.default_role]
-        user_service.set_sticky_roles(member.id, roles)
+        await user_service.set_sticky_roles(member.id, roles)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         if member.guild.id != cfg.guild_id:
             return
 
-        possible_roles = user_service.get_user(member.id).sticky_roles
+        possible_roles = (await user_service.get_user(member.id)).sticky_roles
         roles = [member.guild.get_role(role) for role in possible_roles if member.guild.get_role(
             role) is not None and member.guild.get_role(role) < member.guild.me.top_role]
         await member.add_roles(*roles, reason="Sticky roles")

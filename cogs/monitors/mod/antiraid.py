@@ -112,7 +112,7 @@ class AntiRaidMonitor(commands.Cog):
 
         # skip user if we manually verified them, i.e they were approved by a moderator
         # using the !verify command when they appealed a ban.
-        if user_service.get_user(member.id).raid_verified:
+        if (await user_service.get_user(member.id)).raid_verified:
             return
 
         # skip if it's an older account (before May 1st 2021)
