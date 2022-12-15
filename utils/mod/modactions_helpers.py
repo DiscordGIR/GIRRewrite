@@ -36,7 +36,7 @@ async def add_kick_case(target_member: discord.Member, mod: discord.Member, reas
     # increment max case ID for next case
     await guild_service.inc_case_id()
     # add new case to DB
-    user_service.add_case(target_member.id, case)
+    await user_service.add_case(target_member.id, case)
 
     return prepare_kick_log(mod, target_member, case)
 
@@ -99,7 +99,7 @@ async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: 
 
     elif cur_points >= 400 and not db_user.was_warn_kicked and isinstance(target_member, discord.Member):
         # kick user if >= 400 points and wasn't previously kicked
-        user_service.set_warn_kicked(target_member.id)
+        await user_service.set_warn_kicked(target_member.id)
 
         dmed = await notify_user(target_member, f"You were kicked from {ctx.guild.name} for reaching 400 or more points. Please note that you will be banned at 600 points.", log)
         log_kickban = await add_kick_case(target_member, mod, "400 or more warn points reached.")
@@ -186,7 +186,7 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
     # increment DB's max case ID for next case
     await guild_service.inc_case_id()
     # add case to db
-    user_service.add_case(target_member.id, case)
+    await user_service.add_case(target_member.id, case)
     # prepare log embed to send to #public-mod-logs, user and context
     return prepare_ban_log(mod, target_member, case)
 

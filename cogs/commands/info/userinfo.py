@@ -82,24 +82,24 @@ async def format_cases_page(ctx, entries, current_page, all_pages):
     for case in entries:
         timestamp = case.date
         formatted = f"{format_dt(timestamp, style='F')} ({format_dt(timestamp, style='R')})"
-        if case._type == "WARN" or case._type == "LIFTWARN":
+        if case.type == "WARN" or case.type == "LIFTWARN":
             if case.lifted:
-                embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id} [LIFTED]',
+                embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id} [LIFTED]',
                                 value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Lifted by**: {case.lifted_by_tag}\n**Lift reason**: {case.lifted_reason}\n**Warned on**: {formatted}', inline=True)
-            elif case._type == "LIFTWARN":
-                embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id} [LIFTED (legacy)]',
+            elif case.type == "LIFTWARN":
+                embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id} [LIFTED (legacy)]',
                                 value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Warned on**: {formatted}', inline=True)
             else:
-                embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
+                embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id}',
                                 value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Warned on**: {formatted}', inline=True)
-        elif case._type == "MUTE" or case._type == "REMOVEPOINTS":
-            embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
-                            value=f'**{pun_map[case._type]}**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}', inline=True)
-        elif case._type in pun_map:
-            embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
-                            value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**{pun_map[case._type]} on**: {formatted}', inline=True)
+        elif case.type == "MUTE" or case.type == "REMOVEPOINTS":
+            embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id}',
+                            value=f'**{pun_map[case.type]}**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}', inline=True)
+        elif case.type in pun_map:
+            embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id}',
+                            value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**{pun_map[case.type]} on**: {formatted}', inline=True)
         else:
-            embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
+            embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id}',
                             value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}', inline=True)
     embed.set_footer(
         text=f"Page {current_page} of {len(all_pages)} - newest cases first ({page_count} total cases)")
@@ -239,12 +239,12 @@ class UserInfo(commands.Cog):
                 f"You don't have permissions to check others' cases.")
 
         # fetch user's cases from our database
-        results = user_service.get_cases(user.id)
+        results = await user_service.get_cases(user.id)
         if len(results.cases) == 0:
             return await ctx.send_warning(f'{user.mention} has no cases.', delete_after=5)
 
         # filter out unmute cases because they are irrelevant
-        cases = [case for case in results.cases if case._type != "UNMUTE"]
+        cases = [case for case in results.cases if case.type != "UNMUTE"]
         # reverse so newest cases are first
         cases.reverse()
 

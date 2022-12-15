@@ -164,12 +164,12 @@ async def prepare_embed(target: Union[discord.Message, discord.Member], word: st
         member = target
 
     user_info = await user_service.get_user(member.id)
-    rd = user_service.rundown(member.id)
+    rd = await user_service.rundown(member.id)
     rd_text = ""
     for r in rd:
-        if r._type == "WARN":
+        if r.type == "WARN":
             r.punishment += " points"
-        rd_text += f"**{r._type}** - {r.punishment} - {r.reason} - {discord.utils.format_dt(r.date, style='R')}\n"
+        rd_text += f"**{r.type}** - {r.punishment} - {r.reason} - {discord.utils.format_dt(r.date, style='R')}\n"
 
     embed = discord.Embed(title=title)
     embed.color = discord.Color.red()

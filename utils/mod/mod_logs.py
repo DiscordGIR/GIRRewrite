@@ -20,7 +20,7 @@ def prepare_warn_log(mod, target_member, case):
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Increase", value=case.punishment, inline=True)
     embed.add_field(name="Reason", value=case.reason, inline=True)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.date
     return embed
 
@@ -44,7 +44,7 @@ def prepare_liftwarn_log(mod, target_member, case):
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Decrease", value=case.punishment, inline=True)
     embed.add_field(name="Reason", value=case.lifted_reason, inline=True)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.lifted_date
     return embed
 
@@ -70,7 +70,7 @@ def prepare_editreason_log(mod, target_member, case, old_reason):
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Old reason", value=old_reason, inline=False)
     embed.add_field(name="New Reason", value=case.reason, inline=False)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.date
     return embed
 
@@ -94,7 +94,7 @@ def prepare_removepoints_log(mod, target_member, case):
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Decrease", value=case.punishment, inline=True)
     embed.add_field(name="Reason", value=case.reason, inline=True)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.date
     return embed
 
@@ -117,7 +117,7 @@ def prepare_ban_log(mod, target_member, case):
     embed.add_field(name="Member", value=f'{target_member} ({target_member.mention})', inline=True)
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Reason", value=case.reason, inline=True)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.date
     return embed
 
@@ -140,7 +140,7 @@ def prepare_unban_log(mod, target_member, case):
     embed.add_field(name="Member", value=f'{target_member} ({target_member.id})', inline=True)
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Reason", value=case.reason, inline=True)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.date
     return embed
 
@@ -163,7 +163,7 @@ def prepare_kick_log(mod, target_member, case):
     embed.add_field(name="Member", value=f'{target_member} ({target_member.mention})', inline=True)
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Reason", value=case.reason, inline=False)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.date
     return embed
 
@@ -187,7 +187,7 @@ def prepare_mute_log(mod, target_member, case):
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Duration", value=case.punishment, inline=True)
     embed.add_field(name="Reason", value=case.reason, inline=True)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.date
     return embed
 
@@ -210,6 +210,6 @@ def prepare_unmute_log(mod, target_member, case):
     embed.add_field(name="Member", value=f'{target_member} ({target_member.mention})', inline=True)
     embed.add_field(name="Mod", value=f'{mod} ({mod.mention})', inline=True)
     embed.add_field(name="Reason", value=case.reason, inline=True)
-    embed.set_footer(text=f"Case #{case._id} | {target_member.id}")
+    embed.set_footer(text=f"Case #{case.id} | {target_member.id}")
     embed.timestamp = case.date
     return embed

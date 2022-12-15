@@ -119,7 +119,7 @@ class ModActions(commands.Cog):
                 "The database thinks this user is already muted.")
 
         await guild_service.inc_case_id()
-        user_service.add_case(member.id, case)
+        await user_service.add_case(member.id, case)
 
         log = prepare_mute_log(ctx.author, member, case)
         await ctx.respond_or_edit(embed=log, delete_after=10)
@@ -156,7 +156,7 @@ class ModActions(commands.Cog):
             reason=reason,
         )
         await guild_service.inc_case_id()
-        user_service.add_case(member.id, case)
+        await user_service.add_case(member.id, case)
 
         log = prepare_unmute_log(ctx.author, member, case)
 
@@ -278,7 +278,7 @@ class ModActions(commands.Cog):
             reason=reason,
         )
         await guild_service.inc_case_id()
-        user_service.add_case(user.id, case)
+        await user_service.add_case(user.id, case)
 
         log = prepare_unban_log(ctx.author, user, case)
         await ctx.respond_or_edit(embed=log, delete_after=10)
@@ -310,7 +310,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(reason="Reason for lifting the warn")
     @transform_context
     async def liftwarn(self, ctx: GIRContext, member: ModsAndAboveMember, case_id: str, reason: str) -> None:
-        cases = user_service.get_cases(member.id)
+        cases = await user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
 
         reason = escape_markdown(reason)
@@ -320,7 +320,7 @@ class ModActions(commands.Cog):
         if case is None:
             raise commands.BadArgument(
                 message=f"{member} has no case with ID {case_id}")
-        elif case._type != "WARN":
+        elif case.type != "WARN":
             raise commands.BadArgument(
                 message=f"{member}'s case with ID {case_id} is not a warn case.")
         elif case.lifted:
@@ -360,7 +360,7 @@ class ModActions(commands.Cog):
     @transform_context
     async def editreason(self, ctx: GIRContext, member: ModsAndAboveMemberOrUser, case_id: str, new_reason: str) -> None:
         # retrieve user's case with given ID
-        cases = user_service.get_cases(member.id)
+        cases = await user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
 
         new_reason = escape_markdown(new_reason)
@@ -447,7 +447,7 @@ class ModActions(commands.Cog):
         # increment DB's max case ID for next case
         await guild_service.inc_case_id()
         # add case to db
-        user_service.add_case(member.id, case)
+        await user_service.add_case(member.id, case)
 
         # prepare log embed, send to #public-mod-logs, user, channel where invoked
         log = prepare_removepoints_log(ctx.author, member, case)

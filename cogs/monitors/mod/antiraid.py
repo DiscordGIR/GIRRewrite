@@ -351,7 +351,7 @@ class AntiRaidMonitor(commands.Cog):
             )
 
             await guild_service.inc_case_id()
-            user_service.add_case(user.id, case)
+            await user_service.add_case(user.id, case)
 
             log = prepare_ban_log(self.bot.user, user, case)
 

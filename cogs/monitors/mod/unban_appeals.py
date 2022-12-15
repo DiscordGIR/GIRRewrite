@@ -108,17 +108,17 @@ class UnbanAppeals(commands.Cog):
         embed.add_field(
             name="XP", value=results.xp if not results.is_clem else "CLEMMED", inline=True)
         embed.add_field(
-            name="Punishments", value=f"{results.warn_points} warn points\n{len(user_service.get_cases(appealer.id).cases)} cases", inline=True)
+            name="Punishments", value=f"{results.warn_points} warn points\n{len(await user_service.get_cases(appealer.id).cases)} cases", inline=True)
 
         embed.add_field(name="Account creation date",
                         value=f"{format_dt(appealer.created_at, style='F')} ({format_dt(appealer.created_at, style='R')})", inline=True)
         return embed
 
     async def generate_cases(self, appealer: discord.User):
-        results = user_service.get_cases(appealer.id)
+        results = await user_service.get_cases(appealer.id)
         if not results.cases:
             return None
-        cases = [case for case in results.cases if case._type != "UNMUTE"]
+        cases = [case for case in results.cases if case.type != "UNMUTE"]
         # reverse so newest cases are first
         cases.reverse()
 
@@ -132,24 +132,24 @@ class UnbanAppeals(commands.Cog):
             for case in entries:
                 timestamp = case.date
                 formatted = f"{format_dt(timestamp, style='F')} ({format_dt(timestamp, style='R')})"
-                if case._type == "WARN" or case._type == "LIFTWARN":
+                if case.type == "WARN" or case.type == "LIFTWARN":
                     if case.lifted:
                         embed.add_field(
-                            name=f'{determine_emoji(case._type)} Case #{case._id} [LIFTED]', value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Lifted by**: {case.lifted_by_tag}\n**Lift reason**: {case.lifted_reason}\n**Warned on**: {formatted}', inline=True)
-                    elif case._type == "LIFTWARN":
-                        embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id} [LIFTED (legacy)]',
+                            name=f'{determine_emoji(case.type)} Case #{case.id} [LIFTED]', value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Lifted by**: {case.lifted_by_tag}\n**Lift reason**: {case.lifted_reason}\n**Warned on**: {formatted}', inline=True)
+                    elif case.type == "LIFTWARN":
+                        embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id} [LIFTED (legacy)]',
                                         value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Warned on**: {formatted}', inline=True)
                     else:
-                        embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
+                        embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id}',
                                         value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Warned on**: {formatted}', inline=True)
-                elif case._type == "MUTE" or case._type == "REMOVEPOINTS":
-                    embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
-                                    value=f'**{pun_map[case._type]}**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}', inline=True)
-                elif case._type in pun_map:
-                    embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
-                                    value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**{pun_map[case._type]} on**: {formatted}', inline=True)
+                elif case.type == "MUTE" or case.type == "REMOVEPOINTS":
+                    embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id}',
+                                    value=f'**{pun_map[case.type]}**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}', inline=True)
+                elif case.type in pun_map:
+                    embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id}',
+                                    value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**{pun_map[case.type]} on**: {formatted}', inline=True)
                 else:
-                    embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
+                    embed.add_field(name=f'{determine_emoji(case.type)} Case #{case.id}',
                                     value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}', inline=True)
             embeds.append(embed)
         return embeds

@@ -189,7 +189,7 @@ async def remove_timeout(id: int) -> None:
         reason="Temporary mute expired.",
     )
     await guild_service.inc_case_id()
-    user_service.add_case(id, case)
+    await user_service.add_case(id, case)
 
     guild = BOT_GLOBAL.get_guild(cfg.guild_id)
     user: discord.Member = guild.get_member(id)

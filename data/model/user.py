@@ -35,3 +35,7 @@ class XpView(BaseModel):
     xp: int = 0
     level: int = 0
     is_clem: bool = False
+
+class BirthdayView(BaseModel):
+    id: int = Field(default_factory=int, alias="_id")
+    birthday: List[int] = Field(default_factory=list)

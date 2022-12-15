@@ -1,6 +1,7 @@
 from typing import Counter
 from data.model import Case, Cases, User
-from data.model.user import XpView
+from data.model.user import BirthdayView, XpView
+from beanie.odm.operators.update.array import Push
 from beanie.odm.operators.update.general import Set, Inc
 
 class UserService:
@@ -46,7 +47,7 @@ class UserService:
         """
 
         await self.get_user(_id)
-        await User.find_one(User.id == _id).update(Inc(User.warn_points, points))
+        await User.find_one(User.id == _id).update(Inc({User.warn_points: points}))
 
     async def inc_xp(self, id, xp):
         """Increments user xp.
@@ -64,7 +65,7 @@ class UserService:
         await self.get_user(id)
         await User.find_one(User.id == id).update(Inc({User.level: 1}))
     
-    def get_cases(self, id: int) -> Cases:
+    async def get_cases(self, id: int) -> Cases:
         """Return the Document representing the cases of a user, whose ID is given by `id`
         If the user doesn't have a Cases document in the database, first create that.
 
@@ -79,15 +80,14 @@ class UserService:
             [description]
         """
 
-        cases = Cases.objects(_id=id).first()
-        # first we ensure this user has a Cases document in the database before continuing
+        cases = await Cases.find_one(Cases.id == id)
         if cases is None:
-            cases = Cases()
-            cases._id = id
-            cases.save()
+            cases = Cases(id=id)
+            await cases.save()
+        
         return cases
     
-    def add_case(self, _id: int, case: Case) -> None:
+    async def add_case(self, _id: int, case: Case) -> None:
         """Cases holds all the cases for a particular user with id `_id` as an
         EmbeddedDocumentListField. This function appends a given case object to
         this list. If this user doesn't have any previous cases, we first add
@@ -102,10 +102,10 @@ class UserService:
         """
 
         # ensure this user has a cases document before we try to append the new case
-        self.get_cases(_id)
-        Cases.objects(_id=_id).update_one(push__cases=case)
+        await self.get_cases(_id)
+        await Cases.find_one(Cases.id == _id).update(Push({Cases.cases: case}))
 
-    def set_warn_kicked(self, _id: int) -> None:
+    async def set_warn_kicked(self, _id: int) -> None:
         """Set the `was_warn_kicked` field in the User object of the user, whose ID is given by `_id`,
         to True. (this happens when a user reaches 400+ points for the first time and is kicked).
         If the user doesn't have a User document in the database, first create that.
@@ -117,11 +117,11 @@ class UserService:
         """
 
         # first we ensure this user has a User document in the database before continuing
-        self.get_user(_id)
-        User.objects(_id=_id).update_one(set__was_warn_kicked=True)
+        await self.get_user(_id)
+        await User.find_one(User.id == _id).update(Set({User.was_warn_kicked: True}))
 
 
-    def rundown(self, id: int) -> list:
+    async def rundown(self, id: int) -> list:
         """Return the 3 most recent cases of a user, whose ID is given by `id`
         If the user doesn't have a Cases document in the database, first create that.
 
@@ -136,58 +136,58 @@ class UserService:
             [description]
         """
 
-        cases = Cases.objects(_id=id).first()
+        cases = await self.get_cases(id)
         # first we ensure this user has a Cases document in the database before continuing
         if cases is None:
-            cases = Cases()
-            cases._id = id
-            cases.save()
+            cases = Cases(id=id)
+            await cases.save()
             return []
 
         cases = cases.cases
-        cases = filter(lambda x: x._type != "UNMUTE", cases)
-        cases = sorted(cases, key=lambda i: i['date'])
+        cases = filter(lambda x: x.type != "UNMUTE", cases)
+        cases = sorted(cases, key=lambda i: i.date)
         cases.reverse()
         return cases[0:3]
 
-    def retrieve_birthdays(self, date):
-        return User.objects(birthday=date)
+    async def retrieve_birthdays(self, date):
+        return await User.find(User.birthday == date).project(BirthdayView).to_list()
     
-    def transfer_profile(self, oldmember, newmember):
-        u = self.get_user(oldmember)
-        u._id = newmember
-        u.save()
+    async def transfer_profile(self, oldmember, newmember):
+        u = await self.get_user(oldmember)
+        u.id = newmember
+        await u.save()
         
-        u2 = self.get_user(oldmember)
+        u2 = await self.get_user(oldmember)
         u2.xp = 0
         u2.level = 0
-        u2.save()
+        await u2.save()
         
-        cases = self.get_cases(oldmember)
-        cases._id = newmember
-        cases.save()
+        cases = await self.get_cases(oldmember)
+        cases.id = newmember
+        await cases.save()
         
-        cases2 = self.get_cases(oldmember)
+        cases2 = await self.get_cases(oldmember)
         cases2.cases = []
-        cases2.save()
+        await cases2.save()
         
         return u, len(cases.cases)
     
-    def fetch_raids(self):
+    async def fetch_raids(self):
         values = {}
-        values["Join spam"] = Cases.objects(cases__reason__contains="Join spam detected").count()
-        values["Join spam over time"] = Cases.objects(cases__reason__contains="Join spam over time detected").count()
-        values["Raid phrase"] = Cases.objects(cases__reason__contains="Raid phrase detected").count()
-        values["Ping spam"] = Cases.objects(cases__reason__contains="Ping spam").count()
-        values["Message spam"] = Cases.objects(cases__reason__contains="Message spam").count()
-        
+
+        values["Join spam"] = await Cases.find({ "cases": {"$elemMatch": { "reason": "Join spam detected" } } }).count()
+        values["Join spam over time"] = await Cases.find({ "cases": {"$elemMatch": { "reason": "Join spam over time detected" } } }).count()
+        values["Raid phrase"] = await Cases.find({ "cases": {"$elemMatch": { "reason": "Raid phrase detected" } } }).count()
+        values["Ping spam"] = await Cases.find({ "cases": {"$elemMatch": { "reason": "Ping spam" } } }).count()
+        values["Message spam"] = await Cases.find({ "cases": {"$elemMatch": { "reason": "Message spam" } } }).count()
+
         return values
 
-    def fetch_cases_by_mod(self, _id):
+    async def fetch_cases_by_mod(self, _id):
         values = {}
-        cases = Cases.objects(cases__mod_id=str(_id))
+        # cases = Cases.objects(cases__mod_id=str(_id))
+        cases = await Cases.find({ "cases": {"$elemMatch": { "mod_id": _id } } }).to_list()
         values["total"] = 0
-        cases = list(cases.all())
         final_cases = []
         for target in cases:
             for case in target.cases:
@@ -204,10 +204,9 @@ class UserService:
         values["counts"].reverse()
         return values
 
-    def fetch_cases_by_keyword(self, keyword):
+    async def fetch_cases_by_keyword(self, keyword):
         values = {}
-        cases = Cases.objects(cases__reason__contains=keyword)
-        cases = list(cases.all())
+        cases = await Cases.find({ "cases.reason": { "$regex": keyword }}).to_list()
         values["total"] = 0
         final_cases = []
 

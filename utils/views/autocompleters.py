@@ -248,11 +248,11 @@ async def warn_autocomplete(interaction: discord.Interaction, current: str) -> L
     if not gatekeeper.has(interaction.guild, interaction.user, 5):
         return []
 
-    cases: List[Case] = [case for case in user_service.get_cases(
-        int(interaction.namespace["member"].id)).cases if case._type == "WARN" and not case.lifted]
+    cases: List[Case] = [case for case in await user_service.get_cases(
+        int(interaction.namespace["member"].id)).cases if case.type == "WARN" and not case.lifted]
     cases.sort(key=lambda x: x._id, reverse=True)
 
-    return [app_commands.Choice(name=f"{case._id} - {case.punishment} points - {case.reason}", value=str(case._id)) for case in cases if (not current or str(case._id).startswith(str(current)))][:25]
+    return [app_commands.Choice(name=f"{case.id} - {case.punishment} points - {case.reason}", value=str(case.id)) for case in cases if (not current or str(case.id).startswith(str(current)))][:25]
 
 
 async def timezone_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:

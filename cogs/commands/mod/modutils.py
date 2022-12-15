@@ -49,7 +49,7 @@ class ModUtils(commands.Cog):
                 raise commands.BadArgument(
                     f"Couldn't find user with ID {new_member}")
 
-        u, case_count = user_service.transfer_profile(
+        u, case_count = await user_service.transfer_profile(
             old_member.id, new_member.id)
 
         embed = discord.Embed(title="Transferred profile")
@@ -89,7 +89,7 @@ class ModUtils(commands.Cog):
 
         case = Case(
             _id=await guild_service.get_new_case_id(),
-            _type="CLEM",
+            type="CLEM",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
             punishment=str(-1),
@@ -99,7 +99,7 @@ class ModUtils(commands.Cog):
         # incrememnt DB's max case ID for next case
         await guild_service.inc_case_id()
         # add case to db
-        user_service.add_case(member.id, case)
+        await user_service.add_case(member.id, case)
 
         await ctx.send_success(f"{member.mention} was put on clem.")
 
@@ -288,12 +288,12 @@ class ModUtils(commands.Cog):
 
     async def prepare_rundown_embed(self, ctx: GIRContext, user):
         user_info = await user_service.get_user(user.id)
-        rd = user_service.rundown(user.id)
+        rd = await user_service.rundown(user.id)
         rd_text = ""
         for r in rd:
-            if r._type == "WARN":
+            if r.type == "WARN":
                 r.punishment += " points"
-            rd_text += f"**{r._type}** - {r.punishment} - {r.reason} - {format_dt(r.date, style='R')}\n"
+            rd_text += f"**{r.type}** - {r.punishment} - {r.reason} - {format_dt(r.date, style='R')}\n"
 
         reversed_roles = user.roles
         reversed_roles.reverse()
