@@ -146,7 +146,7 @@ class UserInfo(commands.Cog):
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Show your or another user's XP")
-    @app_commands.describe(member="Memebr to get XP of")
+    @app_commands.describe(member="Member to get XP of")
     @transform_context
     @whisper
     async def xp(self, ctx: GIRContext, member: discord.Member = None) -> None:
@@ -170,7 +170,7 @@ class UserInfo(commands.Cog):
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Show your or another member's warnpoints")
-    @app_commands.describe(member="Memebr to get warnpoints of")
+    @app_commands.describe(member="Member to get warnpoints of")
     @transform_context
     @whisper
     async def warnpoints(self, ctx: GIRContext, member: discord.Member = None):
