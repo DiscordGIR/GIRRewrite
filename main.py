@@ -122,7 +122,7 @@ async def app_command_error(interaction: discord.Interaction, error: AppCommandE
             or isinstance(error, commands.BotMissingPermissions)
             or isinstance(error, commands.MaxConcurrencyReached)
             or isinstance(error, commands.NoPrivateMessage)):
-        await ctx.send_error(error, followup=True, whisper=True, delete_after=5)
+        await ctx.send_error(error, followup=True, whisper=True, bot_error=True, delete_after=5)
     else:
         try:
             raise error

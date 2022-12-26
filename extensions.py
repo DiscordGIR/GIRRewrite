@@ -12,6 +12,7 @@ initial_extensions = [
     "cogs.commands.misc.memes",
     "cogs.commands.misc.misc",
     "cogs.commands.misc.timezones",
+    "cogs.commands.misc.setup_battles",
     "cogs.commands.mod.antiraid",
     "cogs.commands.mod.filter",
     "cogs.commands.mod.modactions",

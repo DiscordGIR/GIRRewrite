@@ -239,7 +239,7 @@ class GIRContext:
             title=title, description=description,  color=discord.Color.orange())
         return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper or ephemeral, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
-    async def send_error(self, description: str, title: Optional[str] = ":(\nYour command ran into a problem", delete_after: Optional[float] = None, followup: Optional[bool] = None, whisper: Optional[bool] = False):
+    async def send_error(self, description: str, title: Optional[str] = ":(\nYour command ran into a problem", delete_after: Optional[float] = None, followup: Optional[bool] = None, whisper: Optional[bool] = False, bot_error: bool = False):
         """Send an embed response with red color to an interaction.
 
         Parameters
@@ -256,7 +256,10 @@ class GIRContext:
 
         embed = discord.Embed(
             title=title, description=description,  color=discord.Color.red())
-        embed.set_footer(text="Note: The bot maintainer will be pinged about this error automatically.")
+        
+        if bot_error:
+            embed.set_footer(text="Note: The bot maintainer will be pinged about this error automatically.")
+
         return await self.respond_or_edit(content="", embed=embed, ephemeral=self.whisper or whisper, view=discord.utils.MISSING, delete_after=delete_after, followup=followup)
 
     async def prompt(self, info: PromptData):
