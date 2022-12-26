@@ -40,7 +40,7 @@ class Birthday(commands.Cog):
             if person.birthday_excluded:
                 continue
 
-            user = guild.get_member(person._id)
+            user = guild.get_member(person.id)
             if user is None:
                 return
 

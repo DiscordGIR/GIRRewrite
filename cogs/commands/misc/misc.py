@@ -132,7 +132,7 @@ class Misc(commands.Cog):
 
         # passed all the sanity checks, let's save the birthday
         db_user.birthday = [month, date]
-        db_user.save()
+        await db_user.save()
 
         await ctx.send_success(f"Your birthday was set.")
         # if it's the user's birthday today let's assign the role right now!

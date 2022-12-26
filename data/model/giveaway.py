@@ -4,7 +4,7 @@ from beanie import Document
 from pydantic import Field
 
 class Giveaway(Document):
-    _id: int = Field(default_factory=int)
+    id: int = Field(default_factory=int)
     is_ended: bool = False
     end_time: datetime
     channel: int

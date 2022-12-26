@@ -86,7 +86,14 @@ class UserService:
             await cases.save()
         
         return cases
+
+    async def get_case_by_id(self, id: int) -> Cases:
+        return await Cases.find_one({ "cases" : { "$elemMatch" : { "_id" : id } } })
     
+    async def edit_case_reason(self, user_id: int, case: Case) -> None:
+        # await Cases.find_one({ "cases" : { "$elemMatch" : { "_id" : id } } }).update({ "cases.$.reason": reason })
+        await Cases.find_one(Cases.id == user_id).update(Set({ "cases.$[elem]": case }), array_filters=[ { "elem._id": case.id } ])
+
     async def add_case(self, _id: int, case: Case) -> None:
         """Cases holds all the cases for a particular user with id `_id` as an
         EmbeddedDocumentListField. This function appends a given case object to

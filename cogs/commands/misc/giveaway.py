@@ -63,7 +63,7 @@ class Giveaway(commands.Cog):
             winners=winners,
             end_time=end_time,
             sponsor=sponsor.id)
-        giveaway.save()
+        await giveaway.save()
 
         await ctx.send_success(f"Giveaway created!", delete_after=5)
 
@@ -75,7 +75,7 @@ class Giveaway(commands.Cog):
     @app_commands.describe(message_id="The ID of the giveaway message.")
     @transform_context
     async def reroll(self, ctx: GIRContext, message_id: str):
-        g = guild_service.get_giveaway(_id=int(message_id))
+        g = await guild_service.get_giveaway(_id=int(message_id))
 
         if g is None:
             raise commands.BadArgument(
@@ -97,7 +97,7 @@ class Giveaway(commands.Cog):
             the_winner = None
 
         g.previous_winners.append(the_winner.id)
-        g.save()
+        await g.save()
 
         channel = ctx.guild.get_channel(g.channel)
 
@@ -109,7 +109,7 @@ class Giveaway(commands.Cog):
     @app_commands.describe(message_id="The ID of the giveaway message.")
     @transform_context
     async def end(self, ctx: GIRContext, message_id: str):
-        giveaway = guild_service.get_giveaway(_id=int(message_id))
+        giveaway = await guild_service.get_giveaway(_id=int(message_id))
         if giveaway is None:
             raise commands.BadArgument(
                 "A giveaway with that ID was not found.")
@@ -135,12 +135,12 @@ class Giveaway(commands.Cog):
         channel = guild.get_channel(giveaway.channel)
 
         # caching mechanism for each giveaway message so we don't get ratelimited by discord
-        if giveaway._id in self.giveaway_messages:
-            message = self.giveaway_messages[giveaway._id]
+        if giveaway.id in self.giveaway_messages:
+            message = self.giveaway_messages[giveaway.id]
         else:
             try:
-                message = await channel.fetch_message(giveaway._id)
-                self.giveaway_messages[giveaway._id] = message
+                message = await channel.fetch_message(giveaway.id)
+                self.giveaway_messages[giveaway.id] = message
             except Exception:
                 return
 

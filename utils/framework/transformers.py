@@ -111,8 +111,8 @@ async def check_invokee(interaction: discord.Interaction, user: discord.Member):
         if user.id == interaction.user.id:
             raise PermissionsFailure("You can't call that on yourself.")
 
-        if user.id == interaction.client.user.id:
-            raise PermissionsFailure("You can't call that on me :(")
+        # if user.id == interaction.client.user.id:
+        #     raise PermissionsFailure("You can't call that on me :(")
 
         if user:
             if user.top_role >= interaction.user.top_role:

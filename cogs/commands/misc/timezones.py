@@ -68,7 +68,7 @@ class Timezones(commands.Cog):
 
         db_user = await user_service.get_user(ctx.author.id)
         db_user.timezone = zone
-        db_user.save()
+        await db_user.save()
 
         footer = None
         if self.timezone_country.get(zone) is None:
@@ -82,7 +82,7 @@ class Timezones(commands.Cog):
     async def remove(self, ctx: GIRContext):
         db_user = await user_service.get_user(ctx.author.id)
         db_user.timezone = None
-        db_user.save()
+        await db_user.save()
 
         await ctx.send_success(f"We have removed your timezone from the database.", ephemeral=ctx.whisper)
 

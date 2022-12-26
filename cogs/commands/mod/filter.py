@@ -63,7 +63,7 @@ class Filters(commands.Cog):
             val = not cur.offline_report_ping
 
         cur.offline_report_ping = val
-        cur.save()
+        await cur.save()
 
         if val:
             await ctx.send_success("You will now be pinged for reports when offline")

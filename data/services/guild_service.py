@@ -145,7 +145,7 @@ class GuildService:
             g.pop(str(id))
             await Guild.find_one(Guild.id == cfg.guild_id).update(Set({ Guild.reaction_role_mapping: g }))
     
-    def get_giveaway(self, _id: int) -> Giveaway:
+    async def get_giveaway(self, _id: int) -> Giveaway:
         """
         Return the Document representing a giveaway, whose ID (message ID) is given by `id`
         If the giveaway doesn't exist in the database, then None is returned.
@@ -158,10 +158,10 @@ class GuildService:
         -------
         Giveaway
         """
-        giveaway = Giveaway.objects(_id=_id).first()
-        return giveaway
+        
+        return await Giveaway.find_one(Giveaway.id == _id)
     
-    def add_giveaway(self, id: int, channel: int, name: str, entries: list, winners: int, ended: bool = False, prev_winners=[]) -> None:
+    async def add_giveaway(self, id: int, channel: int, name: str, entries: list, winners: int, ended: bool = False, prev_winners=[]) -> None:
         """
         Add a giveaway to the database.
         Parameters
@@ -177,15 +177,17 @@ class GuildService:
         winners : int
             The amount of winners that will be selected at the end of the giveaway.
         """
-        giveaway = Giveaway()
-        giveaway._id = id
-        giveaway.channel = channel
-        giveaway.name = name
-        giveaway.entries = entries
-        giveaway.winners = winners
-        giveaway.is_ended = ended
-        giveaway.previous_winners = prev_winners
-        giveaway.save()
+        giveaway = Giveaway(
+            id = id,
+            channel = channel,
+            name = name,
+            entries = entries,
+            winners = winners,
+            is_ended = ended,
+            previous_winners = prev_winners
+        )
+        
+        await giveaway.save()
         
     async def add_raid_phrase(self, phrase: str) -> bool:
         existing = await self.get_guild().raid_phrases.filter(word=phrase)

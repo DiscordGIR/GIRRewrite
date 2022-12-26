@@ -338,7 +338,7 @@ class ModActions(commands.Cog):
         case.lifted_by_tag = str(ctx.author)
         case.lifted_by_id = ctx.author.id
         case.lifted_date = datetime.now()
-        cases.save()
+        await cases.save()
 
         # remove the warn points from the user in DB
         await user_service.inc_points(member.id, -1 * int(case.punishment))
@@ -359,22 +359,24 @@ class ModActions(commands.Cog):
     @app_commands.describe(new_reason="New reason for the case")
     @transform_context
     async def editreason(self, ctx: GIRContext, member: ModsAndAboveMemberOrUser, case_id: str, new_reason: str) -> None:
-        # retrieve user's case with given ID
+        case_id = int(case_id)
         cases = await user_service.get_cases(member.id)
-        case = cases.cases.filter(_id=case_id).first()
+        cases = list(filter(lambda case: case.id == case_id, cases.cases))
+
+        if not cases:
+            raise commands.BadArgument(
+                message=f"{member} has no case with ID {case_id}")
+
+        case = cases[0]
 
         new_reason = escape_markdown(new_reason)
         new_reason = escape_mentions(new_reason)
 
-        # sanity checks
-        if case is None:
-            raise commands.BadArgument(
-                message=f"{member} has no case with ID {case_id}")
-
         old_reason = case.reason
         case.reason = new_reason
-        case.date = datetime.now()
-        cases.save()
+        # case.date = datetime.now()
+        # await cases.save()
+        await user_service.edit_case_reason(member.id, case)
 
         dmed = True
         log = prepare_editreason_log(ctx.author, member, case, old_reason)

@@ -118,7 +118,7 @@ class AntiRaid(commands.Cog):
         else:
             profile.raid_verified = mode
 
-        profile.save()
+        await profile.save()
 
         await ctx.send_success(description=f"{'**Verified**' if profile.raid_verified else '**Unverified**'} user {user.mention}.")
 

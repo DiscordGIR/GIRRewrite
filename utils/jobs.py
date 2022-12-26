@@ -358,11 +358,11 @@ async def end_giveaway(channel_id: int, message_id: int, winners: int) -> None:
             mentions.append(member.mention)
             winner_ids.append(member.id)
 
-    g = guild_service.get_giveaway(_id=message.id)
+    g = await guild_service.get_giveaway(_id=message.id)
     g.entries = reacted_ids
     g.is_ended = True
     g.previous_winners = winner_ids
-    g.save()
+    await g.save()
 
     await message.edit(embed=embed)
     await message.clear_reactions()
