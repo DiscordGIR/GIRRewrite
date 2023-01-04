@@ -148,7 +148,8 @@ class SetupBattle(commands.Cog):
                 vote_percent = (len(submission.votes) / total_vote_count) * 100
 
             percent_rounded = round(vote_percent/10)
-            string = f"<@{submission._id}> ([link]({submission.link})): {len(submission.votes)} votes\n{'🟩' * percent_rounded}{'⬛' * (10 - percent_rounded)} ({vote_percent}%)"
+            member = ctx.guild.get_member(submission._id)
+            string = f"{member or submission._id} ([link]({submission.link})): {len(submission.votes)} votes\n{'🟩' * percent_rounded}{'⬛' * (10 - percent_rounded)} ({vote_percent}%)"
             submission_strings.append(string)
         
         submission_strings = list(enumerate(submission_strings))
