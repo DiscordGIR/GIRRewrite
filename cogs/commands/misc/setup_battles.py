@@ -7,8 +7,21 @@ from discord.ext import commands
 import pytz
 from data.model.battle import Battle
 from utils import cfg, GIRContext, transform_context
-from utils.framework import whisper, mod_and_up
+from utils.framework import mod_and_up
 from utils.framework.checks import always_whisper
+from utils.views.menus.menu import Menu
+
+
+def format_submission_page(ctx, entries, current_page, all_pages):
+    embed = discord.Embed(title="Setup battle results", color=discord.Color.random())
+    embed.description = ""
+
+    for i, entry in entries:
+        embed.description += f"{i+1}. {entry}\n\n"
+
+    embed.set_footer(
+        text=f"{ctx.total_votes} votes in total • Page {current_page} of {len(all_pages)}")
+    return embed
 
 
 class ViewSubmissionsButton(discord.ui.Button):
@@ -19,9 +32,9 @@ class ViewSubmissionsButton(discord.ui.Button):
     async def callback(self, interaction: discord.Interaction):
         clicker = interaction.user
         ctx = GIRContext(interaction)
-        # if clicker.joined_at > self.min_join_date:
-        #     await ctx.send_error(description=f"Sorry, we're only accepting submissions from people that joined before {discord.utils.format_dt(self.min_join_date, style='D')}!", whisper=True)
-        #     return
+        if clicker.joined_at > self.min_join_date:
+            await ctx.send_error(description=f"Sorry, we're only accepting submissions from people that joined before {discord.utils.format_dt(self.min_join_date, style='D')}!", whisper=True)
+            return
 
         previously_voted = Battle.objects(votes__contains=clicker.id)
         if previously_voted:
@@ -106,7 +119,7 @@ class SetupBattle(commands.Cog):
         await ctx.send_success(f"Added new submission from {user.mention}!")
 
     @mod_and_up()
-    @submissions.command(description="Add a new submission")
+    @submissions.command(description="Remove an existing submission")
     @app_commands.describe(user="User that made the submission")
     @transform_context
     @always_whisper
@@ -115,7 +128,7 @@ class SetupBattle(commands.Cog):
         if user_db_object is None:
             raise commands.BadArgument("This user hasn't submitted anything!")
 
-        user_db_object.delete()
+        Battle.objects(_id=user.id).delete()
         await ctx.send_success("Submission was deleted!")
 
     @mod_and_up()
@@ -126,7 +139,7 @@ class SetupBattle(commands.Cog):
         submissions = list(Battle.objects().all())
         total_vote_count = sum([len(submission.votes) for submission in submissions])
         submissions.sort(key=lambda x: len(x.votes), reverse=True)
-        string = ""
+        submission_strings = []
     
         for submission in submissions:
             if total_vote_count == 0:
@@ -135,18 +148,21 @@ class SetupBattle(commands.Cog):
                 vote_percent = (len(submission.votes) / total_vote_count) * 100
 
             percent_rounded = round(vote_percent/10)
-            string += f"<@{submission._id}> ([link]({submission.link})): {len(submission.votes)} votes\n{'🟩' * percent_rounded}{'⬛' * (10 - percent_rounded)} ({vote_percent}%)\n\n"
+            string = f"<@{submission._id}> ([link]({submission.link})): {len(submission.votes)} votes\n{'🟩' * percent_rounded}{'⬛' * (10 - percent_rounded)} ({vote_percent}%)"
+            submission_strings.append(string)
         
-        embed = discord.Embed(description=string, color=discord.Color.random())
-        embed.set_footer(text=f"{total_vote_count} votes in total")
-        await ctx.respond(embed=embed, ephemeral=True)
+        submission_strings = list(enumerate(submission_strings))
+        ctx.total_votes = total_vote_count
+        
+        menu = Menu(ctx, submission_strings, per_page=10,
+                    page_formatter=format_submission_page, whisper=True)
+        await menu.start()
 
-    
     @mod_and_up()
     @submissions.command(description="Post the message users can click on to vote")
     @transform_context
     async def postembed(self, ctx: GIRContext):
-        embed = discord.Embed(color=discord.Color.blurple(), description="Click on the button to see the submissions you can vote on!\n\nYou will see a choice of 2 submissions and can choose between those.")
+        embed = discord.Embed(color=discord.Color.blurple(), title="How voting works", description="You will be given 2 submissions to choose from. These 2 are randomly picked by the bot and its your job to vote for the better one. The submission with the most votes at the end of the voting period wins.\n\nWhy? Because there are 20+ submissions and looking through each one is impractical.\n\nClick on the button below to see the submissions you can vote on!")
         embed.set_footer(text="Note: You can only vote once.")
 
         view = discord.ui.View(timeout=None)
