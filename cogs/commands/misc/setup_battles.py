@@ -52,7 +52,7 @@ class ViewSubmissionsButton(discord.ui.Button):
                 Battle.objects(_id=submission._id).update_one(push__seen_by=clicker.id)
 
         view = VoteView(clicker, submissions[0], submissions[1])
-        await ctx.respond(f"1️⃣ {submissions[0].link}\n2️⃣ {submissions[1].link}", view=view, ephemeral=True)
+        await ctx.respond(f"1️⃣ <{submissions[0].link}>\n2️⃣ <{submissions[1].link}>", view=view, ephemeral=True)
         
         await view.wait()
         result = view.voted_value
