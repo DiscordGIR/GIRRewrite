@@ -112,7 +112,7 @@ class Sileo(commands.Cog):
             return
 
         async with aiohttp.ClientSession() as client:
-            async with client.get(f'https://api.canister.me/v1/community/packages/search?query={urlscheme.group(1)}&searchFields=identifier&responseFields=name,repository.uri,repository.name,depiction,packageIcon,tintColor') as resp:
+            async with client.get(f'https://api.canister.me/v2/jailbreak/package/search?q={urlscheme.group(1)}') as resp:
                 if resp.status == 200:
                     response = json.loads(await resp.text())
                 data = response.get('data')
@@ -139,7 +139,7 @@ class Sileo(commands.Cog):
                 embed = discord.Embed(
                     title=f"{canister.get('name')} - {canister.get('repository')['name']}", color=color)
                 embed.description = f"You have sent a link to a package, you can use the button below to open it directly in Sileo."
-                icon = canister.get('packageIcon')
+                icon = canister.get('icon')
                 depiction = canister.get('depiction')
                 view.add_item(discord.ui.Button(label='View Package in Sileo', emoji="<:Search2:947525874297757706>",
                                                 url=f"https://sharerepo.stkc.win/v3/?pkgid={urlscheme.group(1)}", style=discord.ButtonStyle.url))
@@ -149,7 +149,7 @@ class Sileo(commands.Cog):
                         'depiction'), style=discord.ButtonStyle.url))
 
                 if icon is not None:
-                    embed.set_thumbnail(url=canister.get('packageIcon'))
+                    embed.set_thumbnail(url=canister.get('icon'))
 
                 view.add_item(discord.ui.Button(label='Add Repo to Sileo', emoji="<:Sileo:959128883498729482>",
                                                 url=f"https://repos.slim.rocks/repo/?repoUrl={canister.get('repository')['uri']}&manager=sileo", style=discord.ButtonStyle.url))
