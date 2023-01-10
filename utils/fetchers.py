@@ -73,13 +73,10 @@ async def canister_search_package(query):
 
     """
 
-    async with client_session.get(f'https://api.canister.me/v1/community/packages/search?query={urllib.parse.quote(query)}&searchFields=identifier,name&responseFields=identifier,header,tintColor,name,price,description,packageIcon,repository.uri,repository.name,author,maintainer,latestVersion,nativeDepiction,depiction') as resp:
+    async with client_session.get(f'https://api.canister.me/v2/jailbreak/package/search?q={urllib.parse.quote(query)}') as resp:
         if resp.status == 200:
             response = json.loads(await resp.text())
-            if response.get('status') == "Successful":
-                return response.get('data')
-            else:
-                return None
+            return response.get('data')
         else:
             return None
 
@@ -99,20 +96,17 @@ async def canister_search_repo(query):
 
     """
 
-    async with client_session.get(f'https://api.canister.me/v1/community/repositories/search?query={urllib.parse.quote(query)}') as resp:
+    async with client_session.get(f'https://api.canister.me/v2/jailbreak/repository/search?q={urllib.parse.quote(query)}') as resp:
         if resp.status == 200:
             response = json.loads(await resp.text())
-            if response.get('status') == "Successful":
-                return response.get('data')
-            else:
-                return None
+            return response.get('data')
         else:
             return None
 
 
 @cached(ttl=3600)
 async def canister_fetch_repos():
-    async with client_session.get('https://api.canister.me/v1/community/repositories/search?ranking=1,2,3,4,5') as resp:
+    async with client_session.get('https://api.canister.me/v2/jailbreak/repository/ranking?rank=*') as resp:
         if resp.status == 200:
             response = await resp.json(content_type=None)
             return response.get("data")
