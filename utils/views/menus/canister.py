@@ -31,7 +31,7 @@ def tweak_embed_format(entry):
     description = discord.utils.escape_markdown(entry.get('description'))
 
     if entry.get('name') is None:
-        titleKey = entry.get('identifier')
+        titleKey = entry.get('package')
     embed = discord.Embed(title=titleKey, color=discord.Color.blue())
     embed.description = description[:200] + \
         "..." if len(description) > 200 else description
@@ -44,15 +44,15 @@ def tweak_embed_format(entry):
             entry.get('maintainer').split("<")[0]), inline=True)
 
     embed.add_field(name="Version", value=discord.utils.escape_markdown(
-        entry.get('latestVersion') or "No Version"), inline=True)
+        entry.get('version') or "No Version"), inline=True)
     embed.add_field(name="Price", value=entry.get(
         "price") or "Free", inline=True)
     embed.add_field(
         name="Repo", value=f"[{entry.get('repository').get('name')}]({entry.get('repository').get('uri')})" or "No Repo", inline=True)
     embed.add_field(name="Bundle ID", value=entry.get(
-        "identifier") or "Not found", inline=True)
+        "package") or "Not found", inline=True)
 
-    if entry.get('tintColor') is None and entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
+    if entry.get('tintColor') is None and entry.get('icon') is not None and url_pattern.match(entry.get('icon')):
         embed.color = discord.Color.blue()
     elif entry.get('tintColor') is not None:
         try:
@@ -61,8 +61,10 @@ def tweak_embed_format(entry):
             color = discord.Color.blue()
         embed.color = color
 
-    if entry.get('packageIcon') is not None and url_pattern.match(entry.get('packageIcon')):
-        embed.set_thumbnail(url=entry.get('packageIcon'))
+    if entry.get('icon') is not None and url_pattern.match(entry.get('icon')):
+        embed.set_thumbnail(url=entry.get('icon'))
+
+    # this probably needs to be redone as stkc.win doesn't even resolve anymore (also you can just check repository.slug == bigboss)
     embed.set_footer(icon_url=f"{'https://assets.stkc.win/bigboss-sileo.png' if 'http://apt.thebigboss.org/repofiles/cydia/CydiaIcon.png' in entry.get('repository').get('uri')+'/CydiaIcon.png' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
                      text=f"Powered by Canister" or "No Package")
     embed.timestamp = datetime.now()
@@ -98,6 +100,8 @@ async def format_tweak_page(ctx, entries, current_page, all_pages):
             break
 
     embed = tweak_embed_format(entry)
+
+    # this probably needs to be redone as stkc.win doesn't even resolve anymore (also you can just check repository.slug == bigboss)
     embed.set_footer(icon_url=f"{'https://assets.stkc.win/bigboss-sileo.png' if 'http://apt.thebigboss.org/repofiles/cydia/CydiaIcon.png' in entry.get('repository').get('uri')+'/CydiaIcon.png' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
                      text=f"Powered by Canister • Page {current_page}/{len(all_pages)}" or "No Package")
     return embed
@@ -182,9 +186,9 @@ class TweakDropdown(discord.ui.Select):
         self.should_whisper = should_whisper
         entries = entries[:24]
         self.current_entry = entries[0]
-        self.entries = {entry.get("identifier"): entry for entry in entries}
-        options = [discord.SelectOption(label=(option.get("name") or option.get('identifier'))[:100] or "No title", description=f"{option.get('author').split('<')[0] if option.get('author') is not None else option.get('maintainer').split('<')[0]} • {option.get('repository').get('name')}"[:100], value=option.get(
-            "identifier"), emoji=self.repo_icons.get(option.get("repository").get("uri")) if self.repo_icons.get(option.get("repository").get("uri")) else "<:sileo_tweak_icon:957456295898779678>") for option in entries]
+        self.entries = {entry.get("package"): entry for entry in entries}
+        options = [discord.SelectOption(label=(option.get("name") or option.get('package'))[:100] or "No title", description=f"{option.get('author').split('<')[0] if option.get('author') is not None else option.get('maintainer').split('<')[0]} • {option.get('repository').get('name')}"[:100], value=option.get(
+            "package"), emoji=self.repo_icons.get(option.get("repository").get("uri")) if self.repo_icons.get(option.get("repository").get("uri")) else "<:sileo_tweak_icon:957456295898779678>") for option in entries]
 
         if len(self.raw_entries) > 24:
             options.append(discord.SelectOption(
