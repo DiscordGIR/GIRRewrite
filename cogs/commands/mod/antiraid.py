@@ -5,6 +5,9 @@ from discord import app_commands
 from data.services import guild_service, user_service
 from utils import cfg, GIRContext, transform_context
 from utils.framework import admin_and_up, mod_and_up
+from utils.framework.checks import always_whisper
+from utils.framework.transformers import ModsAndAboveMemberOrUser
+from utils.mod.modactions_helpers import add_ban_case, submit_public_log
 from utils.views import Confirm, GenericDescriptionModal
 
 
@@ -246,6 +249,40 @@ class AntiRaid(commands.Cog):
             return True
         except Exception:
             return
+
+    @admin_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Ban all members with a certain name")
+    @app_commands.describe(member="Member to ban. The bot will find members with the same name and ban them all.")
+    @transform_context
+    @always_whisper
+    async def nameban(self, ctx, member: ModsAndAboveMemberOrUser):
+        all_members = [m for m in ctx.guild.members if m.name == member.name]
+        
+        # send a prompt to the channel to confirm if invoker wants to ban
+        view = Confirm(ctx, true_response=f"Alright, banning {len(all_members)} members with name `{member.name}`! This will take a while.",
+                           false_response="Cancelled.")
+        await ctx.respond(f"Found {len(all_members)} members with the username `{member.name}`. Are you **absolutely sure** you want to ban them all?", view=view, ephemeral=True)
+        # Wait for the View to stop listening for input...
+        await view.wait()
+        do_ban = view.value
+
+        if not do_ban:
+            return
+
+        reason = f"Mass ban on {len(all_members)} users with name `{member.name}`"
+        db_guild = guild_service.get_guild()
+
+        # ban all members
+        for m in all_members:
+            self.bot.ban_cache.ban(m.id)
+            log = await add_ban_case(m, ctx.author, reason, db_guild)
+            await m.ban(reason=reason)
+            
+            # send a message to the modlog channel
+            await submit_public_log(ctx, db_guild, member, log)
+
+        await ctx.send_success(f"Banned {len(all_members)} members with name `{member.name}`!", ephemeral=False)
 
 
 async def setup(bot):

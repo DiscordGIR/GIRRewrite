@@ -26,6 +26,7 @@ class Confirm(ui.View):
     async def confirm(self, interaction: discord.Interaction, _: ui.Button):
         self.ctx.interaction = interaction
         self.value = True
+        await self.ctx.send_success(description=self.true_response, ephemeral=self.ctx.whisper)
         self.stop()
 
     # This one is similar to the confirmation button except sets the inner value to `False`
@@ -33,7 +34,7 @@ class Confirm(ui.View):
     async def cancel(self, interaction: discord.Interaction, _: ui.Button):
         self.ctx.interaction = interaction
         if self.false_response is not None:
-            await self.ctx.send_warning(description=self.false_response)
+            await self.ctx.send_warning(description=self.false_response, ephemeral=self.ctx.whisper)
         self.value = False
         self.stop()
 
