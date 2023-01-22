@@ -27,7 +27,7 @@ class AntiRaidMonitor(commands.Cog):
 
         # cooldown to monitor if too many users join in a short period of time (more than 10 within 8 seconds)
         self.join_raid_detection_threshold = commands.CooldownMapping.from_cooldown(
-            rate=10, per=8, type=commands.BucketType.guild)
+            rate=10, per=15, type=commands.BucketType.guild)
         # cooldown to monitor if users are spamming a message (8 within 6 seconds)
         self.message_spam_detection_threshold = commands.CooldownMapping.from_cooldown(
             rate=7, per=6.0, type=commands.BucketType.member)
