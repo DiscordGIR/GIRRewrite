@@ -61,7 +61,7 @@ class FixSocials(commands.Cog):
         if redirected_url is None:
             return
 
-        await message.reply(f"I hate tiktok but here you go {redirected_url}")
+        await message.reply(f"I hate tiktok but here you go {redirected_url}", mention_author=False)
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 
@@ -70,7 +70,7 @@ class FixSocials(commands.Cog):
         link = link.replace("instagram.com", "ddinstagram.com")
 
         # get video id from link
-        await message.reply(f"I hate instagram but here you go {link}")
+        await message.reply(f"I hate instagram but here you go {link}", mention_author=False)
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 
