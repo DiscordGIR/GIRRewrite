@@ -16,7 +16,8 @@ class Meow(commands.Cog):
           'MEOWWWWWWWWWWWWWWWW',
           'meowwwwwww',
           'MOEEW!!!!!!!!!!!!!!!!!!!!!!',
-          'MEOOOOWZERS'
+          'MEOOOOWZERS',
+          'nyaa~'
         ]
 
     @commands.Cog.listener()
