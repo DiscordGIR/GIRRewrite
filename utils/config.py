@@ -30,6 +30,7 @@ class Config:
         if os.environ.get("BAN_APPEAL_GUILD_ID") is None or os.environ.get("BAN_APPEAL_MOD_ROLE") is None:
             logger.info("Ban appeals monitoring is DISABLED!")
             self.ban_appeal_guild_id = None
+            self.ban_appeal_url = None
         else:
             self.ban_appeal_guild_id = int(
                 os.environ.get("BAN_APPEAL_GUILD_ID"))
