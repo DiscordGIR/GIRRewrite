@@ -184,8 +184,11 @@ class AntiRaidMonitor(commands.Cog):
 
     async def detect_scam_link(self, message: discord.Message):
         # check if message contains @everyone or @here
-        if ("@everyone" not in message.content and "@here" not in message.content) and \
-                ("take it" not in message.content and "airdrop" not in message.content and "nitro" not in message.content):
+        contains_everyone = "@everyone" in message.content
+        contains_here = "@here" in message.content
+        contains_keywords = any(keyword in message.content for keyword in ["take it", "airdrop", "nitro"])
+
+        if not (contains_everyone or contains_here) or not contains_keywords:
             return False
 
         # use regex to find if message contains url
