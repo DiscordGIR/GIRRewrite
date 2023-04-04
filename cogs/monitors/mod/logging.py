@@ -196,10 +196,16 @@ class Logging(commands.Cog):
         embed.add_field(
             name="Channel", value=message.channel.mention, inline=True)
         content = message.content
+        async for action in message.guild.audit_logs(limit=1, action=discord.AuditLogAction.message_delete):
+            if action.target.id == message.author.id:
+                embed.add_field(
+                    name="Deleted by", value=f'{action.user} ({action.user.mention})', inline=True)
+
         if len(message.content) > 400:
             content = content[0:400] + "..."
         embed.add_field(name="Message", value=content +
                         f"\n\n[Link to message]({message.jump_url})", inline=False)
+
         embed.set_footer(text=message.author.id)
         embed.timestamp = datetime.now()
         await channel.send(embed=embed)
