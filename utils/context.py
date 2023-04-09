@@ -76,7 +76,7 @@ class GIRContext:
 
     @property
     def edit(self):
-        return self.interaction.edit_original_message
+        return self.interaction.edit_original_response
 
     @property
     def bot(self):
