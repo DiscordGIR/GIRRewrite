@@ -121,7 +121,7 @@ class Songs(commands.Cog):
 
         message_to_edit = await message.reply(content=title, view=view, mention_author=False)
 
-        if spotify_uri is not None:
+        if spotify_uri is not None and not triggered_words:
             self.bot.loop.create_task(
                 self.add_to_spotify_playlist(spotify_uri, message_to_edit))
 
