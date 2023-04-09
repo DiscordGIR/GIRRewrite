@@ -12,6 +12,7 @@ from data.services import guild_service
 from utils import cfg
 from utils.framework import find_triggered_filters
 from utils.logging import logger
+from datetime import timezone
 
 platforms = {
     "spotify": {
@@ -43,6 +44,8 @@ class Songs(commands.Cog):
             "I'm a fan of {artist} too! \n\"{title}\" is such a great song, thanks for sharing!",
             "I'm a big fan of {artist}, \nand \"{title}\" is one of my favorite songs of theirs.",
         ]
+        self.spotify_cooldown = commands.CooldownMapping.from_cooldown(
+            rate=4, per=3600.0, type=commands.BucketType.member)
 
     async def cog_load(self):
         if cfg.spotify_id is None or cfg.spotify_secret is None:
@@ -53,18 +56,18 @@ class Songs(commands.Cog):
                                     redirect_uri="http://localhost:8081", scope='playlist-modify-public', open_browser=False)
             token_info = sp_oauth.get_cached_token()
 
-            if not token_info:
-                if cfg.spotify_auth_code is None:
-                    auth_url = sp_oauth.get_authorize_url()
-                    logger.warning(f'Please go to this URL to authorize access, then set the environment variable `SPOTIFY_AUTH_CODE`: {auth_url}')
-                    self.sp = None
-                    return
+            if not token_info and cfg.spotify_auth_code is None:
+                auth_url = sp_oauth.get_authorize_url()
+                logger.warning(f'Please go to this URL to authorize access, then set the environment variable `SPOTIFY_AUTH_CODE`: {auth_url}')
+                self.sp = None
+                return
 
             token_info = sp_oauth.get_access_token(cfg.spotify_auth_code)
             self.sp = spotipy.Spotify(auth_manager=sp_oauth)
             logger.info("Authenticated with Spotify!")
         except Exception as e:
             logger.error(f"Failed to authenticate with Spotify: {e}")
+            self.sp = None
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -133,6 +136,12 @@ class Songs(commands.Cog):
         track_ids = [track['track']['id'] for track in playlist['items']]
 
         if track_id.split(":")[-1] in track_ids:
+            return
+
+        bucket = self.spotify_cooldown.get_bucket(message)
+        current = message.created_at.replace(tzinfo=timezone.utc).timestamp()
+
+        if bucket.update_rate_limit(current):
             return
 
         try:
