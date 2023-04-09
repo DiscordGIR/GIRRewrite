@@ -77,7 +77,7 @@ class Menu(ui.View):
             self.ctx.interaction = interaction
             await self.ctx.interaction.response.edit_message(embed=embed, view=self)
         elif self.ctx.interaction.response.is_done():
-            await self.ctx.interaction.edit_original_message(embed=embed, view=self)
+            await self.ctx.interaction.edit_original_response(embed=embed, view=self)
         else: # this is the first time we're posting this menu
             await self.ctx.interaction.response.send_message(embed=embed, view=self, ephemeral=self.whisper)
 
