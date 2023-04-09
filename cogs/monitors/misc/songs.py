@@ -4,10 +4,14 @@ import re
 
 import aiohttp
 import discord
-from data.services import guild_service
+import spotipy
 from discord.ext import commands
+from spotipy.oauth2 import SpotifyOAuth
+
+from data.services import guild_service
 from utils import cfg
 from utils.framework import find_triggered_filters
+from utils.logging import logger
 
 platforms = {
     "spotify": {
@@ -26,21 +30,41 @@ platforms = {
 
 
 class Songs(commands.Cog):
+    sp: spotipy.Spotify
+    
     def __init__(self, bot):
         self.bot = bot
-        # self.spotify_pattern = re.compile(r"[\bhttps://open.\b]spotify[\b.com\b]*[/:]*track[/:]*[A-Za-z0-9]+")
-        # self.am_pattern = re.compile(r"[\bhttps://music.\b]apple[\b.com\b]*[/:][[a-zA-Z][a-zA-Z]]?[:/]album[/:][a-zA-Z\d%\(\)-]+[/:][\d]{1,10}")
-        self.pattern = re.compile(r"https:\/\/(open.spotify.com\/track\/[A-Za-z0-9]+|music.apple.com\/[a-zA-Z][a-zA-Z]?\/album\/[a-zA-Z\d%\(\)-]+/[\d]{1,10}\?i=[\d]{1,15})")
+        self.pattern = re.compile(
+            r"https:\/\/(open.spotify.com\/track\/[A-Za-z0-9]+|music.apple.com\/[a-zA-Z][a-zA-Z]?\/album\/[a-zA-Z\d%\(\)-]+/[\d]{1,10}\?i=[\d]{1,15})")
         self.song_phrases = [
             "I like listening to {artist} too!\n Here's \"{title}\"...",
             "You listen to {artist} too? They're my favorite!\nHere's \"{title}\"...",
             "Wow, \"{title}\" by {artist} is such a good tune!\nI could listen to this all day...",
             "I'm a fan of {artist} too! \n\"{title}\" is such a great song, thanks for sharing!",
             "I'm a big fan of {artist}, \nand \"{title}\" is one of my favorite songs of theirs.",
-            "I've been looking for new music to listen to, \nand \"{title}\"\nby {artist} is definitely going on my playlist!",
-            "I've never heard of {artist} before, \nbut I'm really enjoying their song \"{title}\"!",
-            "I'm really feeling this song!\"{title}\" by \n{artist} is definitely going on my repeat playlist."
         ]
+
+    async def cog_load(self):
+        if cfg.spotify_id is None or cfg.spotify_secret is None:
+            return
+
+        try:
+            sp_oauth = SpotifyOAuth(client_id=cfg.spotify_id, client_secret=cfg.spotify_secret,
+                                    redirect_uri="http://localhost:8081", scope='playlist-modify-public', open_browser=False)
+            token_info = sp_oauth.get_cached_token()
+
+            if not token_info:
+                if cfg.spotify_auth_code is None:
+                    auth_url = sp_oauth.get_authorize_url()
+                    logger.warning(f'Please go to this URL to authorize access, then set the environment variable `SPOTIFY_AUTH_CODE`: {auth_url}')
+                    self.sp = None
+                    return
+
+            token_info = sp_oauth.get_access_token(cfg.spotify_auth_code)
+            self.sp = spotipy.Spotify(auth_manager=sp_oauth)
+            logger.info("Authenticated with Spotify!")
+        except Exception as e:
+            logger.error(f"Failed to authenticate with Spotify: {e}")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -71,6 +95,7 @@ class Songs(commands.Cog):
                 res = json.loads(res)
 
         spotify_data = res.get('linksByPlatform').get('spotify')
+        spotify_uri = spotify_data.get('nativeAppUriDesktop')
         unique_id = spotify_data.get(
             'entityUniqueId') if spotify_data is not None else res.get('entityUniqueId')
         title = res.get('entitiesByUniqueId').get(unique_id)
@@ -92,9 +117,29 @@ class Songs(commands.Cog):
             platform_links = res.get('linksByPlatform').get(platform)
             if platform_links is not None:
                 view.add_item(discord.ui.Button(style=discord.ButtonStyle.link,
-                            emoji=body["emote"], url=platform_links.get('url')))
+                                                emoji=body["emote"], url=platform_links.get('url')))
 
-        await message.reply(content=title, view=view, mention_author=False)
+        message_to_edit = await message.reply(content=title, view=view, mention_author=False)
+
+        if spotify_uri is not None:
+            self.bot.loop.create_task(
+                self.add_to_spotify_playlist(spotify_uri, message_to_edit))
+
+    async def add_to_spotify_playlist(self, track_id: str, message: discord.Message):
+        if self.sp is None:
+            return
+
+        playlist = self.sp.playlist_tracks(cfg.spotify_playlist_url)
+        track_ids = [track['track']['id'] for track in playlist['items']]
+
+        if track_id.split(":")[-1] in track_ids:
+            return
+
+        try:
+            self.sp.playlist_add_items(cfg.spotify_playlist_url, [track_id])
+            await message.edit(embed=discord.Embed(description=f"Added to the [r/Jailbreak Spotify playlist](https://open.spotify.com/playlist/{cfg.spotify_playlist_url})!"))
+        except Exception as e:
+            print(e)
 
 
 async def setup(bot):
