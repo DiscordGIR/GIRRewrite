@@ -74,7 +74,7 @@ class ModsAndAboveMember(app_commands.Transformer):
 
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Member:
-        await app_commands.transformers.MemberTransformer.transform(interaction, value)
+        await app_commands.transformers.MemberTransformer.transform(cls, interaction, value)
         await check_invokee(interaction, value)
 
         return value
