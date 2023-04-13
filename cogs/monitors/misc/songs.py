@@ -10,7 +10,7 @@ from spotipy.oauth2 import SpotifyOAuth
 
 from data.services import guild_service
 from utils import cfg
-from utils.framework import find_triggered_filters
+from utils.framework import find_triggered_filters, gatekeeper
 from utils.logging import logger
 from datetime import timezone
 
@@ -123,6 +123,9 @@ class Songs(commands.Cog):
                                                 emoji=body["emote"], url=platform_links.get('url')))
 
         message_to_edit = await message.reply(content=title, view=view, mention_author=False)
+
+        if not gatekeeper.has(message.guild, message.author, 3):
+            return
 
         if spotify_uri is not None and not triggered_words:
             self.bot.loop.create_task(
