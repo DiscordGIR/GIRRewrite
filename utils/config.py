@@ -61,6 +61,13 @@ class Config:
             logger.warning("Markov is DISABLED! `/memegen text` features will not be enabled.")
 
         self.dev = os.environ.get("DEV") is not None
+        
+        self.spotify_id = os.environ.get("SPOTIFY_ID")
+        self.spotify_secret = os.environ.get("SPOTIFY_SECRET")
+        self.spotify_playlist_url = os.environ.get("SPOTIFY_PLAYLIST_URL")
+        self.spotify_auth_code = os.environ.get("SPOTIFY_AUTH_CODE")
+        if self.spotify_id is None or self.spotify_secret is None or self.spotify_playlist_url is None:
+            logger.warning("Adding songs to public Spotify playlist disabled.")
 
         logger.info(
             f"GIR will be running in: {self.guild_id} in \033[1m{'DEVELOPMENT' if self.dev else 'PRODUCTION'}\033[0m mode")
