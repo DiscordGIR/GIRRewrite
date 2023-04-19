@@ -23,14 +23,12 @@ async def get_device(value):
     return devices[0]
 
 class DeviceTransformer(app_commands.Transformer):
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str):
+    async def transform(self, interaction: discord.Interaction, value: str):
         return await get_device(value)
 
 
 class VersionOnDevice(app_commands.Transformer):
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str):
+    async def transform(self, interaction: discord.Interaction, value: str):
         device = interaction.namespace["device"]
         if device is None:
             raise app_commands.TransformerError(
@@ -57,8 +55,7 @@ class VersionOnDevice(app_commands.Transformer):
 
 
 class Duration(app_commands.Transformer):
-    @classmethod
-    async def transform(cls, _: discord.Interaction, value: str):
+    async def transform(self, _: discord.Interaction, value: str):
         try:
             value = pytimeparse.parse(value)
         except ValueError:
@@ -68,37 +65,28 @@ class Duration(app_commands.Transformer):
 
 
 class ModsAndAboveMember(app_commands.Transformer):
-    @classmethod
-    def type(cls) -> AppCommandOptionType:
-        return AppCommandOptionType.user
+    type: AppCommandOptionType = AppCommandOptionType.user
 
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Member:
-        await app_commands.transformers.MemberTransformer.transform(cls, interaction, value)
+    async def transform(self, interaction: discord.Interaction, value: str) -> discord.Member:
+        await app_commands.transformers.MemberTransformer.transform(self, interaction, value)
         await check_invokee(interaction, value)
 
         return value
 
 
 class ModsAndAboveMemberOrUser(app_commands.Transformer):
-    @classmethod
-    def type(cls) -> AppCommandOptionType:
-        return AppCommandOptionType.user
+    type: AppCommandOptionType = AppCommandOptionType.user
 
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> Union[discord.Member, discord.User]:
+    async def transform(self, interaction: discord.Interaction, value: str) -> Union[discord.Member, discord.User]:
         await check_invokee(interaction, value)
 
         return value
 
 
 class UserOnly(app_commands.Transformer):
-    @classmethod
-    def type(cls) -> AppCommandOptionType:
-        return AppCommandOptionType.user
+    type: AppCommandOptionType = AppCommandOptionType.user
 
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.User:
+    async def transform(self, interaction: discord.Interaction, value: str) -> discord.User:
         if isinstance(value, discord.Member):
             raise PermissionsFailure(
                 "You can't call this command on guild members!")
@@ -121,18 +109,14 @@ async def check_invokee(interaction: discord.Interaction, user: discord.Member):
 
 
 class ImageAttachment(app_commands.Transformer):
-    @classmethod
-    def type(cls) -> AppCommandOptionType:
-        return AppCommandOptionType.attachment
+    type: AppCommandOptionType = AppCommandOptionType.attachment
 
-    @classmethod
-    async def transform(cls, interaction: discord.Interaction, value: str) -> discord.Attachment:
+    async def transform(self, interaction: discord.Interaction, value: discord.Attachment) -> discord.Attachment:
         if value is None:
             return
 
-        image = await app_commands.transformers.passthrough_transformer(AppCommandOptionType.attachment).transform(interaction, value)
-        _type = image.content_type
+        _type = value.content_type
         if _type not in ["image/png", "image/jpeg", "image/gif", "image/webp"]:
             raise app_commands.TransformerError("Attached file was not an image.")
 
-        return image
+        return value
