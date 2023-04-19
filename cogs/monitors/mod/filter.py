@@ -322,7 +322,7 @@ class Filter(commands.Cog):
             res = await message.reply(embed=embed, view=view, delete_after=20)
         elif intent_news_triggered and subject_and_word_in_message:
             embed = discord.Embed(color=discord.Color.orange())
-            embed.description = f"It appears you are asking about future jailbreaks. Nobody knows when a jailbreak will be released, but you can subscribe to notifications about releases by going to <#{db_guild.channel_reaction_roles}>."
+            embed.description = f"It appears you are asking about future jailbreaks. Nobody knows when a jailbreak will be released, but you can subscribe to notifications about releases by going to <id:customize>."
             embed.set_footer(
                 text="This action was performed automatically. Please disregard if incorrect.")
             res = await message.reply(embed=embed, delete_after=20)
