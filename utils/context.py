@@ -99,48 +99,6 @@ class GIRContext:
         Takes in the same args and kwargs as `respond`.
         """
 
-        # if self.interaction.response.is_done():
-        #     print("?")
-        #     if kwargs.get("followup"):
-        #         if kwargs.get("view") is None:
-        #             kwargs["view"] = discord.utils.MISSING
-
-        #         if "followup" in kwargs:
-        #             del kwargs["followup"]
-
-        #         delete_after = kwargs.get("delete_after")
-        #         if "delete_after" in kwargs:
-        #             del kwargs["delete_after"]
-
-        #         test = await self.followup.send(*args, **kwargs)
-        #         if not kwargs.get("ephemeral") and delete_after is not None:
-        #             await test.delete(delay=delete_after)
-        #         return
-
-        #     ephemeral = kwargs.get("ephemeral")
-        #     if kwargs.get("ephemeral") is not None:
-        #         del kwargs["ephemeral"]
-        #     delete_after = kwargs.get("delete_after")
-        #     if "delete_after" in kwargs:
-        #         del kwargs["delete_after"]
-        #     if "followup" in kwargs:
-        #         del kwargs["followup"]
-
-        #     await self.edit(*args, **kwargs)
-        #     if delete_after and not ephemeral:
-        #         await asyncio.sleep(delete_after)
-        #         await self.interaction.delete_original_message()
-        # else:
-        #     if "followup" in kwargs:
-        #         del kwargs["followup"]
-        #     delete_after = kwargs.get("delete_after")
-        #     if "delete_after" in kwargs:
-        #         del kwargs["delete_after"]
-        #     res = await self.respond(*args, **kwargs)
-        #     if not kwargs.get("ephemeral") and delete_after is not None:
-        #         await asyncio.sleep(delete_after)
-        #         await self.interaction.delete_original_message()
-        
         if self.interaction.response.is_done(): # we've responded to the interaction already
             if not kwargs.get("followup"): # is there a message to edit and do we want to edit it?
                 ephemeral = kwargs.get("ephemeral")
@@ -185,7 +143,7 @@ class GIRContext:
     async def delay_delete(self, ctx: discord.Interaction, delay: int):
         try:
             await asyncio.sleep(delay)
-            await ctx.delete_original_message()
+            await ctx.delete_original_response()
         except:
             pass
 
