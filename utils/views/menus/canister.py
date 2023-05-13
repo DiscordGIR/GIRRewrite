@@ -1,3 +1,4 @@
+import random
 import re
 from datetime import datetime
 
@@ -185,11 +186,24 @@ class TweakDropdown(discord.ui.Select):
         self.raw_entries = entries
         self.should_whisper = should_whisper
         entries = entries[:24]
-        self.current_entry = entries[0]
-        self.entries = {entry.get("package"): entry for entry in entries}
-        options = [discord.SelectOption(label=(option.get("name") or option.get('package'))[:100] or "No title", description=f"{option.get('author').split('<')[0] if option.get('author') is not None else option.get('maintainer').split('<')[0]} • {option.get('repository').get('name')}"[:100], value=option.get(
-            "package"), emoji=self.repo_icons.get(option.get("repository").get("uri")) if self.repo_icons.get(option.get("repository").get("uri")) else "<:sileo_tweak_icon:957456295898779678>") for option in entries]
 
+        self.current_entry = entries[0]
+        self.entries = {entry.get('package'): entry for entry in entries}
+        options = []
+        seen_packages = []
+        for option in entries:
+            if option.get("package") in seen_packages:
+                continue
+            options.append(
+                discord.SelectOption(
+                    label=(option.get("name") or option.get('package'))[:100] or "No title", 
+                    description=f"{option.get('author').split('<')[0] if option.get('author') is not None else option.get('maintainer').split('<')[0]} • {option.get('repository').get('name')}"[:100], 
+                    emoji=self.repo_icons.get(option.get("repository").get("uri")) if self.repo_icons.get(option.get("repository").get("uri")) else "<:sileo_tweak_icon:957456295898779678>",
+                    value=option.get("uuid")
+                )
+            )
+            seen_packages.append(option.get("package"))
+            
         if len(self.raw_entries) > 24:
             options.append(discord.SelectOption(
                 label=f"View {len(self.raw_entries) - 24} more results...", value="view_more"))
