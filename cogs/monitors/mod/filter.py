@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import aiohttp
 import discord
 from aiocache.decorators import cached
+from data.model import FilterWord
 from data.services import guild_service
 from discord.ext import commands
 from utils import cfg, logger, scam_cache
@@ -128,8 +129,9 @@ class Filter(commands.Cog):
             if word.notify:
                 await self.delete(message)
                 await self.ratelimit(message)
-                await self.do_filter_notify(message, word.word)
-                await report(self.bot, message, word.word)
+                await self.do_filter_notify(message, word)
+                if not word.piracy:
+                    await report(self.bot, message, word.word)
                 return
 
             triggered = True
@@ -137,7 +139,7 @@ class Filter(commands.Cog):
         if triggered:
             await self.delete(message)
             await self.ratelimit(message)
-            await self.do_filter_notify(message, word.word)
+            await self.do_filter_notify(message, word)
 
         return triggered
 
@@ -237,20 +239,22 @@ class Filter(commands.Cog):
             except Exception:
                 return
 
-    async def do_filter_notify(self, message: discord.Message, word):
+    async def do_filter_notify(self, message: discord.Message, word: FilterWord):
         member = message.author
         channel = message.channel
-        message_to_user = f"Your message contained a word you aren't allowed to say in {member.guild.name}. This could be either hate speech or the name of a piracy tool/source. Please refrain from saying it!"
+        message_to_user = f"Your message contained a word you aren't allowed to say in {member.guild.name}."
         footer = "Repeatedly triggering the filter will automatically result in a mute."
+        embed = discord.Embed(color=discord.Color.orange())
+        embed.set_footer(text=footer)
+
         try:
-            embed = discord.Embed(
-                description=f"{message_to_user}\n\nFiltered word found: **{word}**", color=discord.Color.orange())
-            embed.set_footer(text=footer)
+            embed.description = f"{message_to_user} This could be either hate speech or the name of a piracy tool/source. Please refrain from saying it!\n\nFiltered word found: **{word.word}**"
             await member.send(embed=embed)
         except Exception:
-            embed = discord.Embed(description=message_to_user,
-                                  color=discord.Color.orange())
-            embed.set_footer(text=footer)
+            if word.piracy:
+                embed.description = f"{message_to_user} **{word.word}** is a piracy tool/source and mentioning it is against our rules. Please refrain from saying it!"
+            else:
+                embed.description = f"{message_to_user} This could be either hate speech or the name of a piracy tool/source. Please refrain from saying it!"
             await channel.send(member.mention, embed=embed, delete_after=10)
 
         log_embed = discord.Embed(title="Filter Triggered")
@@ -322,7 +326,7 @@ class Filter(commands.Cog):
             res = await message.reply(embed=embed, view=view, delete_after=20)
         elif intent_news_triggered and subject_and_word_in_message:
             embed = discord.Embed(color=discord.Color.orange())
-            embed.description = f"It appears you are asking about future jailbreaks. Nobody knows when a jailbreak will be released, but you can subscribe to notifications about releases by going to <id:customize>."
+            embed.description = f"It appears you are asking about future jailbreaks. Nobody knows when a jailbreak will be released, but you can subscribe to notifications about releases by going to <#{db_guild.channel_reaction_roles}>."
             embed.set_footer(
                 text="This action was performed automatically. Please disregard if incorrect.")
             res = await message.reply(embed=embed, delete_after=20)

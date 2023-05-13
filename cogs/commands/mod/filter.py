@@ -109,6 +109,8 @@ class Filters(commands.Cog):
         await menu.start()
 
     @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Mark a word as piracy")
     @app_commands.describe(word="The word to mark as piracy")
     @app_commands.autocomplete(word=filterwords_autocomplete)
     @transform_context
