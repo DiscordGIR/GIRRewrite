@@ -59,7 +59,7 @@ class ModUtils(commands.Cog):
         embed.add_field(name="XP", value=u.xp)
         embed.add_field(name="Warnpoints", value=f"{u.warn_points} points")
         embed.add_field(
-            name="Cases", value=f"We tranferred {case_count} cases")
+            name="Cases", value=f"We transferred {case_count} cases")
 
         await ctx.respond_or_edit(embed=embed, delete_after=10)
 
