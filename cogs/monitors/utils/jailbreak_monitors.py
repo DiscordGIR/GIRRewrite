@@ -107,15 +107,18 @@ class Sileo(commands.Cog):
             return
 
         urlscheme = re.search(
-            "sileo:\/\/package\/([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+(\.[a-zA-Z0-9]+)+)", message.content)
+            "(sileo|zbra):\/\/package\/([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+(\.[a-zA-Z0-9]+)+)", message.content)
+
         if urlscheme is None:
             return
 
         view = discord.ui.View()
         embed = discord.Embed(color=discord.Color.green())
-        embed.description = f"You have sent a link to a package, you can use the button below to open it directly in Sileo."
+        embed.description = f"You have sent a link to a package, you can use the buttons below to open it directly in your preferred package manager."
         view.add_item(discord.ui.Button(label='View Package in Sileo', emoji="<:Sileo:959128883498729482>",
                                         url=f"https://sharerepo.stkc.win/v3/?pkgid={urlscheme.group(1)}", style=discord.ButtonStyle.url))
+        view.add_item(discord.ui.Button(label='View Package in Zebra', emoji="<:Zeeb:959129860603801630>",
+                                        url=f"https://sharerepo.stkc.win/v3/?pkgid={urlscheme.group(1)}&pkgman=zebra", style=discord.ButtonStyle.url))
         await message.reply(embed=embed, view=view, mention_author=False)
 
 
