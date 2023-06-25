@@ -115,7 +115,7 @@ If you want to inspect or change database values:
 <table>
   <tr>
     <td align="center"><a href="https://aamirfarooq.dev"><img src="https://avatars.githubusercontent.com/u/10660846?v=4" width="100px;" alt=""/><br /><sub><b>SlimShadyIAm</b></sub></a></td>
-    <td align="center"><a href="https://github.com/stekc"><img src="https://avatars.githubusercontent.com/u/57512084?v=4" width="100px;" alt=""/><br /><sub><b>stekc</b></sub></a></td>
+    <td align="center"><a href="https://stkc.win"><img src="https://stkc.win/assets/pfp.png" width="100px;" alt=""/><br /><sub><b>stkc</b></sub></a></td>
     <td align="center"><a href="https://github.com/Ultra03"><img src="https://avatars.githubusercontent.com/u/20672260?v=4" width="100px;" alt=""/><br /><sub><b>Ultra03</b></sub></a></td>
     <td align="center"><a href="https://github.com/ja1dan"><img src="https://avatars.githubusercontent.com/u/37126748?v=4" width="100px;" alt=""/><br /><sub><b>ja1dan</b></sub></a></td>
     <td align="center"><a href="https://github.com/donato-fiore"><img src="https://avatars.githubusercontent.com/u/50346119?v=4" width="100px;" alt=""/><br /><sub><b>donato-fiore</b></sub></a></td>

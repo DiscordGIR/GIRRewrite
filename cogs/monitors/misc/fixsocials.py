@@ -1,5 +1,6 @@
 import asyncio
 import re
+import json
 from aiocache import cached
 import aiohttp
 
@@ -41,20 +42,43 @@ class FixSocials(commands.Cog):
             await self.fix_instagram(message, link)
 
     @cached(ttl=3600)
-    async def get_tiktok_redirect(self, link: str):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(link, allow_redirects=False) as response:
-                if response.status != 301:
-                    return
-            
-                redirected_url = str(response).split("Location': \'")[1].split("\'")[0]
-        
-        redirected_url = redirected_url.replace('www.tiktok.com', 'vxtiktok.com')
-        if (tracking_id_index := redirected_url.index('?')) is not None:
-            # remove everything after the question mark (tracking ID)
-            redirected_url = redirected_url[:tracking_id_index]
+    async def quickvids(self, tiktok_url):
+        headers = {
+            'content-type': 'application/json',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        }
+        async with aiohttp.ClientSession(headers=headers) as session:
+            url = 'https://api.quickvids.win/v1/shorturl/create'
+            data = {'tiktok_url': tiktok_url}
+            async with session.post(url, json=data) as response:
+                if response.status == 200:
+                    text = await response.text()
+                    data = json.loads(text)
+                    quickvids_url = data['quickvids_url']
+                    return quickvids_url
+                else:
+                    return None
 
-        return redirected_url
+    @cached(ttl=3600)
+    async def get_tiktok_redirect(self, link: str):
+        quickvids_url = await self.quickvids(link)
+        if quickvids_url:
+            return quickvids_url
+
+        else:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(link, allow_redirects=False) as response:
+                    if response.status != 301:
+                        return
+
+                    redirected_url = str(response).split("Location': \'")[1].split("\'")[0]
+
+            redirected_url = redirected_url.replace('www.tiktok.com', 'vxtiktok.com')
+            if (tracking_id_index := redirected_url.index('?')) is not None:
+                # remove everything after the question mark (tracking ID)
+                redirected_url = redirected_url[:tracking_id_index]
+
+            return redirected_url
 
     async def fix_tiktok(self, message: discord.Message, link: str):
         redirected_url = await self.get_tiktok_redirect(link)

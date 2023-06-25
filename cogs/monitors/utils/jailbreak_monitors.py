@@ -46,15 +46,15 @@ class RepoWatcher(commands.Cog):
             return
 
         view = discord.ui.View()
-
+        embed = discord.Embed(color=discord.Color.green())
+        embed.description = f"You have sent a link to a repo, you can use the buttons below to open it directly in your preferred package manager."
         view.add_item(discord.ui.Button(label='Add Repo to Sileo', emoji="<:Sileo:959128883498729482>",
                                         url=f"https://repos.slim.rocks/repo/?repoUrl={potential_repo}&manager=sileo", style=discord.ButtonStyle.url))
         view.add_item(discord.ui.Button(label='Add Repo to Zebra', emoji="<:Zeeb:959129860603801630>",
                                         url=f"https://repos.slim.rocks/repo/?repoUrl={potential_repo}&manager=zebra", style=discord.ButtonStyle.url))
         view.add_item(discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
                                         url=f"https://repos.slim.rocks/repo/?repoUrl={potential_repo}", style=discord.ButtonStyle.url))
-
-        await message.reply(file=discord.File("data/images/transparent1x1.png"), view=view, mention_author=False)
+        await message.reply(embed=embed, view=view, mention_author=False)
 
 
 class Tweaks(commands.Cog):
@@ -107,53 +107,19 @@ class Sileo(commands.Cog):
             return
 
         urlscheme = re.search(
-            "sileo:\/\/package\/([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+(\.[a-zA-Z0-9]+)+)", message.content)
+            "(sileo|zbra):\/\/package\/([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+(\.[a-zA-Z0-9]+)+)", message.content)
+
         if urlscheme is None:
             return
 
-        async with aiohttp.ClientSession() as client:
-            async with client.get(f'https://api.canister.me/v2/jailbreak/package/search?q={urlscheme.group(1)}') as resp:
-                if resp.status == 200:
-                    response = json.loads(await resp.text())
-                data = response.get('data')
-
-                if not data:
-                    view = discord.ui.View()
-                    embed = discord.Embed(
-                        title=":(\nI couldn't find that package", color=discord.Color.orange())
-                    embed.description = f"You have sent a link to a package, you can use the button below to open it directly in Sileo."
-                    view.add_item(discord.ui.Button(label='View Package in Sileo', emoji="<:Search2:947525874297757706>",
-                                                    url=f"https://sharerepo.stkc.win/v3/?pkgid={urlscheme.group(1)}", style=discord.ButtonStyle.url))
-                    await message.reply(embed=embed, view=view, mention_author=False)
-                    return
-
-                canister = response['data'][0]
-                color = canister.get('tintColor')
-                view = discord.ui.View()
-
-                if color is None:
-                    color = discord.Color.blue()
-
-                else:
-                    color = discord.Color(int(color.strip('#'), 16))
-                embed = discord.Embed(
-                    title=f"{canister.get('name')} - {canister.get('repository')['name']}", color=color)
-                embed.description = f"You have sent a link to a package, you can use the button below to open it directly in Sileo."
-                icon = canister.get('icon')
-                depiction = canister.get('depiction')
-                view.add_item(discord.ui.Button(label='View Package in Sileo', emoji="<:Search2:947525874297757706>",
-                                                url=f"https://sharerepo.stkc.win/v3/?pkgid={urlscheme.group(1)}", style=discord.ButtonStyle.url))
-
-                if depiction is not None:
-                    view.add_item(discord.ui.Button(label='View Depiction', emoji="<:Depiction:947358756033949786>", url=canister.get(
-                        'depiction'), style=discord.ButtonStyle.url))
-
-                if icon is not None:
-                    embed.set_thumbnail(url=canister.get('icon'))
-
-                view.add_item(discord.ui.Button(label='Add Repo to Sileo', emoji="<:Sileo:959128883498729482>",
-                                                url=f"https://repos.slim.rocks/repo/?repoUrl={canister.get('repository')['uri']}&manager=sileo", style=discord.ButtonStyle.url))
-                await message.reply(embed=embed, view=view, mention_author=False)
+        view = discord.ui.View()
+        embed = discord.Embed(color=discord.Color.green())
+        embed.description = f"You have sent a link to a package, you can use the buttons below to open it directly in your preferred package manager."
+        view.add_item(discord.ui.Button(label='View Package in Sileo', emoji="<:Sileo:959128883498729482>",
+                                        url=f"https://sharerepo.stkc.win/v3/?pkgid={urlscheme.group(1)}", style=discord.ButtonStyle.url))
+        view.add_item(discord.ui.Button(label='View Package in Zebra', emoji="<:Zeeb:959129860603801630>",
+                                        url=f"https://sharerepo.stkc.win/v3/?pkgid={urlscheme.group(1)}&pkgman=zebra", style=discord.ButtonStyle.url))
+        await message.reply(embed=embed, view=view, mention_author=False)
 
 
 async def setup(bot):
