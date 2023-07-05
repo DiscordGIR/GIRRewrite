@@ -19,6 +19,9 @@ class FixSocials(commands.Cog):
         # regex for instagram urls
         self.instagram_pattern = re.compile(r"(https:\/\/(www.)?instagram\.com\/(?:p|reel)\/([^/?#&]+))\/")
 
+        # regex for twitter urls
+        self.twitter_pattern = re.compile(r"(https:\/\/(www.)?twitter\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+)")
+
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -40,6 +43,9 @@ class FixSocials(commands.Cog):
         elif instagram_match := self.instagram_pattern.search(message_content):
             link = instagram_match.group(0)
             await self.fix_instagram(message, link)
+        elif twitter_match := self.twitter_pattern.search(message_content):
+            link = twitter_match.group(0)
+            await self.fix_twitter(message, link)
 
     @cached(ttl=3600)
     async def quickvids(self, tiktok_url):
@@ -90,11 +96,23 @@ class FixSocials(commands.Cog):
         await message.edit(suppress=True)
 
     async def fix_instagram(self, message: discord.Message, link: str):
-        link = link.replace("www.", "")
-        link = link.replace("instagram.com", "ddinstagram.com")
+        quickvids_url = await self.quickvids(link)
+        if quickvids_url:
+            link = quickvids_url
+        else:
+            link = link.replace("www.", "")
+            link = link.replace("instagram.com", "ddinstagram.com")
 
         # get video id from link
         await message.reply(f"I hate instagram but here you go {link}", mention_author=False)
+        await asyncio.sleep(0.5)
+        await message.edit(suppress=True)
+
+    async def fix_twitter(self, message: discord.Message, link: str):
+        link = link.replace("www.", "")
+        link = link.replace("twitter.com", "vxtwitter.com")
+
+        await message.reply(f"I hate twitter but here you go {link}", mention_author=False)
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 
