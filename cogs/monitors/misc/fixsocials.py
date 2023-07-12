@@ -112,9 +112,13 @@ class FixSocials(commands.Cog):
         link = link.replace("www.", "")
         link = link.replace("twitter.com", "vxtwitter.com")
 
-        await message.reply(f"I hate twitter but here you go {link}", mention_author=False)
-        await asyncio.sleep(0.5)
-        await message.edit(suppress=True)
+        if message.embeds:
+            embed = message.embeds[0]
+            if embed.to_dict().get('video'):
+                await message.reply(f"I hate twitter but here you go {link}", mention_author=False)
+                await asyncio.sleep(0.5)
+                await message.edit(suppress=True)
+
 
 
 async def setup(bot):
