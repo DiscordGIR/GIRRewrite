@@ -47,6 +47,15 @@ class FixSocials(commands.Cog):
             link = twitter_match.group(0)
             await self.fix_twitter(message, link)
 
+    @cached(ttl=600)
+    async def quickvids_down(self, url):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                html = await response.text()
+                # When QuickVids returns a link to their own account the API is likely having issues
+                if 'https:\u002F\u002Ftiktok.com\u002F@savethatvideo' in html:
+                    return True
+
     @cached(ttl=3600)
     async def quickvids(self, tiktok_url):
         headers = {
@@ -61,6 +70,8 @@ class FixSocials(commands.Cog):
                     text = await response.text()
                     data = json.loads(text)
                     quickvids_url = data['quickvids_url']
+                    if await self.quickvids_down(quickvids_url):
+                        return None
                     return quickvids_url
                 else:
                     return None
