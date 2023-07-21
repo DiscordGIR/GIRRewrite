@@ -193,7 +193,7 @@ class iOSCFW(commands.Cog):
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Get info about a beta iOS version.")
-    @app_commands.describe(version="Beta ersion to get info about")
+    @app_commands.describe(version="Beta version to get info about")
     @app_commands.autocomplete(version=ios_beta_version_autocomplete)
     @transform_context
     @whisper_in_general
