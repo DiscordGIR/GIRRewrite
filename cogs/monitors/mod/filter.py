@@ -261,7 +261,7 @@ class Filter(commands.Cog):
         log_embed.color = discord.Color.red()
         log_embed.add_field(
             name="Member", value=f"{member} ({member.mention})")
-        log_embed.add_field(name="Word", value=word)
+        log_embed.add_field(name="Word", value=word.word)
         log_embed.add_field(
             name="Message", value=message.content, inline=False)
         log_embed.timestamp = datetime.utcnow()
