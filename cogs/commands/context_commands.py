@@ -108,7 +108,7 @@ def setup_context_commands(bot: commands.Bot):
     @mod_and_up()
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Warn 50 points")
     async def warn_rc(interaction: discord.Interaction, member: discord.Member) -> None:
-        member = await ModsAndAboveMember.transform(interaction, member)
+        member = await ModsAndAboveMember().transform(interaction, member)
         ctx = GIRContext(interaction)
         ctx.whisper = True
         view = WarnView(ctx, member)
@@ -117,7 +117,7 @@ def setup_context_commands(bot: commands.Bot):
     @mod_and_up()
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Warn 50 points")
     async def warn_msg(interaction: discord.Interaction, message: discord.Message) -> None:
-        member = await ModsAndAboveMember.transform(interaction, message.author)
+        member = await ModsAndAboveMember().transform(interaction, message.author)
         ctx = GIRContext(interaction)
         ctx.whisper = True
         view = WarnView(ctx, message.author)
@@ -128,7 +128,7 @@ def setup_context_commands(bot: commands.Bot):
     async def generate_report_rc(interaction: discord.Interaction, member: discord.Member) -> None:
         ctx = GIRContext(interaction)
         ctx.whisper = True
-        member = await ModsAndAboveMember.transform(interaction, member)
+        member = await ModsAndAboveMember().transform(interaction, member)
         await manual_report(ctx.author, member)
         await ctx.send_success("Generated report!")
 
@@ -137,7 +137,7 @@ def setup_context_commands(bot: commands.Bot):
     async def generate_report_msg(interaction: discord.Interaction, message: discord.Message) -> None:
         ctx = GIRContext(interaction)
         ctx.whisper = True
-        member = await ModsAndAboveMember.transform(interaction, message.author)
+        member = await ModsAndAboveMember().transform(interaction, message.author)
         await manual_report(ctx.author, message)
         await ctx.send_success("Generated report!")
 
