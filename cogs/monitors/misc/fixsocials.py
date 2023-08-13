@@ -106,7 +106,7 @@ class FixSocials(commands.Cog):
 
     async def fix_twitter(self, message: discord.Message, link: str):
         link = link.replace("www.", "")
-        link = link.replace('https://x.com', 'https://twitter.com')
+        link = link.replace('x.com', 'twitter.com')
         link = link.replace("twitter.com", "vxtwitter.com")
 
         await message.reply(f"I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go {link}", mention_author=False)
