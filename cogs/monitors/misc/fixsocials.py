@@ -67,9 +67,20 @@ class FixSocials(commands.Cog):
                     return None
 
     @cached(ttl=3600)
+    async def is_carousel(self, link: str):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(link, timeout=5) as response:
+                    if response.status == 200:
+                        text = await response.text()
+                        return '>Download All Images</button>' in text
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            return False
+
+    @cached(ttl=3600)
     async def get_tiktok_redirect(self, link: str):
         quickvids_url = await self.quickvids(link)
-        if quickvids_url:
+        if quickvids_url and not await self.is_carousel(quickvids_url):
             return quickvids_url
 
         else:
