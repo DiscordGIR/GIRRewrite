@@ -50,21 +50,24 @@ class FixSocials(commands.Cog):
 
     @cached(ttl=3600)
     async def quickvids(self, tiktok_url):
-        headers = {
-            'content-type': 'application/json',
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-        }
-        async with aiohttp.ClientSession(headers=headers) as session:
-            url = 'https://api.quickvids.win/v1/shorturl/create'
-            data = {'input_text': tiktok_url}
-            async with session.post(url, json=data) as response:
-                if response.status == 200:
-                    text = await response.text()
-                    data = json.loads(text)
-                    quickvids_url = data['quickvids_url']
-                    return quickvids_url
-                else:
-                    return None
+        try:
+            headers = {
+                'content-type': 'application/json',
+                'user-agent': 'GIR - slim.rocks/gir',
+            }
+            async with aiohttp.ClientSession(headers=headers) as session:
+                url = 'https://api.quickvids.win/v1/shorturl/create'
+                data = {'input_text': tiktok_url}
+                async with session.post(url, json=data, timeout=aiohttp.ClientTimeout(total=5)) as response:
+                    if response.status == 200:
+                        text = await response.text()
+                        data = json.loads(text)
+                        quickvids_url = data['quickvids_url']
+                        return quickvids_url
+                    else:
+                        return None
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            return None
 
     @cached(ttl=3600)
     async def is_carousel(self, link: str):
@@ -120,9 +123,18 @@ class FixSocials(commands.Cog):
         link = link.replace('x.com', 'twitter.com')
         link = link.replace("twitter.com", "vxtwitter.com")
 
-        await message.reply(f"I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go {link}", mention_author=False)
-        await asyncio.sleep(0.5)
-        await message.edit(suppress=True)
+        await asyncio.sleep(1)
+
+        if message.embeds:
+            embed = message.embeds[0]
+            if embed.to_dict().get('video') or embed.to_dict().get('image'):
+                await message.reply(f"I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go {link}", mention_author=False)
+                await asyncio.sleep(0.5)
+                await message.edit(suppress=True)
+        else:
+            await message.reply(f"I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go {link}", mention_author=False)
+            await asyncio.sleep(0.5)
+            await message.edit(suppress=True)
 
 
 
