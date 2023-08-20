@@ -1,6 +1,7 @@
 import asyncio
 import re
 import json
+import random
 from aiocache import cached
 import aiohttp
 
@@ -20,7 +21,7 @@ class FixSocials(commands.Cog):
         self.instagram_pattern = re.compile(r"(https:\/\/(www.)?instagram\.com\/(?:p|reel)\/([^/?#&]+))\/")
 
         # regex for twitter urls
-        self.twitter_pattern = re.compile(r"(https:\/\/(www.)?twitter\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+)")
+        self.twitter_pattern = re.compile(r"(https:\/\/(www.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+)")
 
 
     @commands.Cog.listener()
@@ -47,39 +48,42 @@ class FixSocials(commands.Cog):
             link = twitter_match.group(0)
             await self.fix_twitter(message, link)
 
-    @cached(ttl=600)
-    async def quickvids_down(self, url):
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                html = await response.text()
-                # When QuickVids returns a link to their own account the API is likely having issues
-                if 'https:\u002F\u002Ftiktok.com\u002F@savethatvideo' in html:
-                    return True
-
     @cached(ttl=3600)
     async def quickvids(self, tiktok_url):
-        headers = {
-            'content-type': 'application/json',
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-        }
-        async with aiohttp.ClientSession(headers=headers) as session:
-            url = 'https://api.quickvids.win/v1/shorturl/create'
-            data = {'input_text': tiktok_url}
-            async with session.post(url, json=data) as response:
-                if response.status == 200:
-                    text = await response.text()
-                    data = json.loads(text)
-                    quickvids_url = data['quickvids_url']
-                    if await self.quickvids_down(quickvids_url):
+        try:
+            headers = {
+                'content-type': 'application/json',
+                'user-agent': 'GIR - slim.rocks/gir',
+            }
+            async with aiohttp.ClientSession(headers=headers) as session:
+                url = 'https://api.quickvids.win/v1/shorturl/create'
+                data = {'input_text': tiktok_url}
+                async with session.post(url, json=data, timeout=aiohttp.ClientTimeout(total=5)) as response:
+                    if response.status == 200:
+                        text = await response.text()
+                        data = json.loads(text)
+                        quickvids_url = data['quickvids_url']
+                        return quickvids_url
+                    else:
                         return None
-                    return quickvids_url
-                else:
-                    return None
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            return None
+
+    @cached(ttl=3600)
+    async def is_carousel(self, link: str):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(link, timeout=5) as response:
+                    if response.status == 200:
+                        text = await response.text()
+                        return '>Download All Images</button>' in text
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            return False
 
     @cached(ttl=3600)
     async def get_tiktok_redirect(self, link: str):
         quickvids_url = await self.quickvids(link)
-        if quickvids_url:
+        if quickvids_url and not await self.is_carousel(quickvids_url):
             return quickvids_url
 
         else:
@@ -107,28 +111,30 @@ class FixSocials(commands.Cog):
         await message.edit(suppress=True)
 
     async def fix_instagram(self, message: discord.Message, link: str):
-        quickvids_url = await self.quickvids(link)
-        if quickvids_url:
-            link = quickvids_url
-        else:
-            link = link.replace("www.", "")
-            link = link.replace("instagram.com", "ddinstagram.com")
+        link = link.replace("www.", "")
+        link = link.replace("instagram.com", "ddinstagram.com")
 
-        # get video id from link
         await message.reply(f"I hate instagram but here you go {link}", mention_author=False)
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 
     async def fix_twitter(self, message: discord.Message, link: str):
         link = link.replace("www.", "")
+        link = link.replace('x.com', 'twitter.com')
         link = link.replace("twitter.com", "vxtwitter.com")
+
+        await asyncio.sleep(1)
 
         if message.embeds:
             embed = message.embeds[0]
-            if embed.to_dict().get('video'):
-                await message.reply(f"I hate twitter but here you go {link}", mention_author=False)
+            if embed.to_dict().get('video') or embed.to_dict().get('image'):
+                await message.reply(f"I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go {link}", mention_author=False)
                 await asyncio.sleep(0.5)
                 await message.edit(suppress=True)
+        else:
+            await message.reply(f"I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go {link}", mention_author=False)
+            await asyncio.sleep(0.5)
+            await message.edit(suppress=True)
 
 
 
