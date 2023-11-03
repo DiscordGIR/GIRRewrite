@@ -320,7 +320,7 @@ class Filter(commands.Cog):
             embed.set_footer(
                 text="This action was performed automatically. Please disregard if incorrect.")
             view.add_item(discord.ui.Button(label='Genius Bar', emoji="<:Genius:947545923028922448>",
-                                            url=f"https://discord.com/channels/349243932447604736/688124678707216399", style=discord.ButtonStyle.url))
+                                            url=f"https://discord.com/channels/349243932447604736/969343289641828382", style=discord.ButtonStyle.url))
             view.add_item(discord.ui.Button(label='Jailbreak Channel', emoji="<:Channel2:947546361715388417>",
                                             url=f"https://discord.com/channels/349243932447604736/688122301975363591", style=discord.ButtonStyle.url))
             res = await message.reply(embed=embed, view=view, delete_after=20)
@@ -339,7 +339,7 @@ class Filter(commands.Cog):
             view.add_item(discord.ui.Button(label='Get Started', emoji="<:Guide:947350624385794079>",
                                             url=f"https://ios.cfw.guide/get-started/#required-reading", style=discord.ButtonStyle.url))
             view.add_item(discord.ui.Button(label='Jailbreak Chart', emoji="<:Search2:947525874297757706>",
-                                            url=f"https://appledb.dev/", style=discord.ButtonStyle.url))
+                                            url=f"https://docs.google.com/spreadsheets/d/e/2PACX-1vRXcZDsbk2j_AL5YCPnwAp6Ovf5xmLRwNK2wXrwGN__FCbkGWz6Be4l5JyHxEOyogjPnVl51nrDVOcC/pubhtml", style=discord.ButtonStyle.url))
 
             await message.reply(embed=embed, view=view, delete_after=20)
 
