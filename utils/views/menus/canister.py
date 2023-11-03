@@ -66,7 +66,7 @@ def tweak_embed_format(entry):
         embed.set_thumbnail(url=entry.get('icon'))
 
     # this probably needs to be redone as stkc.win doesn't even resolve anymore (also you can just check repository.slug == bigboss)
-    embed.set_footer(icon_url=f"{'https://assets.stkc.win/bigboss-sileo.png' if 'http://apt.thebigboss.org/repofiles/cydia/CydiaIcon.png' in entry.get('repository').get('uri')+'/CydiaIcon.png' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
+    embed.set_footer(icon_url=f"{'https://stkc.win/assets/bigboss-sileo.png' if entry.get('repository').get('name').lower() == 'bigboss' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
                      text=f"Powered by Canister" or "No Package")
     embed.timestamp = datetime.now()
 
@@ -188,7 +188,7 @@ class TweakDropdown(discord.ui.Select):
         entries = entries[:24]
 
         self.current_entry = entries[0]
-        self.entries = {entry.get('package'): entry for entry in entries}
+        self.entries = {entry.get('uuid'): entry for entry in entries}
         options = []
         seen_packages = []
         for option in entries:

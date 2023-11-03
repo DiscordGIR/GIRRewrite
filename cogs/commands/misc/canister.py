@@ -120,7 +120,7 @@ class Canister(commands.Cog):
         embed = discord.Embed(title=repo_data.get(
             'name'), color=discord.Color.blue())
         embed.add_field(name="URL", value=repo_data.get('uri'), inline=True)
-        embed.set_thumbnail(url=f'{repo_data.get("uri")}/CydiaIcon.png')
+        embed.set_thumbnail(url=f"{'https://stkc.win/assets/bigboss-sileo.png' if repo_data.get('name').lower() == 'bigboss' else repo_data.get('uri')+'/CydiaIcon.png'}")
         embed.set_footer(text="Powered by Canister")
 
         this_repo = repo_data.get("uri")
