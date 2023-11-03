@@ -36,7 +36,7 @@ class Songs(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.pattern = re.compile(
-            r"https:\/\/(open.spotify.com\/track\/[A-Za-z0-9]+|music.apple.com\/[a-zA-Z][a-zA-Z]?\/album\/[a-zA-Z\d%\(\)-]+/[\d]{1,10}\?i=[\d]{1,15})")
+            r"https:\/\/(open.spotify.com\/track\/[A-Za-z0-9]+|music.apple.com\/[a-zA-Z][a-zA-Z]?\/album\/[a-zA-Z\d%\(\)-]+/[\d]{1,10}\?i=[\d]{1,15}|spotify.link\/[A-Za-z0-9]+)")
         self.song_phrases = [
             "I like listening to {artist} too!\n Here's \"{title}\"...",
             "You listen to {artist} too? They're my favorite!\nHere's \"{title}\"...",

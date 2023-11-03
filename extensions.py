@@ -21,7 +21,6 @@ initial_extensions = [
     "cogs.monitors.misc.role_assignment_buttons",
     "cogs.monitors.misc.songs",
     "cogs.monitors.mod.antiraid",
-    "cogs.monitors.mod.blootooth",
     "cogs.monitors.mod.logging",
     "cogs.monitors.mod.filter",
     "cogs.monitors.mod.sabbath",
