@@ -20,6 +20,9 @@ class FixSocials(commands.Cog):
         # regex for instagram urls
         self.instagram_pattern = re.compile(r"(https:\/\/(www.)?instagram\.com\/(?:p|reel)\/([^/?#&]+))\/")
 
+        # regex for reddit urls
+        self.reddit_pattern = re.compile(r"(https?://(?:www\.)?(?:old\.)?reddit\.com/r/[A-Za-z0-9_]+/comments/[A-Za-z0-9]+)")
+
         # regex for twitter urls
         self.twitter_pattern = re.compile(r"(https:\/\/(www.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+)")
 
@@ -44,6 +47,9 @@ class FixSocials(commands.Cog):
         elif instagram_match := self.instagram_pattern.search(message_content):
             link = instagram_match.group(0)
             await self.fix_instagram(message, link)
+        elif reddit_match := self.reddit_pattern.search(message_content):
+            link = reddit_match.group(0)
+            await self.fix_reddit(message, link)
         elif twitter_match := self.twitter_pattern.search(message_content):
             link = twitter_match.group(0)
             await self.fix_twitter(message, link)
@@ -115,6 +121,15 @@ class FixSocials(commands.Cog):
         link = link.replace("instagram.com", "ddinstagram.com")
 
         await message.reply(f"I hate instagram but here you go {link}", mention_author=False)
+        await asyncio.sleep(0.5)
+        await message.edit(suppress=True)
+
+    async def fix_reddit(self, message: discord.Message, link: str):
+        link = link.replace("www.", "")
+        link = link.replace("old.reddit.com", "reddit.com")
+        link = link.replace("reddit.com", "rxddit.com")
+
+        await message.reply(f"I hate reddit but here you go {link}", mention_author=False)
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 

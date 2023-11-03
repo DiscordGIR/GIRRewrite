@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 from utils import GIRContext, canister_search_package, cfg, transform_context
 from utils.fetchers import canister_fetch_repos
-from utils.framework import gatekeeper, whisper_in_general
+from utils.framework import gatekeeper, whisper_in_general, find_triggered_filters, find_triggered_raid_phrases
 from utils.views import TweakDropdown, default_repos, repo_autocomplete
 
 
@@ -30,6 +30,9 @@ class Canister(commands.Cog):
         pattern = re.compile(
             r".*?(?<!\[)+\[\[((?!\s+)([\w+\ \&\+\-\<\>\#\:\;\%\(\)]){2,})\]\](?!\])+.*")
         if not pattern.match(message.content):
+            return
+        
+        if find_triggered_filters(message.content, author) or find_triggered_raid_phrases(message.content, author):
             return
 
         matches = pattern.findall(message.content)
