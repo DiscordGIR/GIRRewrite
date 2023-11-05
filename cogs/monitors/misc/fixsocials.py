@@ -76,7 +76,7 @@ class FixSocials(commands.Cog):
             return None
 
     @cached(ttl=3600)
-    async def is_carousel(self, link: str):
+    async def is_carousel_tiktok(self, link: str):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(link, timeout=5) as response:
@@ -85,11 +85,23 @@ class FixSocials(commands.Cog):
                         return '>Download All Images</button>' in text
         except (aiohttp.ClientError, asyncio.TimeoutError):
             return False
+        
+    @cached(ttl=3600)
+    async def is_selfpost_reddit(self, link: str):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(link+'.json', timeout=5) as response:
+                    if response.status == 200:
+                        json = await response.json()
+                        return json[0]['data']['children'][0]['data']['is_self']
+                            
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            return False
 
     @cached(ttl=3600)
     async def get_tiktok_redirect(self, link: str):
         quickvids_url = await self.quickvids(link)
-        if quickvids_url and not await self.is_carousel(quickvids_url):
+        if quickvids_url and not await self.is_carousel_tiktok(quickvids_url):
             return quickvids_url
 
         else:
@@ -125,6 +137,10 @@ class FixSocials(commands.Cog):
         await message.edit(suppress=True)
 
     async def fix_reddit(self, message: discord.Message, link: str):
+        # only fix reddit links with media
+        if await self.is_selfpost_reddit(link):
+            return
+
         link = link.replace("www.", "")
         link = link.replace("old.reddit.com", "reddit.com")
         link = link.replace("reddit.com", "rxddit.com")
@@ -138,8 +154,8 @@ class FixSocials(commands.Cog):
         link = link.replace('x.com', 'twitter.com')
         link = link.replace("twitter.com", "vxtwitter.com")
 
+        # only fix tweets with an image or video (or links that dont embed at all)
         await asyncio.sleep(1)
-
         if message.embeds:
             embed = message.embeds[0]
             if embed.to_dict().get('video') or embed.to_dict().get('image'):
