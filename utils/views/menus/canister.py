@@ -66,7 +66,7 @@ def tweak_embed_format(entry):
         embed.set_thumbnail(url=entry.get('icon'))
 
     # this probably needs to be redone as stkc.win doesn't even resolve anymore (also you can just check repository.slug == bigboss)
-    embed.set_footer(icon_url=f"{'https://stkc.win/assets/bigboss-sileo.png' if entry.get('repository').get('name').lower() == 'bigboss' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
+    embed.set_footer(icon_url=f"{'https://stkc.win/assets/bigboss-sileo.png' if entry.get('repository').get('slug') == 'bigboss' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
                      text=f"Powered by Canister" or "No Package")
     embed.timestamp = datetime.now()
 
@@ -103,7 +103,7 @@ async def format_tweak_page(ctx, entries, current_page, all_pages):
     embed = tweak_embed_format(entry)
 
     # this probably needs to be redone as stkc.win doesn't even resolve anymore (also you can just check repository.slug == bigboss)
-    embed.set_footer(icon_url=f"{'https://assets.stkc.win/bigboss-sileo.png' if 'http://apt.thebigboss.org/repofiles/cydia/CydiaIcon.png' in entry.get('repository').get('uri')+'/CydiaIcon.png' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
+    embed.set_footer(icon_url=f"{'https://stkc.win/assets/bigboss-sileo.png' if entry.get('repository').get('slug') == 'bigboss' else entry.get('repository').get('uri')+'/CydiaIcon.png'}",
                      text=f"Powered by Canister • Page {current_page}/{len(all_pages)}" or "No Package")
     return embed
 

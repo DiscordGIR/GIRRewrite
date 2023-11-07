@@ -72,11 +72,13 @@ async def canister_search_package(query):
         "List of packages that Canister found matching the query"
 
     """
-
+    ignored_repos = ["zodttd", "modmyi"]
     async with client_session.get(f'https://api.canister.me/v2/jailbreak/package/search?q={urllib.parse.quote(query)}') as resp:
         if resp.status == 200:
             response = json.loads(await resp.text())
-            return response.get('data')
+            packages = response.get('data')
+            packages = [package for package in packages if package['repository']['slug'] not in ignored_repos]
+            return packages
         else:
             return None
 
