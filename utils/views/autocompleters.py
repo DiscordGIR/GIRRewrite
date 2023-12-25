@@ -254,6 +254,15 @@ async def warn_autocomplete(interaction: discord.Interaction, current: str) -> L
 
     return [app_commands.Choice(name=f"{case._id} - {case.punishment} points - {case.reason}", value=str(case._id)) for case in cases if (not current or str(case._id).startswith(str(current)))][:25]
 
+async def clem_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    if not gatekeeper.has(interaction.guild, interaction.user, 5):
+        return []
+
+    cases: List[Case] = [case for case in user_service.get_cases(
+        int(interaction.namespace["member"].id)).cases if case._type == "CLEM" and not case.lifted]
+    cases.sort(key=lambda x: x._id, reverse=True)
+
+    return [app_commands.Choice(name=f"{case._id} - {case.date.strptime('%I:%M%p %b %o, %Y')}", value=str(case._id)) for case in cases if (not current or str(case._id).startswith(str(current)))][:25]
 
 async def timezone_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     return [app_commands.Choice(name=tz, value=tz) for tz in pytz.common_timezones_set if current.lower() in tz.lower() or current.lower() in tz.replace("_", " ").lower()][:25]
