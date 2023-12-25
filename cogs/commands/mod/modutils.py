@@ -103,6 +103,64 @@ class ModUtils(commands.Cog):
 
         await ctx.send_success(f"{member.mention} was put on clem.")
 
+    @guild_owner_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Unclems user, sets warn points to 0 & unfreezes XP")
+    @app_commands.describe(member="The user to unclem")
+    @app_commands.describe(case_id="Case ID of the clem to lift")
+    @app_commands.describe(reason="Reason for lifting the clem")
+    @transform_context
+    async def unclem(self, ctx: GIRContext, member: discord.Member, case_id: str, reason: str):
+        results = user_service.get_user(member.id)
+        if results.is_clem is False:
+            await ctx.send_error(f"{member.mention} is not on clem.")
+            raise commands.BadArgument(f"{member.mention} is not on clem.")
+
+        results.is_clem = False
+        results.is_xp_frozen = False
+        results.warn_points = 0
+        results.save()
+
+        cases = user_service.get_cases(member.id)
+        case = cases.cases.filter(_id=case_id).first()
+
+        if case is None:
+            raise commands.BadArgument(
+                message=f"{member} has no case with ID {case_id}")
+        elif case._type != "WARN":
+            raise commands.BadArgument(
+                message=f"{member}'s case with ID {case_id} is not a clem case.")
+        elif case.lifted:
+            raise commands.BadArgument(
+                message=f"Case with ID {case_id} already lifted.")
+
+        # passed sanity checks, so update the case in DB
+        case.lifted = True
+        case.lifted_reason = reason
+        case.lifted_by_tag = str(ctx.author)
+        case.lifted_by_id = ctx.author.id
+        case.lifted_date = datetime.now()
+        cases.save()
+
+        # incrememnt DB's max case ID for next case
+        guild_service.inc_caseid()
+        # add case to db
+        user_service.add_case(member.id, case)
+        user_service.get_cases(member.id)
+        embed = discord.Embed(title="Unclem", description="Generating new XP level based on current message count (this may take a while...)", color=discord.Color.green())
+        embed.set_thumbnail(url=member.display_avatar)
+
+        await ctx.respond_or_edit(embed)
+        #TODO: Is there a better way to do this?
+        xp_cog = self.bot.get_cog('cogs.monitors.utils.xp')
+        for channel in await ctx.guild.fetch_channels():
+            async for message in channel.history(limit=None, after=case.date, oldest=True):
+                if message.author == member:
+                    # Could just steal the code from the function but this is ~~lazier~~ easier
+                    xp_cog.on_message(xp_cog, message)
+
+        await ctx.send_success(f"{member.mention} was unclemmed.")
+
     @admin_and_up()
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Freeze a user's XP")
