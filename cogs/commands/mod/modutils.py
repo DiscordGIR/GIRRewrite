@@ -333,7 +333,7 @@ class ModUtils(commands.Cog):
             embed.add_field(name=f"{len(rd)} most recent cases",
                             value=rd_text, inline=False)
         else:
-            embed.add_field(name=f"Recent cases",
+            embed.add_field(name="Recent cases",
                             value="This user has no cases.", inline=False)
 
         return embed
