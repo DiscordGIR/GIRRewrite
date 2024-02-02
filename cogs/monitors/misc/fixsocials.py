@@ -144,7 +144,6 @@ class FixSocials(commands.Cog):
             embed = message.embeds[0]
             image = embed.to_dict().get('image')
             if image and 'video_thumb' in image.get('url'):
-                link = link.replace('fxtwitter.com', 'fxtwitter.com')
                 await message.reply(f"[I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go]({link})", mention_author=False)
                 await asyncio.sleep(0.5)
                 await message.edit(suppress=True)
