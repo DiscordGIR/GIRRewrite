@@ -21,7 +21,7 @@ class FixSocials(commands.Cog):
         self.instagram_pattern = re.compile(r"(https:\/\/(www.)?instagram\.com\/(?:p|reel)\/([^/?#&]+))\/")
 
         # regex for reddit urls
-        self.reddit_pattern = re.compile(r"(https?://(?:www\.)?(?:old\.)?reddit\.com/r/[A-Za-z0-9_]+/comments/[A-Za-z0-9]+)")
+        self.reddit_pattern = re.compile(r"(https?://(?:www\.)?(?:old\.)?reddit\.com/r/[A-Za-z0-9_]+/(?:comments|s)/[A-Za-z0-9_]+(?:/[^/ ]+)?(?:/\w+)?)|(https?://(?:www\.)?redd\.it/[A-Za-z0-9]+)")
 
         # regex for twitter urls
         self.twitter_pattern = re.compile(r"(https:\/\/(www.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+)")
@@ -85,18 +85,6 @@ class FixSocials(commands.Cog):
                         return '>Download All Images</button>' in text
         except (aiohttp.ClientError, asyncio.TimeoutError):
             return False
-        
-    @cached(ttl=3600)
-    async def is_selfpost_reddit(self, link: str):
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(link+'.json', timeout=5) as response:
-                    if response.status == 200:
-                        json = await response.json()
-                        return json[0]['data']['children'][0]['data']['is_self']
-                            
-        except (aiohttp.ClientError, asyncio.TimeoutError):
-            return False
 
     @cached(ttl=3600)
     async def get_tiktok_redirect(self, link: str):
@@ -124,7 +112,7 @@ class FixSocials(commands.Cog):
         if redirected_url is None:
             return
 
-        await message.reply(f"I hate tiktok but here you go {redirected_url}", mention_author=False)
+        await message.reply(f"[I hate tiktok but here you go]({redirected_url})", mention_author=False)
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 
@@ -132,38 +120,36 @@ class FixSocials(commands.Cog):
         link = link.replace("www.", "")
         link = link.replace("instagram.com", "ddinstagram.com")
 
-        await message.reply(f"I hate instagram but here you go {link}", mention_author=False)
+        await message.reply(f"[I hate instagram but here you go]({link})", mention_author=False)
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 
     async def fix_reddit(self, message: discord.Message, link: str):
-        # only fix reddit links with media
-        if await self.is_selfpost_reddit(link):
-            return
-
         link = link.replace("www.", "")
         link = link.replace("old.reddit.com", "reddit.com")
         link = link.replace("reddit.com", "rxddit.com")
 
-        await message.reply(f"I hate reddit but here you go {link}", mention_author=False)
+        await message.reply(f"[I hate reddit but here you go]({link})", mention_author=False)
         await asyncio.sleep(0.5)
         await message.edit(suppress=True)
 
     async def fix_twitter(self, message: discord.Message, link: str):
         link = link.replace("www.", "")
         link = link.replace('x.com', 'twitter.com')
-        link = link.replace("twitter.com", "vxtwitter.com")
+        link = link.replace("twitter.com", "fxtwitter.com")
 
-        # only fix tweets with an image or video (or links that dont embed at all)
-        await asyncio.sleep(1)
+        # twitter embeds work for images again, only fix links with a video
+        await asyncio.sleep(2)
         if message.embeds:
             embed = message.embeds[0]
-            if embed.to_dict().get('video') or embed.to_dict().get('image'):
-                await message.reply(f"I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go {link}", mention_author=False)
+            image = embed.to_dict().get('image')
+            if image and 'video_thumb' in image.get('url'):
+                link = link.replace('fxtwitter.com', 'fxtwitter.com')
+                await message.reply(f"[I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go]({link})", mention_author=False)
                 await asyncio.sleep(0.5)
                 await message.edit(suppress=True)
         else:
-            await message.reply(f"I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go {link}", mention_author=False)
+            await message.reply(f"[I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go]({link})", mention_author=False)
             await asyncio.sleep(0.5)
             await message.edit(suppress=True)
 
