@@ -89,7 +89,7 @@ class MyTree(app_commands.CommandTree):
             else:
                 message_content += str(option.get("value")) + " "
 
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             message_content, interaction.user)
 
         if triggered_words:

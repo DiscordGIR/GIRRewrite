@@ -31,7 +31,7 @@ class Canister(commands.Cog):
         if not pattern.match(message.content):
             return
         
-        if find_triggered_filters(message.content, message.author) or find_triggered_raid_phrases(message.content, message.author):
+        if await find_triggered_filters(message.content, message.author) or await find_triggered_raid_phrases(message.content, message.author):
             return
 
         matches = pattern.findall(message.content)

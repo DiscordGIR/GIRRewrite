@@ -304,7 +304,7 @@ class AntiRaidMonitor(commands.Cog):
         if gatekeeper.has(message.guild, message.author, 2):
             return False
 
-        if find_triggered_raid_phrases(message.content, message.author) is not None:
+        if await find_triggered_raid_phrases(message.content, message.author) is not None:
             await self.raid_ban(message.author)
             return True
 

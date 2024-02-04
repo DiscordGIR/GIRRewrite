@@ -108,7 +108,7 @@ class Songs(commands.Cog):
             title = discord.utils.escape_markdown(title)
             title = discord.utils.escape_mentions(title)
 
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             title, message.author)
 
         if triggered_words:

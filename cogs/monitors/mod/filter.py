@@ -96,7 +96,7 @@ class Filter(commands.Cog):
         await self.detect_cij_or_eta(message)
 
     async def nick_filter(self, member):
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             member.display_name, member)
 
         if not triggered_words:
@@ -112,7 +112,7 @@ class Filter(commands.Cog):
             pass
 
     async def bad_word_filter(self, message) -> bool:
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             message.content, message.author)
         if not triggered_words:
             return

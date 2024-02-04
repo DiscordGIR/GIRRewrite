@@ -1,3 +1,4 @@
+from aiocache import cached, caches
 from data.model import FilterWord, Guild, Tag, Giveaway
 from utils import cfg
 
@@ -96,31 +97,44 @@ class GuildService:
         giveaway.previous_winners = prev_winners
         giveaway.save()
         
-    def add_raid_phrase(self, phrase: str) -> bool:
+    async def add_raid_phrase(self, phrase: str) -> bool:
         existing = self.get_guild().raid_phrases.filter(word=phrase)
         if(len(existing) > 0):
             return False
         Guild.objects(_id=cfg.guild_id).update_one(push__raid_phrases=FilterWord(word=phrase, bypass=5, notify=True))
+        await self.get_raid_phrases.cache.clear()
         return True
     
-    def remove_raid_phrase(self, phrase: str):
+    @cached(ttl=3600, key="guild_raid_phrases")
+    async def get_raid_phrases(self):
+        return self.get_guild().raid_phrases
+
+    async def remove_raid_phrase(self, phrase: str):
+        await self.get_raid_phrases.cache.clear()
         Guild.objects(_id=cfg.guild_id).update_one(pull__raid_phrases__word=FilterWord(word=phrase).word)
 
     def set_spam_mode(self, mode) -> None:
         Guild.objects(_id=cfg.guild_id).update_one(set__ban_today_spam_accounts=mode)
 
-    def add_filtered_word(self, fw: FilterWord) -> None:
+    async def add_filtered_word(self, fw: FilterWord) -> None:
         existing = self.get_guild().filter_words.filter(word=fw.word)
         if(len(existing) > 0):
             return False
 
         Guild.objects(_id=cfg.guild_id).update_one(push__filter_words=fw)
+        await self.get_filtered_words.cache.clear()
         return True
 
-    def remove_filtered_word(self, word: str):
+    @cached(ttl=3600, key="guild_filtered_words")
+    async def get_filtered_words(self) -> FilterWord:
+        return self.get_guild().filter_words
+
+    async def remove_filtered_word(self, word: str):
+        await self.get_filtered_words.cache.clear()
         return Guild.objects(_id=cfg.guild_id).update_one(pull__filter_words__word=FilterWord(word=word).word)
 
-    def update_filtered_word(self, word: FilterWord):
+    async def update_filtered_word(self, word: FilterWord):
+        await self.get_filtered_words.cache.clear()
         return Guild.objects(_id=cfg.guild_id, filter_words__word=word.word).update_one(set__filter_words__S=word)
 
     def add_whitelisted_guild(self, id: int):

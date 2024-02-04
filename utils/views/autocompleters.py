@@ -238,7 +238,7 @@ async def filterwords_autocomplete(interaction: discord.Interaction, current: st
     if not gatekeeper.has(interaction.guild, interaction.user, 5):
         return []
 
-    words = [word.word for word in guild_service.get_guild().filter_words]
+    words = [word.word for word in await guild_service.get_filtered_words()]
     words.sort()
 
     return [app_commands.Choice(name=word, value=word) for word in words if str(word).startswith(str(current))][:25]

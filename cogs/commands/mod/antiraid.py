@@ -23,7 +23,7 @@ class AntiRaid(commands.Cog):
     async def raid(self, ctx: GIRContext, phrase: str) -> None:
         # these are phrases that when said by a whitename, automatically bans them.
         # for example: known scam URLs
-        done = guild_service.add_raid_phrase(phrase)
+        done = await guild_service.add_raid_phrase(phrase)
         if not done:
             raise commands.BadArgument("That phrase is already in the list.")
         else:
@@ -47,7 +47,7 @@ class AntiRaid(commands.Cog):
         phrases = [phrase.strip() for phrase in phrases if phrase.strip()]
 
         phrases_contenders = set(phrases)
-        phrases_already_in_db = set([phrase.word for phrase in guild_service.get_guild().raid_phrases])
+        phrases_already_in_db = set([phrase.word for phrase in await guild_service.get_raid_phrases()])
 
         duplicate_count = len(phrases_already_in_db & phrases_contenders) # count how many duplicates we have
         new_phrases = list(phrases_contenders - phrases_already_in_db)
@@ -73,7 +73,7 @@ class AntiRaid(commands.Cog):
 
         if do_add:
             for phrase in new_phrases:
-                guild_service.add_raid_phrase(phrase)
+                await guild_service.add_raid_phrase(phrase)
 
             await ctx.send_success(f"Added {len(new_phrases)} phrases to the raid filter.")
         else:
@@ -87,11 +87,11 @@ class AntiRaid(commands.Cog):
     async def removeraid(self, ctx: GIRContext, phrase: str) -> None:
         word = phrase.lower()
 
-        words = guild_service.get_guild().raid_phrases
+        words = await guild_service.get_raid_phrases()
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
-            guild_service.remove_raid_phrase(words[0].word)
+            await guild_service.remove_raid_phrase(words[0].word)
             await ctx.send_success("Deleted!", delete_after=5)
         else:
             raise commands.BadArgument("That word is not a raid phrase.")

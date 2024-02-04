@@ -463,7 +463,7 @@ class Memes(commands.Cog):
                     data = await resp.json()
                     text = data.get("choices")[0].get("text")
                     text = discord.utils.escape_markdown(text)
-                    if find_triggered_filters(text, ctx.author) or find_triggered_raid_phrases(text, ctx.author):
+                    if await find_triggered_filters(text, ctx.author) or await find_triggered_raid_phrases(text, ctx.author):
                         text = "A filter was triggered by this response. Please try a different prompt."
 
                     embed = discord.Embed(color=discord.Color.random())
