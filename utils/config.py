@@ -3,6 +3,46 @@ from dotenv.main import load_dotenv
 from .logging import logger
 
 
+class Roles:
+    def __init__(self):
+        self.administrator = None
+        self.moderator = None
+        self.sub_mod = None
+        self.genius = None
+        self.birthday = None
+        self.member_ultra = None
+        self.member_one = None
+        self.member_edition = None
+        self.member_plus = None
+        self.member_pro = None
+        self.dev = None
+        self.sub_news = None
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class Channels:
+    def __init__(self):
+        self.applenews = None
+        self.booster_emoji = None
+        self.bot_commands = None
+        self.common_issues = None
+        self.development = None
+        self.emoji_logs = None
+        self.general = None
+        self.genius_bar = None
+        self.jailbreak = None
+        self.private_logs = None
+        self.public_logs = None
+        self.rules = None
+        self.reports = None
+        self.subnews = None
+        self.music = None
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
 class Config:
     def __init__(self):
         load_dotenv()
@@ -68,6 +108,18 @@ class Config:
         self.spotify_auth_code = os.environ.get("SPOTIFY_AUTH_CODE")
         if self.spotify_id is None or self.spotify_secret is None or self.spotify_playlist_url is None:
             logger.warning("Adding songs to public Spotify playlist disabled.")
+
+        self.roles = Roles()
+        self.channels = Channels()
+
+        # read config.json to populate roles and channels
+        import json
+        with open('config.json') as f:
+            data = json.load(f)
+            for k, v in data['roles'].items():
+                setattr(self.roles, k, v)
+            for k, v in data['channels'].items():
+                setattr(self.channels, k, v)
 
         logger.info(
             f"GIR will be running in: {self.guild_id} in \033[1m{'DEVELOPMENT' if self.dev else 'PRODUCTION'}\033[0m mode")

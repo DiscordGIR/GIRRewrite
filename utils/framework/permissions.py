@@ -32,30 +32,29 @@ class Permissions:
             
         """
 
-        the_guild: Guild = guild_service.get_guild()
         roles_to_check = [
-            "role_memberplus",
-            "role_memberpro",
-            "role_memberedition",
-            "role_genius",
-            "role_moderator",
-            "role_administrator",
+            "member_plus",
+            "member_pro",
+            "member_edition",
+            "genius",
+            "moderator",
+            "administrator",
         ]
 
         for role in roles_to_check:
             try:
-                getattr(the_guild, role)
+                getattr(cfg.roles, role)
             except AttributeError:
                 raise AttributeError(
                     f"Database is not set up properly! Role '{role}' is missing. Please refer to README.md.")
 
-        self._role_permission_mapping = {
-            1: the_guild.role_memberplus,
-            2: the_guild.role_memberpro,
-            3: the_guild.role_memberedition,
-            4: the_guild.role_genius,
-            5: the_guild.role_moderator,
-            6: the_guild.role_administrator,
+        self._permission_mapping = {
+            1: cfg.roles.member_plus,
+            2: cfg.roles.member_pro,
+            3: cfg.roles.member_edition,
+            4: cfg.roles.genius,
+            5: cfg.roles.moderator,
+            6: cfg.roles.administrator,
         }
 
         # This dict maps a permission level to a lambda function which, when given the right paramters,
@@ -64,22 +63,22 @@ class Permissions:
             0: lambda x, y: True,
 
             1: (lambda guild, m: self.has(guild, m, 2) or (guild.id == cfg.guild_id
-                and guild.get_role(the_guild.role_memberplus) in m.roles)),
+                and guild.get_role(cfg.roles.member_plus) in m.roles)),
 
             2: (lambda guild, m: self.has(guild, m, 3) or (guild.id == cfg.guild_id
-                and guild.get_role(the_guild.role_memberpro) in m.roles)),
+                and guild.get_role(cfg.roles.member_pro) in m.roles)),
 
             3: (lambda guild, m: self.has(guild, m, 4) or (guild.id == cfg.guild_id
-                and guild.get_role(the_guild.role_memberedition) in m.roles)),
+                and guild.get_role(cfg.roles.member_edition) in m.roles)),
 
             4: (lambda guild, m: self.has(guild, m, 5) or (guild.id == cfg.guild_id
-                and guild.get_role(the_guild.role_genius) in m.roles)),
+                and guild.get_role(cfg.roles.genius) in m.roles)),
 
             5: (lambda guild, m: self.has(guild, m, 6) or (guild.id == cfg.guild_id
-                and guild.get_role(the_guild.role_moderator) in m.roles)),
+                and guild.get_role(cfg.roles.moderator) in m.roles)),
 
             6: (lambda guild, m: self.has(guild, m, 7) or (guild.id == cfg.guild_id
-                and guild.get_role(the_guild.role_administrator) in m.roles)),
+                and guild.get_role(cfg.roles.administrator) in m.roles)),
 
             7: (lambda guild, m: self.has(guild, m, 9) or (guild.id == cfg.guild_id
                 and m == guild.owner)),
@@ -137,26 +136,11 @@ class Permissions:
 
         return self._permissions[level](guild, member)
 
-    # TODO: fix
-    # def level_role_list(self, level: int) -> List[int]:
-    #     if level == 0:
-    #         return []
-    #     elif level > 6:
-    #         # bot owner permission
-    #         return [CommandPermission(id=cfg.owner_id, type=2, permission=True)] + [ CommandPermission(id=cfg.aaron_id, type=2, permission=True)]
-
-    #     if self._role_permission_mapping.get(level) is None:
-    #         raise AttributeError(f"Permission level {level} not found")
-
-    #     # generate role permissions up until Administrator (guild owner always has access!)
-    #     return [CommandPermission(id=self._role_permission_mapping[_level], type=1, permission=True) for _level in range(level, 7)] \
-    #         + [CommandPermission(id=cfg.owner_id, type=2, permission=True) ] + [ CommandPermission(id=cfg.aaron_id, type=2, permission=True)]  # bot owner permission
-
     def calculate_permissions(self, level: int):
         if self._permissions.get(level) is None:
             raise AttributeError(f"Undefined permission level {level}")
 
-        return self.level_role_list(level)
+        return self.level_list(level)
 
     def level_info(self, level: int) -> str:
         return self._permission_names[level]
