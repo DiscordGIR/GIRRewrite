@@ -130,8 +130,7 @@ class ModUtils(commands.Cog):
         results.birthday = None
         results.save()
 
-        birthday_role = ctx.guild.get_role(
-            guild_service.get_guild().role_birthday)
+        birthday_role = ctx.guild.get_role(cfg.roles.birthday)
         if birthday_role is None:
             return
 
@@ -159,8 +158,7 @@ class ModUtils(commands.Cog):
         except Exception:
             pass
 
-        birthday_role = ctx.guild.get_role(
-            guild_service.get_guild().role_birthday)
+        birthday_role = ctx.guild.get_role(cfg.roles.birthday)
         if birthday_role is None:
             return
 
@@ -206,8 +204,7 @@ class ModUtils(commands.Cog):
         eastern = pytz.timezone('US/Eastern')
         today = datetime.datetime.today().astimezone(eastern)
         if today.month == month and today.day == date:
-            birthday_role = ctx.guild.get_role(
-                guild_service.get_guild().role_birthday)
+            birthday_role = ctx.guild.get_role(cfg.roles.birthday)
             if birthday_role is None:
                 return
             if birthday_role in member.roles:
@@ -279,8 +276,7 @@ class ModUtils(commands.Cog):
             await channel.send(message)
         await ctx.send_success("Done!")
 
-        logging_channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_private)
+        logging_channel = ctx.guild.get_channel(cfg.channels.private_logs)
 
         embed = discord.Embed(color=discord.Color.gold(), title="Someone abused me :(",
                               description=f"In {ctx.channel.mention} {ctx.author.mention} said:\n\n{message}")

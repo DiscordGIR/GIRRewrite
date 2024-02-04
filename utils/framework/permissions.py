@@ -1,9 +1,5 @@
 import discord
-# from discord.commands.permissions import CommandPermission
 
-from typing import List
-from data.model.guild import Guild
-from data.services.guild_service import guild_service
 from utils.config import cfg
 
 class Permissions:

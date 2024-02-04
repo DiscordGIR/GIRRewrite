@@ -391,8 +391,7 @@ class ModActions(commands.Cog):
 
         dmed = await notify_user(member, f"Your case was updated in {ctx.guild.name}.", log)
 
-        public_chan = ctx.guild.get_channel(
-            guild_service.get_guild().channel_public)
+        public_chan = ctx.guild.get_channel(cfg.channels.public_logs)
 
         found = False
         async for message in public_chan.history(limit=200):

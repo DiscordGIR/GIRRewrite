@@ -36,7 +36,7 @@ class Channels:
     rules: int
     reports: int
     sub_news: int
-    music: int
+    rules: int
 
     def __getitem__(self, key):
         return getattr(self, key)

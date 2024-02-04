@@ -1,5 +1,5 @@
 from discord.ext import commands
-from data.services import guild_service
+from utils.config import cfg
 
 class AppleNews(commands.Cog):
     def __init__(self, bot):
@@ -11,7 +11,7 @@ class AppleNews(commands.Cog):
         
         if not msg.guild:
             return
-        if msg.channel.id != guild_service.get_guild().channel_applenews:
+        if msg.channel.id != cfg.channels.applenews:
             return
         if not msg.author.bot:
             return

@@ -6,7 +6,7 @@ from typing import Union
 
 import discord
 import pytz
-from data.services import guild_service, user_service
+from data.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
@@ -66,7 +66,7 @@ class Misc(commands.Cog):
     @transform_context
     async def jumbo(self, ctx: GIRContext, emoji: str):
         # non-mod users will be ratelimited
-        bot_chan = guild_service.get_guild().channel_botspam
+        bot_chan = cfg.channels.bot_commands
         if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != bot_chan:
             bucket = self.spam_cooldown.get_bucket(ctx.interaction)
             if bucket.update_rate_limit():
@@ -138,8 +138,7 @@ class Misc(commands.Cog):
         # if it's the user's birthday today let's assign the role right now!
         today = datetime.datetime.today().astimezone(self.eastern_timezone)
         if today.month == month and today.day == date:
-            db_guild = guild_service.get_guild()
-            await give_user_birthday_role(self.bot, db_guild, ctx.author, ctx.guild)
+            await give_user_birthday_role(self.bot, ctx.author, ctx.guild)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Get avatar of another user or yourself.")

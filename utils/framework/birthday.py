@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from utils.config import cfg
 import pytz
 
 eastern_timezone = pytz.timezone('US/Eastern')
@@ -57,8 +58,8 @@ MONTH_MAPPING = {
 }
 
 
-async def give_user_birthday_role(bot, db_guild, user, guild):
-    birthday_role = guild.get_role(db_guild.role_birthday)
+async def give_user_birthday_role(bot, user, guild):
+    birthday_role = guild.get_role(cfg.roles.birthday)
     if birthday_role is None:
         return
 

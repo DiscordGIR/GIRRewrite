@@ -6,7 +6,6 @@ from aiocache import cached
 import aiohttp
 
 import discord
-from data.services import guild_service
 from discord.ext import commands
 from utils import cfg
 
@@ -37,7 +36,7 @@ class FixSocials(commands.Cog):
             return
         if message.author.bot:
             return
-        if message.channel.id != guild_service.get_guild().channel_general:
+        if message.channel.id != cfg.channels.general:
             return
 
         message_content = message.content.strip("<>")

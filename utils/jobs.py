@@ -206,8 +206,7 @@ async def remove_timeout(id: int) -> None:
     log.remove_author()
     log.set_thumbnail(url=user.display_avatar)
 
-    public_chan = guild.get_channel(
-        db_guild.channel_public)
+    public_chan = guild.get_channel(cfg.channels.public_logs)
 
     dmed = True
     try:
@@ -246,8 +245,7 @@ async def remind(id, reminder):
     try:
         await member.send(embed=embed)
     except Exception:
-        channel = guild.get_channel(
-            guild_service.get_guild().channel_botspam)
+        channel = guild.get_channel(cfg.channels.bot_commands)
         await channel.send(member.mention, embed=embed)
 
 
@@ -275,12 +273,11 @@ async def remove_bday(id: int) -> None:
 
     """
 
-    db_guild = guild_service.get_guild()
     guild = BOT_GLOBAL.get_guild(cfg.guild_id)
     if guild is None:
         return
 
-    bday_role = db_guild.role_birthday
+    bday_role = cfg.roles.birthday
     bday_role = guild.get_role(bday_role)
     if bday_role is None:
         return

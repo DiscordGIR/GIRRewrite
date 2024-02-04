@@ -54,39 +54,6 @@ class GuildService:
 
         Guild.objects(_id=cfg.guild_id).update_one(inc__case_id=1)
 
-    def all_rero_mappings(self):
-        g = self.get_guild()
-        current = g.reaction_role_mapping
-        return current
-
-    def add_rero_mapping(self, mapping):
-        g = self.get_guild()
-        current = g.reaction_role_mapping
-        the_key = list(mapping.keys())[0]
-        current[str(the_key)] = mapping[the_key]
-        g.reaction_role_mapping = current
-        g.save()
-
-    def append_rero_mapping(self, message_id, mapping):
-        g = self.get_guild()
-        current = g.reaction_role_mapping
-        current[str(message_id)] = current[str(message_id)] | mapping
-        g.reaction_role_mapping = current
-        g.save()
-
-    def get_rero_mapping(self, id):
-        g = self.get_guild()
-        if id in g.reaction_role_mapping:
-            return g.reaction_role_mapping[id]
-        else:
-            return None
-
-    def delete_rero_mapping(self, id):
-        g = self.get_guild()
-        if str(id) in g.reaction_role_mapping.keys():
-            g.reaction_role_mapping.pop(str(id))
-            g.save()
-    
     def get_giveaway(self, _id: int) -> Giveaway:
         """
         Return the Document representing a giveaway, whose ID (message ID) is given by `id`

@@ -269,8 +269,7 @@ class Filter(commands.Cog):
         log_embed.timestamp = datetime.utcnow()
         log_embed.set_footer(text=message.author.id)
 
-        log_channel = message.guild.get_channel(
-            guild_service.get_guild().channel_private)
+        log_channel = message.guild.get_channel(cfg.channels.private_logs)
         if log_channel is not None:
             await log_channel.send(embed=log_embed)
 
@@ -315,7 +314,7 @@ class Filter(commands.Cog):
         intent_news_triggered = any(intent in text for intent in intent_news)
         intent_cij_triggered = any(intent in text for intent in intent_cij)
         
-        if (intent_news_triggered or intent_cij_triggered) and subject_and_word_in_message and message.channel.id == guild_service.get_guild().channel_general:
+        if (intent_news_triggered or intent_cij_triggered) and subject_and_word_in_message and message.channel.id == cfg.channels.general:
             view = discord.ui.View()
             embed = discord.Embed(color=discord.Color.orange())
             embed.description = f"Please keep support or jailbreak related messages in the appropriate channels. Thanks!"
