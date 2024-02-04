@@ -27,11 +27,10 @@ class BoosterEmojis(commands.Cog):
         except Exception:
             return
 
-        db_guild = guild_service.get_guild()
 
         if not msg.guild.id == cfg.guild_id:
             return
-        if payload.channel_id != db_guild.channel_booster_emoji:
+        if payload.channel_id != cfg.channels.booster_emoji:
             return
         if not str(payload.emoji) in ['✅', '❌']:
             return
@@ -91,10 +90,9 @@ class BoosterEmojis(commands.Cog):
         if msg.author.bot:
             return
 
-        db_guild = guild_service.get_guild()
         if not msg.guild.id == cfg.guild_id:
             return
-        if not msg.channel.id == db_guild.channel_booster_emoji:
+        if not msg.channel.id == cfg.channels.booster_emoji:
             return
 
         try:

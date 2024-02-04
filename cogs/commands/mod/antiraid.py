@@ -226,10 +226,8 @@ class AntiRaid(commands.Cog):
             raise commands.BadArgument("Server is already unlocked or my permissions are wrong.")
 
     async def lock_unlock_channel(self,  ctx: GIRContext, channel, lock=None):
-        db_guild = guild_service.get_guild()
-        
         default_role = ctx.guild.default_role
-        member_plus = ctx.guild.get_role(db_guild.role_memberplus)   
+        member_plus = ctx.guild.get_role(cfg.roles.member_plus)   
         
         default_perms = channel.overwrites_for(default_role)
         memberplus_perms = channel.overwrites_for(member_plus)
@@ -280,7 +278,7 @@ class AntiRaid(commands.Cog):
             await m.ban(reason=reason)
             
             # send a message to the modlog channel
-            await submit_public_log(ctx, db_guild, member, log)
+            await submit_public_log(ctx, member, log)
 
         await ctx.send_success(f"Banned {len(all_members)} members with name `{member.name}`!", ephemeral=False)
 

@@ -90,13 +90,13 @@ class Logging(commands.Cog):
             return
 
 
+        db_guild = guild_service.get_guild()
         webhook = db_guild.emoji_logging_webhook
         if webhook is None:
             channel = member.guild.get_channel(cfg.channels.emoji_logs)
             if channel is None:
                 return
 
-            db_guild = guild_service.get_guild()
             webhook = (await channel.create_webhook(name=f"Webhook {channel.name}")).url
             db_guild.emoji_logging_webhook = webhook
             db_guild.save()
@@ -184,7 +184,7 @@ class Logging(commands.Cog):
         if message.channel.id in db_guild.logging_excluded_channels:
             return
 
-        channel = message.guild.get_channel(db_guild.channel_private)
+        channel = message.guild.get_channel(cfg.channels.private_logs)
 
         embed = discord.Embed(title="Message Deleted")
         embed.color = discord.Color.red()
@@ -270,7 +270,6 @@ class Logging(commands.Cog):
         if not guild.id == cfg.guild_id:
             return
 
-        db_guild = guild_service.get_guild()
         channel = guild.get_channel(cfg.channels.private_logs)
 
         embed = discord.Embed(title="Member Banned")

@@ -139,7 +139,7 @@ async def response_log(ctx, log):
         await ctx.send(embed=log, delete_after=10)
 
 
-async def submit_public_log(ctx: GIRContext, db_guild: Guild, user: Union[discord.Member, discord.User], log, dmed: bool = None):
+async def submit_public_log(ctx: GIRContext, user: Union[discord.Member, discord.User], log, dmed: bool = None):
     """Submits a public log
 
     Parameters
@@ -158,7 +158,7 @@ async def submit_public_log(ctx: GIRContext, db_guild: Guild, user: Union[discor
         "Embed to send"
     """
     public_chan = ctx.guild.get_channel(
-        db_guild.channel_public)
+        cfg.channels.public_logs)
     if public_chan:
         log.remove_author()
         log.set_thumbnail(url=user.display_avatar)
