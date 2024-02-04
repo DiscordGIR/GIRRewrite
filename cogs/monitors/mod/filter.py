@@ -70,13 +70,13 @@ class Filter(commands.Cog):
             return
         if gatekeeper.has(message.guild, message.author, 7):
             return
-        db_guild = guild_service.get_guild()
-        role_submod = message.guild.get_role(db_guild.role_sub_mod)
+
+        role_submod = message.guild.get_role(cfg.roles.sub_mod)
         if role_submod is not None and role_submod in message.author.roles:
             return
 
         # run through filters
-        if message.content and await self.bad_word_filter(message, db_guild):
+        if message.content and await self.bad_word_filter(message):
             return
 
         if gatekeeper.has(message.guild, message.author, 6):
@@ -88,12 +88,12 @@ class Filter(commands.Cog):
         if gatekeeper.has(message.guild, message.author, 5):
             return
 
-        if message.content and await self.do_invite_filter(message, db_guild):
+        if message.content and await self.do_invite_filter(message):
             return
-        if await self.do_spoiler_newline_filter(message, db_guild):
+        if await self.do_spoiler_newline_filter(message):
             return
 
-        await self.detect_cij_or_eta(message, db_guild)
+        await self.detect_cij_or_eta(message)
 
     async def nick_filter(self, member):
         triggered_words = find_triggered_filters(
@@ -111,19 +111,19 @@ class Filter(commands.Cog):
         except Exception:
             pass
 
-    async def bad_word_filter(self, message, db_guild) -> bool:
+    async def bad_word_filter(self, message) -> bool:
         triggered_words = find_triggered_filters(
             message.content, message.author)
         if not triggered_words:
             return
 
-        dev_role = message.guild.get_role(db_guild.role_dev)
+        dev_role = message.guild.get_role(cfg.roles.dev)
 
         triggered = False
         for word in triggered_words:
             if word.piracy:
                 # ignore if it's a dev saying piracy in #development
-                if message.channel.id == db_guild.channel_development and dev_role in message.author.roles:
+                if message.channel.id == cfg.roles.dev in message.author.roles:
                     continue
 
             if word.notify:
@@ -143,10 +143,12 @@ class Filter(commands.Cog):
 
         return triggered
 
-    async def do_invite_filter(self, message, db_guild):
+    async def do_invite_filter(self, message):
         invites = re.findall(self.invite_filter, message.content, flags=re.S)
         if not invites:
             return
+
+        db_guild = guild_service.get_guild()
 
         whitelist = db_guild.filter_excluded_guilds
         for invite in invites:
@@ -176,14 +178,14 @@ class Filter(commands.Cog):
 
         return False
 
-    async def do_spoiler_newline_filter(self, message: discord.Message, db_guild):
+    async def do_spoiler_newline_filter(self, message: discord.Message):
         """
         SPOILER FILTER
         """
         if re.search(self.spoiler_filter, message.content, flags=re.S):
             # ignore if dev in dev channel
-            dev_role = message.guild.get_role(db_guild.role_dev)
-            if message.channel.id == db_guild.channel_development and dev_role in message.author.roles:
+            dev_role = message.guild.get_role(cfg.roles.dev)
+            if message.channel.id == cfg.channels.development and dev_role in message.author.roles:
                 return False
 
             await self.delete(message)
@@ -198,7 +200,7 @@ class Filter(commands.Cog):
         NEWLINE FILTER
         """
         if len(message.content.splitlines()) > 100:
-            dev_role = message.guild.get_role(db_guild.role_dev)
+            dev_role = message.guild.get_role(cfg.roles.dev)
             if not dev_role or dev_role not in message.author.roles:
                 await self.delete(message)
                 await self.ratelimit(message)
@@ -288,7 +290,7 @@ class Filter(commands.Cog):
 
                 return {}
 
-    async def detect_cij_or_eta(self, message: discord.Message, db_guild):
+    async def detect_cij_or_eta(self, message: discord.Message):
         if message.edited_at is not None:
             return
         if gatekeeper.has(message.guild, message.author, 1):

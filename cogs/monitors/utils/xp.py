@@ -3,7 +3,6 @@ from discord.ext import commands
 
 import math
 from random import randint
-from data.services.guild_service import guild_service
 from data.services.user_service import user_service
 from utils.config import cfg
 
@@ -25,9 +24,8 @@ class Xp(commands.Cog):
             return
 
         level = user.level
-        db_guild = guild_service.get_guild()
 
-        roles_to_add = self.assess_new_roles(level, db_guild)
+        roles_to_add = self.assess_new_roles(level)
         await self.add_new_roles(member, roles_to_add)
 
     @commands.Cog.listener()
@@ -39,8 +37,7 @@ class Xp(commands.Cog):
         if message.author.bot:
             return
 
-        db_guild = guild_service.get_guild()
-        if message.channel.id == db_guild.channel_botspam:
+        if message.channel.id == cfg.channels.bot_commands:
             return
 
         user = user_service.get_user(id=message.author.id)
@@ -55,21 +52,21 @@ class Xp(commands.Cog):
         if new_level > level_before:
             user_service.inc_level(message.author.id)
 
-        roles_to_add = self.assess_new_roles(new_level, db_guild)
+        roles_to_add = self.assess_new_roles(new_level)
         await self.add_new_roles(message, roles_to_add)
 
-    def assess_new_roles(self, new_level, db):
+    def assess_new_roles(self, new_level):
         roles_to_add = []
         if 15 <= new_level:
-            roles_to_add.append(db.role_memberplus)
+            roles_to_add.append(cfg.roles.member_plus)
         if 30 <= new_level:
-            roles_to_add.append(db.role_memberpro)
+            roles_to_add.append(cfg.roles.member_pro)
         if 50 <= new_level:
-            roles_to_add.append(db.role_memberedition)
+            roles_to_add.append(cfg.roles.member_edition)
         if 75 <= new_level:
-            roles_to_add.append(db.role_memberone)
+            roles_to_add.append(cfg.roles.member_one)
         if 100 <= new_level:
-            roles_to_add.append(db.role_memberultra)
+            roles_to_add.append(cfg.roles.member_ultra)
 
         return roles_to_add
 

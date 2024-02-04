@@ -4,7 +4,6 @@ import re
 
 import discord
 from discord import app_commands
-from data.services import guild_service
 from discord.ext import commands
 from utils import GIRContext, cfg
 from utils.context import transform_context
@@ -61,7 +60,7 @@ class Genius(commands.Cog):
     async def new(self, ctx: GIRContext, title: str,  image: ImageAttachment = None) -> None:
         # get #common-issues channel
         channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_common_issues)
+            cfg.channels.common_issues)
         if not channel:
             raise commands.BadArgument("common issues channel not found")
 
@@ -92,7 +91,7 @@ class Genius(commands.Cog):
     @transform_context
     async def edit(self, ctx: GIRContext, title: str, image: ImageAttachment = None) -> None:
         channel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_common_issues)
+            cfg.channels.common_issues)
         if not channel:
             raise commands.BadArgument("common issues channel not found")
 
@@ -154,7 +153,7 @@ class Genius(commands.Cog):
     async def reindex(self, ctx: GIRContext):
         # get #common-issues channel
         channel: discord.TextChannel = ctx.guild.get_channel(
-            guild_service.get_guild().channel_common_issues)
+            cfg.channels.common_issues)
         if not channel:
             raise commands.BadArgument("common issues channel not found")
 
@@ -284,13 +283,11 @@ class Genius(commands.Cog):
     @app_commands.describe(image="Image to show in embed")
     @transform_context
     async def subnews(self, ctx: GIRContext, image: ImageAttachment = None):
-        db_guild = guild_service.get_guild()
-
-        channel = ctx.guild.get_channel(db_guild.channel_subnews)
+        channel = ctx.guild.get_channel(cfg.channels.subnews)
         if not channel:
             raise commands.BadArgument("A subreddit news channel was not found. Contact Slim.")
 
-        subnews = ctx.guild.get_role(db_guild.role_sub_news)
+        subnews = ctx.guild.get_role(cfg.roles.sub_news)
         if not subnews:
             raise commands.BadArgument("A subbredit news role was not found. Conact Slim")
 

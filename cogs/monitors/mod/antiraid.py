@@ -371,7 +371,7 @@ class AntiRaidMonitor(commands.Cog):
             else:
                 await user.guild.ban(discord.Object(id=user.id), reason="Raid")
 
-            public_logs = user.guild.get_channel(db_guild.channel_public)
+            public_logs = user.guild.get_channel(cfg.channels.public_logs)
             if public_logs:
                 log.remove_author()
                 log.set_thumbnail(url=user.display_avatar)
@@ -389,7 +389,7 @@ class AntiRaidMonitor(commands.Cog):
                 continue
 
             default_role = guild.default_role
-            member_plus = guild.get_role(db_guild.role_memberplus)
+            member_plus = guild.get_role(cfg.roles.member_plus)
 
             default_perms = channel.overwrites_for(default_role)
             memberplus_perms = channel.overwrites_for(member_plus)

@@ -60,7 +60,7 @@ class Memes(commands.Cog):
         bucket = self.meme_cooldown.get_bucket(meme.name)
         current = datetime.now().timestamp()
         # ratelimit only if the invoker is not a moderator
-        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(guild_service.get_guild().role_sub_mod) in ctx.author.roles):
+        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(cfg.roles.sub_mod) in ctx.author.roles):
             raise commands.BadArgument("That meme is on cooldown.")
 
         # if the Meme has an image, add it to the embed
@@ -272,9 +272,8 @@ class Memes(commands.Cog):
         if cfg.resnext_token is None:
             raise commands.BadArgument("ResNext token is not set up!")
 
-        db_guild = guild_service.get_guild()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
-        if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
+        if ctx.channel.id not in [cfg.channels.general, cfg.channels.bot_commands] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
 
         if not is_mod:
@@ -341,9 +340,8 @@ class Memes(commands.Cog):
             raise commands.BadArgument(
                 "Bottom text can't have weird characters.")
 
-        db_guild = guild_service.get_guild()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
-        if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
+        if ctx.channel.id not in [cfg.channels.general, cfg.channels.bot_commands] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
 
         if not is_mod:
@@ -395,9 +393,8 @@ class Memes(commands.Cog):
             raise commands.BadArgument(
                 "Bottom text can't have weird characters.")
 
-        db_guild = guild_service.get_guild()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
-        if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
+        if ctx.channel.id not in [cfg.channels.general, cfg.channels.bot_commands] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
 
         if not is_mod:
@@ -440,9 +437,8 @@ class Memes(commands.Cog):
         if cfg.open_ai_token is None:
             raise commands.BadArgument("This command is disabled.")
 
-        db_guild = guild_service.get_guild()
         is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
-        if ctx.channel.id not in [db_guild.channel_general, db_guild.channel_botspam] and not is_mod:
+        if ctx.channel.id not in [cfg.channels.general, cfg.channels.bot_commands] and not is_mod:
             raise commands.BadArgument(f"This command can't be used here.")
 
         if not is_mod:

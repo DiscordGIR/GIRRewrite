@@ -4,41 +4,39 @@ from .logging import logger
 
 
 class Roles:
-    def __init__(self):
-        self.administrator = None
-        self.moderator = None
-        self.sub_mod = None
-        self.genius = None
-        self.birthday = None
-        self.member_ultra = None
-        self.member_one = None
-        self.member_edition = None
-        self.member_plus = None
-        self.member_pro = None
-        self.dev = None
-        self.sub_news = None
+    administrator: int 
+    moderator: int
+    sub_mod: int
+    genius: int
+    birthday: int
+    member_ultra: int
+    member_one: int
+    member_edition: int
+    member_plus: int
+    member_pro: int
+    dev: int
+    sub_news: int
 
     def __getitem__(self, key):
         return getattr(self, key)
 
 
 class Channels:
-    def __init__(self):
-        self.applenews = None
-        self.booster_emoji = None
-        self.bot_commands = None
-        self.common_issues = None
-        self.development = None
-        self.emoji_logs = None
-        self.general = None
-        self.genius_bar = None
-        self.jailbreak = None
-        self.private_logs = None
-        self.public_logs = None
-        self.rules = None
-        self.reports = None
-        self.subnews = None
-        self.music = None
+    applenews: int
+    booster_emoji: int
+    bot_commands: int
+    common_issues: int
+    development: int
+    emoji_logs: int
+    general: int
+    genius_bar: int
+    jailbreak: int
+    private_logs: int
+    public_logs: int
+    rules: int
+    reports: int
+    sub_news: int
+    music: int
 
     def __getitem__(self, key):
         return getattr(self, key)
