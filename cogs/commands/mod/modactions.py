@@ -358,7 +358,7 @@ class ModActions(commands.Cog):
         dmed = await notify_user(member, f"Your warn has been lifted in {ctx.guild}.", log)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)

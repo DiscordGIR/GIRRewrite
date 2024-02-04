@@ -117,13 +117,13 @@ class Filter(commands.Cog):
         if not triggered_words:
             return
 
-        dev_role = message.guild.get_role(cfg.roles.dev)
+        dev_role = message.guild.get_role(cfg.roles.developer)
 
         triggered = False
         for word in triggered_words:
             if word.piracy:
                 # ignore if it's a dev saying piracy in #development
-                if message.channel.id == cfg.roles.dev in message.author.roles:
+                if message.channel.id == cfg.roles.developer in message.author.roles:
                     continue
 
             if word.notify:
@@ -184,7 +184,7 @@ class Filter(commands.Cog):
         """
         if re.search(self.spoiler_filter, message.content, flags=re.S):
             # ignore if dev in dev channel
-            dev_role = message.guild.get_role(cfg.roles.dev)
+            dev_role = message.guild.get_role(cfg.roles.developer)
             if message.channel.id == cfg.channels.development and dev_role in message.author.roles:
                 return False
 
@@ -200,7 +200,7 @@ class Filter(commands.Cog):
         NEWLINE FILTER
         """
         if len(message.content.splitlines()) > 100:
-            dev_role = message.guild.get_role(cfg.roles.dev)
+            dev_role = message.guild.get_role(cfg.roles.developer)
             if not dev_role or dev_role not in message.author.roles:
                 await self.delete(message)
                 await self.ratelimit(message)

@@ -14,7 +14,7 @@ class Roles:
     member_edition: int
     member_plus: int
     member_pro: int
-    dev: int
+    developer: int
     sub_news: int
 
     def __getitem__(self, key):
