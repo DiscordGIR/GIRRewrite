@@ -4,7 +4,6 @@ from .menus.canister import *
 from .menus.cfwguide import *
 from .menus.menu import *
 from .menus.report import *
-from .menus.role_buttons import *
 from .misc import *
 from .modals.commonissue import *
 from .modals.prompt import *

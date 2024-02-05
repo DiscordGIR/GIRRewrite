@@ -175,5 +175,5 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     # also send response in channel where command was called
     dmed = await notify_user_warn(ctx, target_member, mod, db_user, db_guild, cur_points, log)
     await response_log(ctx, log)
-    await submit_public_log(ctx, db_guild, target_member, log, dmed)
+    await submit_public_log(ctx, target_member, log, dmed)
 

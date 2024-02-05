@@ -128,3 +128,6 @@ dmypy.json
 
 # PyCharm files
 .idea/
+
+# GIR
+config.json
