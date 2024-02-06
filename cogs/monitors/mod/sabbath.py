@@ -22,7 +22,7 @@ class Sabbath(commands.Cog):
             return
 
         # check if message pings aaron or owner role:
-        if not (cfg.aaron_id in message.raw_mentions or cfg.aaron_role in message.raw_role_mentions):
+        if not (cfg.aaron_id in message.raw_mentions or cfg.roles.aaron_role in message.raw_role_mentions):
             return
 
         if not guild_service.get_guild().sabbath_mode:
@@ -40,7 +40,7 @@ class Sabbath(commands.Cog):
 
 
 async def setup(bot):
-    if cfg.aaron_id is None or cfg.aaron_role is None:
+    if cfg.aaron_id is None or cfg.roles.aaron_role is None:
         logger.warn(
             "Aaron's ID or role not set, disabling the Sabbath cog! If you want this, refer to README.md.")
         return

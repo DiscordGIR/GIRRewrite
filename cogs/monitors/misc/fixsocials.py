@@ -28,7 +28,7 @@ class FixSocials(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if cfg.aaron_id is None or cfg.aaron_role is None:
+        if cfg.aaron_id is None or cfg.roles.aaron_role is None:
             return
         if not message.guild:
             return

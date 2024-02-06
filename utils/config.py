@@ -16,6 +16,7 @@ class Roles:
     member_pro: int
     developer: int
     sub_news: int
+    aaron_role: int
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -58,12 +59,6 @@ class Config:
         if self.aaron_id is None:
             self.setup_error("AARON_ID")
         self.aaron_id = int(self.aaron_id)
-
-        self.aaron_role = os.environ.get("AARON_ROLE")
-        if self.aaron_role is not None:
-            self.aaron_role = int(self.aaron_role)
-        else:
-            self.setup_warning("AARON_ROLE")
 
         if os.environ.get("BAN_APPEAL_GUILD_ID") is None or os.environ.get("BAN_APPEAL_MOD_ROLE") is None:
             logger.info("Ban appeals monitoring is DISABLED!")
