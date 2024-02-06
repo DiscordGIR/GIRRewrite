@@ -41,7 +41,7 @@ class Misc(commands.Cog):
     @transform_context
     @whisper
     async def remindme(self, ctx: GIRContext, reminder: str, duration: Duration):
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(pytz.utc)
         delta = duration
         if delta is None:
             raise commands.BadArgument(
