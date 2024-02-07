@@ -16,7 +16,7 @@ class Canister(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.guild is None:
+        if message.guild is None or message.guild.id != cfg.guild_id:
             return
 
         author = message.guild.get_member(message.author.id)
