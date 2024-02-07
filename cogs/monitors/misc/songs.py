@@ -8,7 +8,6 @@ import spotipy
 from discord.ext import commands
 from spotipy.oauth2 import SpotifyOAuth
 
-from data.services import guild_service
 from utils import cfg
 from utils.framework import find_triggered_filters, gatekeeper
 from utils.logging import logger
@@ -71,7 +70,7 @@ class Songs(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if cfg.aaron_id is None or cfg.aaron_role is None:
+        if cfg.aaron_id is None or cfg.roles.aaron_role is None:
             return
         if not message.guild:
             return
@@ -79,7 +78,7 @@ class Songs(commands.Cog):
             return
         if message.author.bot:
             return
-        if message.channel.id != guild_service.get_guild().channel_general:
+        if message.channel.id != cfg.channels.general:
             return
 
         match = self.pattern.search(message.content.strip("<>"))
@@ -109,7 +108,7 @@ class Songs(commands.Cog):
             title = discord.utils.escape_markdown(title)
             title = discord.utils.escape_mentions(title)
 
-        triggered_words = find_triggered_filters(
+        triggered_words = await find_triggered_filters(
             title, message.author)
 
         if triggered_words:

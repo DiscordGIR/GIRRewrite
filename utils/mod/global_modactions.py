@@ -69,7 +69,7 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     log.remove_author()
     log.set_thumbnail(url=target_member.display_avatar)
     dmed = await notify_user(target_member, f"You have been muted in {ctx.guild.name}", log)
-    await submit_public_log(ctx, db_guild, target_member, log, dmed)
+    await submit_public_log(ctx, target_member, log, dmed)
 
 
 async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason: str = "No reason.") -> None:
@@ -114,7 +114,7 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
     await response_log(ctx, log)
 
     dmed = await notify_user(target_member, f"You have been unmuted in {ctx.guild.name}", log)
-    await submit_public_log(ctx, db_guild, target_member, log, dmed)
+    await submit_public_log(ctx, target_member, log, dmed)
 
 
 async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: discord.Member, reason="No reason."):
@@ -139,7 +139,7 @@ async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: disc
     else:
         ctx.bot.ban_cache.ban(target_member.id)
     await response_log(ctx, log)
-    await submit_public_log(ctx, db_guild, target_member, log)
+    await submit_public_log(ctx, target_member, log)
 
 
 async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, reason):
@@ -175,5 +175,5 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     # also send response in channel where command was called
     dmed = await notify_user_warn(ctx, target_member, mod, db_user, db_guild, cur_points, log)
     await response_log(ctx, log)
-    await submit_public_log(ctx, db_guild, target_member, log, dmed)
+    await submit_public_log(ctx, target_member, log, dmed)
 

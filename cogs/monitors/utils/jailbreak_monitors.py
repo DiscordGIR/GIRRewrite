@@ -5,7 +5,6 @@ import traceback
 
 import aiohttp
 import discord
-from data.services.guild_service import guild_service
 from discord.ext import commands
 
 from utils import canister_fetch_repos, cfg, logger
@@ -25,7 +24,7 @@ class RepoWatcher(commands.Cog):
             return
         if message.author.bot:
             return
-        if message.channel.id == guild_service.get_guild().channel_general and not gatekeeper.has(message.guild, message.author, 5):
+        if message.channel.id == cfg.channels.general and not gatekeeper.has(message.guild, message.author, 5):
             return
         # Stops double messages when a package and repo URL are in the same message
         if 'sileo://package/' in message.content:
@@ -103,7 +102,7 @@ class Sileo(commands.Cog):
             return
         if message.author.bot:
             return
-        if message.channel.id == guild_service.get_guild().channel_general and not gatekeeper.has(message.guild, message.author, 5):
+        if message.channel.id == cfg.channels.general and not gatekeeper.has(message.guild, message.author, 5):
             return
 
         urlscheme = re.search(

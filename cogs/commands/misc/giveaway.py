@@ -1,9 +1,9 @@
 import datetime
 import random
+import pytz
 
 import discord
 import humanize
-import pytimeparse
 from data.model import Giveaway as GiveawayDB
 from data.services import guild_service
 from discord import app_commands
@@ -40,7 +40,7 @@ class Giveaway(commands.Cog):
             raise commands.BadArgument("Must have more than 1 winner!")
 
         # calculate end time
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(pytz.utc)
         end_time = now + datetime.timedelta(seconds=delta)
 
         # prepare giveaway embed and post it in giveaway channel
@@ -109,6 +109,7 @@ class Giveaway(commands.Cog):
     @app_commands.describe(message_id="The ID of the giveaway message.")
     @transform_context
     async def end(self, ctx: GIRContext, message_id: str):
+        await ctx.defer()
         giveaway = guild_service.get_giveaway(_id=int(message_id))
         if giveaway is None:
             raise commands.BadArgument(

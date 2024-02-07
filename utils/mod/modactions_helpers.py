@@ -114,7 +114,7 @@ async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: 
             dmed = await notify_user(target_member, f"You were warned in {ctx.guild.name}. Please note that you will be kicked at 400 points and banned at 600 points.", log)
 
     if log_kickban:
-        await submit_public_log(ctx, db_guild, target_member, log_kickban)
+        await submit_public_log(ctx, target_member, log_kickban)
 
     return dmed
 
@@ -139,7 +139,7 @@ async def response_log(ctx, log):
         await ctx.send(embed=log, delete_after=10)
 
 
-async def submit_public_log(ctx: GIRContext, db_guild: Guild, user: Union[discord.Member, discord.User], log, dmed: bool = None):
+async def submit_public_log(ctx: GIRContext, user: Union[discord.Member, discord.User], log, dmed: bool = None):
     """Submits a public log
 
     Parameters
@@ -158,7 +158,7 @@ async def submit_public_log(ctx: GIRContext, db_guild: Guild, user: Union[discor
         "Embed to send"
     """
     public_chan = ctx.guild.get_channel(
-        db_guild.channel_public)
+        cfg.channels.public_logs)
     if public_chan:
         log.remove_author()
         log.set_thumbnail(url=user.display_avatar)
@@ -202,4 +202,4 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
 
 async def delay_delete(ctx: discord.Interaction):
     await asyncio.sleep(10)
-    await ctx.delete_original_message()
+    await ctx.delete_original_response()

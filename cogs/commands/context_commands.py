@@ -25,7 +25,7 @@ tag_cooldown = CooldownMapping.from_cooldown(
 
 
 def whisper(ctx: GIRContext):
-    if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != guild_service.get_guild().channel_botspam:
+    if not gatekeeper.has(ctx.guild, ctx.author, 5) and ctx.channel.id != cfg.channels.bot_commands:
         ctx.whisper = True
     else:
         ctx.whisper = False
@@ -44,7 +44,7 @@ async def handle_support_tag(ctx: GIRContext, member: discord.Member) -> None:
     bucket = tag_cooldown.get_bucket(tag.name)
     current = datetime.now().timestamp()
     # ratelimit only if the invoker is not a moderator
-    if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(guild_service.get_guild().role_sub_mod) in ctx.author.roles):
+    if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(cfg.roles.sub_mod) in ctx.author.roles):
         raise commands.BadArgument("That tag is on cooldown.")
 
     # if the Tag has an image, add it to the embed

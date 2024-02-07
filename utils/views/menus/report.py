@@ -8,7 +8,7 @@ from data.services.guild_service import guild_service
 from discord import ui
 from utils import GIRContext, cfg
 from utils.framework import gatekeeper
-from utils.mod import ban, mute, unmute, warn
+from utils.mod import ban, mute, unmute
 from utils.views.modals.prompt import GenericDescriptionModal
 
 from .report_action import ModAction, ReportActionReason
@@ -29,10 +29,9 @@ async def report(bot: discord.Client, message: discord.Message, word: str, invit
         "Was the filtered word an invite?"
 
     """
-    db_guild = guild_service.get_guild()
-    channel = message.guild.get_channel(db_guild.channel_reports)
+    channel = message.guild.get_channel(cfg.channels.reports)
 
-    ping_string = prepare_ping_string(db_guild, message)
+    ping_string = prepare_ping_string(message)
     view = ReportActions(target_member=message.author)
 
     if invite:
@@ -56,8 +55,7 @@ async def manual_report(mod: discord.Member, target: Union[discord.Message, disc
         "The moderator that started this report
 
     """
-    db_guild = guild_service.get_guild()
-    channel = target.guild.get_channel(db_guild.channel_reports)
+    channel = target.guild.get_channel(cfg.channels.reports)
 
     ping_string = f"{mod.mention} reported a member"
     if isinstance(target, discord.Message):
@@ -84,10 +82,9 @@ async def report_raid_phrase(bot: discord.Client, message: discord.Message, doma
         "Was the filtered word an invite?"
 
     """
-    db_guild = guild_service.get_guild()
-    channel = message.guild.get_channel(db_guild.channel_reports)
+    channel = message.guild.get_channel(cfg.channels.reports)
 
-    ping_string = prepare_ping_string(db_guild, message)
+    ping_string = prepare_ping_string(message)
     view = RaidPhraseReportActions(message.author, domain)
 
     embed = prepare_embed(
@@ -96,9 +93,8 @@ async def report_raid_phrase(bot: discord.Client, message: discord.Message, doma
 
 
 async def report_spam(bot, msg, user, title):
-    db_guild = guild_service.get_guild()
-    channel = msg.guild.get_channel(db_guild.channel_reports)
-    ping_string = prepare_ping_string(db_guild, msg)
+    channel = msg.guild.get_channel(cfg.channels.reports)
+    ping_string = prepare_ping_string(msg)
 
     view = SpamReportActions(user)
     embed = prepare_embed(msg, title=title)
@@ -116,18 +112,15 @@ async def report_raid(user, msg=None):
     if msg is not None:
         embed.add_field(name="Message", value=msg.content, inline=False)
 
-    db_guild = guild_service.get_guild()
-    reports_channel = user.guild.get_channel(db_guild.channel_reports)
-    await reports_channel.send(f"<@&{db_guild.role_moderator}>", embed=embed, allowed_mentions=discord.AllowedMentions(roles=True))
+    reports_channel = user.guild.get_channel(cfg.channels.reports)
+    await reports_channel.send(f"<@&{cfg.roles.moderator}>", embed=embed, allowed_mentions=discord.AllowedMentions(roles=True))
 
 
-def prepare_ping_string(db_guild, message):
+def prepare_ping_string(message):
     """Prepares modping string
 
     Parameters
     ----------
-    db_guild
-        "Guild DB"
     message : discord.Message
         "Message object"
 
@@ -136,7 +129,7 @@ def prepare_ping_string(db_guild, message):
     if cfg.dev:
         return ping_string
 
-    role = message.guild.get_role(db_guild.role_moderator)
+    role = message.guild.get_role(cfg.roles.moderator)
     for member in role.members:
         offline_ping = (user_service.get_user(member.id)).offline_report_ping
         if member.status == discord.Status.online or offline_ping:
@@ -319,7 +312,7 @@ class RaidPhraseReportActions(ui.View):
         except Exception:
             await ctx.send_warning("I wasn't able to ban them.", delete_after=5)
 
-        done = guild_service.add_raid_phrase(self.domain)
+        done = await guild_service.add_raid_phrase(self.domain)
         if done:
             await ctx.send_success(f"{self.domain} was added to the raid phrase list.", delete_after=5)
         else:

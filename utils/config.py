@@ -3,6 +3,45 @@ from dotenv.main import load_dotenv
 from .logging import logger
 
 
+class Roles:
+    administrator: int 
+    moderator: int
+    sub_mod: int
+    genius: int
+    birthday: int
+    member_ultra: int
+    member_one: int
+    member_edition: int
+    member_plus: int
+    member_pro: int
+    developer: int
+    sub_news: int
+    aaron_role: int
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+
+class Channels:
+    applenews: int
+    booster_emoji: int
+    bot_commands: int
+    common_issues: int
+    development: int
+    emoji_logs: int
+    general: int
+    genius_bar: int
+    jailbreak: int
+    private_logs: int
+    public_logs: int
+    rules: int
+    reports: int
+    sub_news: int
+    rules: int
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
 class Config:
     def __init__(self):
         load_dotenv()
@@ -20,12 +59,6 @@ class Config:
         if self.aaron_id is None:
             self.setup_error("AARON_ID")
         self.aaron_id = int(self.aaron_id)
-
-        self.aaron_role = os.environ.get("AARON_ROLE")
-        if self.aaron_role is not None:
-            self.aaron_role = int(self.aaron_role)
-        else:
-            self.setup_warning("AARON_ROLE")
 
         if os.environ.get("BAN_APPEAL_GUILD_ID") is None or os.environ.get("BAN_APPEAL_MOD_ROLE") is None:
             logger.info("Ban appeals monitoring is DISABLED!")
@@ -68,6 +101,18 @@ class Config:
         self.spotify_auth_code = os.environ.get("SPOTIFY_AUTH_CODE")
         if self.spotify_id is None or self.spotify_secret is None or self.spotify_playlist_url is None:
             logger.warning("Adding songs to public Spotify playlist disabled.")
+
+        self.roles = Roles()
+        self.channels = Channels()
+
+        # read config.json to populate roles and channels
+        import json
+        with open('config.json') as f:
+            data = json.load(f)
+            for k, v in data['roles'].items():
+                setattr(self.roles, k, v)
+            for k, v in data['channels'].items():
+                setattr(self.channels, k, v)
 
         logger.info(
             f"GIR will be running in: {self.guild_id} in \033[1m{'DEVELOPMENT' if self.dev else 'PRODUCTION'}\033[0m mode")

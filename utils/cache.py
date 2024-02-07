@@ -1,8 +1,4 @@
-import asyncio
-from re import S
-
 import discord
-from data.services import guild_service
 from utils.fetchers import fetch_scam_urls
 
 from .config import cfg 
@@ -43,8 +39,7 @@ class IssueCache():
         if not guild:
             return
 
-        channel = guild.get_channel(
-            guild_service.get_guild().channel_common_issues)
+        channel = guild.get_channel(cfg.channels.common_issues)
         if channel is None:
             logger.warn("#rules-and-info channel not found! The /issue command will not work! Make sure to set `channel_common_issues` in the database if you want it.")
             return
@@ -75,8 +70,7 @@ class RuleCache():
         if not guild:
             return
 
-        channel = guild.get_channel(
-            guild_service.get_guild().channel_rules)
+        channel = guild.get_channel(cfg.channels.rules)
         if channel is None:
             logger.warn("#rules-and-info channel not found! The /rule command will not work! Make sure to set `channel_rules` in the database if you want it.")
             return

@@ -51,10 +51,15 @@ async def ios_version_autocomplete(_: discord.Interaction, current: str) -> List
         return []
 
     versions = versions.get("ios")
-    # versions = [v for _, v in versions.items()]
+
+    versions = filter(lambda x: x.get('osStr') in ["iOS", "iPadOS"], versions)
+    versions = filter(lambda x: x.get('build') is not None, versions)
+    versions = list(versions)
+
     versions.sort(key=lambda x: str(x.get("released")
                   or "1970-01-01"), reverse=True)
     return [app_commands.Choice(name=f"{v['osStr']} {v['version']} ({v['build']})", value=v["uniqueBuild"]) for v in versions if (current.lower() in v['version'].lower() or current.lower() in v['build'].lower()) and not v['beta']][:25]
+
 
 
 async def ios_beta_version_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
@@ -63,6 +68,9 @@ async def ios_beta_version_autocomplete(_: discord.Interaction, current: str) ->
         return []
 
     versions = versions.get("ios")
+    versions = filter(lambda x: x.get('osStr') in ["iOS", "iPadOS"], versions)
+    versions = filter(lambda x: x.get('build') is not None, versions)
+    versions = list(versions)
     # versions = [v for _, v in versions.items()]
     versions.sort(key=lambda x: x.get("released")
                   or "1970-01-01", reverse=True)
@@ -238,7 +246,7 @@ async def filterwords_autocomplete(interaction: discord.Interaction, current: st
     if not gatekeeper.has(interaction.guild, interaction.user, 5):
         return []
 
-    words = [word.word for word in guild_service.get_guild().filter_words]
+    words = [word.word for word in await guild_service.get_filtered_words()]
     words.sort()
 
     return [app_commands.Choice(name=word, value=word) for word in words if str(word).startswith(str(current))][:25]

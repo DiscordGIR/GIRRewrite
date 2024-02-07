@@ -2,10 +2,7 @@ import typing
 import discord
 from discord import app_commands
 from discord.ext import commands
-from discord.ext.commands import Command, Group
 
-from setuptools import Command
-from data.services.guild_service import guild_service
 from utils import cfg, GIRContext, transform_context
 from utils.framework import whisper, gatekeeper
 from utils.views import command_list_autocomplete
@@ -37,7 +34,7 @@ class Utilities(commands.Cog):
                 is_admin = gatekeeper.has(ctx.guild, ctx.author, 6)
                 is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
                 is_genius = gatekeeper.has(ctx.guild, ctx.author, 4)
-                submod = ctx.guild.get_role(guild_service.get_guild().role_sub_mod)
+                submod = ctx.guild.get_role(cfg.roles.sub_mod)
 
                 if not cog.__cog_app_commands__:
                     continue

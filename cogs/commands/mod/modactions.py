@@ -56,7 +56,7 @@ class ModActions(commands.Cog):
         await member.kick(reason=reason)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, member, log)
+        await submit_public_log(ctx, member, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -75,7 +75,7 @@ class ModActions(commands.Cog):
         await member.kick(reason=reason)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, member, log)
+        await submit_public_log(ctx, member, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -133,7 +133,7 @@ class ModActions(commands.Cog):
         log.set_thumbnail(url=member.display_avatar)
 
         dmed = await notify_user(member, f"You have been muted in {ctx.guild.name}", log)
-        await submit_public_log(ctx, db_guild, member, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -170,7 +170,7 @@ class ModActions(commands.Cog):
         await ctx.respond_or_edit(embed=log, delete_after=10)
 
         dmed = await notify_user(member, f"You have been unmuted in {ctx.guild.name}", log)
-        await submit_public_log(ctx, db_guild, member, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -206,7 +206,7 @@ class ModActions(commands.Cog):
             await ctx.guild.ban(discord.Object(id=user.id))
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, user, log)
+        await submit_public_log(ctx, user, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -252,7 +252,7 @@ class ModActions(commands.Cog):
 
         await ctx.interaction.message.delete()
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, user, log)
+        await submit_public_log(ctx, user, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -293,7 +293,7 @@ class ModActions(commands.Cog):
         log = prepare_unban_log(ctx.author, user, case)
         await ctx.respond_or_edit(embed=log, delete_after=10)
 
-        await submit_public_log(ctx, db_guild, user, log)
+        await submit_public_log(ctx, user, log)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -307,6 +307,7 @@ class ModActions(commands.Cog):
         elif amount >= 100:
             amount = 100
 
+        await ctx.defer()
         msgs = [message async for message in ctx.channel.history(limit=amount)]
         await ctx.channel.purge(limit=amount)
         await ctx.send_success(f'Purged {len(msgs)} messages.', delete_after=10)
@@ -358,7 +359,7 @@ class ModActions(commands.Cog):
         dmed = await notify_user(member, f"Your warn has been lifted in {ctx.guild}.", log)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, guild_service.get_guild(), member, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -391,8 +392,7 @@ class ModActions(commands.Cog):
 
         dmed = await notify_user(member, f"Your case was updated in {ctx.guild.name}.", log)
 
-        public_chan = ctx.guild.get_channel(
-            guild_service.get_guild().channel_public)
+        public_chan = ctx.guild.get_channel(cfg.channels.public_logs)
 
         found = False
         async for message in public_chan.history(limit=200):
@@ -465,7 +465,7 @@ class ModActions(commands.Cog):
         dmed = await notify_user(member, f"Your points were removed in {ctx.guild.name}.", log)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
-        await submit_public_log(ctx, db_guild, member, log, dmed)
+        await submit_public_log(ctx, member, log, dmed)
 
 
 async def setup(bot):
