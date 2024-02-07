@@ -114,7 +114,7 @@ async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: 
             dmed = await notify_user(target_member, f"You were warned in {ctx.guild.name}. Please note that you will be kicked at 400 points and banned at 600 points.", log)
 
     if log_kickban:
-        await submit_public_log(ctx, db_guild, target_member, log_kickban)
+        await submit_public_log(ctx, target_member, log_kickban)
 
     return dmed
 
@@ -202,4 +202,4 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
 
 async def delay_delete(ctx: discord.Interaction):
     await asyncio.sleep(10)
-    await ctx.delete_original_message()
+    await ctx.delete_original_response()
