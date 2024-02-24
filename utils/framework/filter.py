@@ -17,7 +17,7 @@ async def find_triggered_filters(input, member: discord.Member) -> List[FilterWo
 
     tr = {ord(a): ord(b) for a, b in zip(*symbols)}
 
-    input_lowercase = fold(input.translate(tr).lower()).lower()
+    input_lowercase = fold(input.translate(tr).lower()).lower().strip(":")   
     folded_without_spaces = "".join(input_lowercase.split())
     folded_without_spaces_and_punctuation = folded_without_spaces.translate(
         str.maketrans('', '', string.punctuation))
