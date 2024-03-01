@@ -99,7 +99,7 @@ class FixSocials(commands.Cog):
 
                     redirected_url = str(response).split("Location': \'")[1].split("\'")[0]
 
-            redirected_url = redirected_url.replace('www.tiktok.com', 'vxtiktok.com')
+            redirected_url = redirected_url.replace('www.tiktok.com', 'tnktok.com')
             if (tracking_id_index := redirected_url.index('?')) is not None:
                 # remove everything after the question mark (tracking ID)
                 redirected_url = redirected_url[:tracking_id_index]
@@ -117,7 +117,7 @@ class FixSocials(commands.Cog):
 
     async def fix_instagram(self, message: discord.Message, link: str):
         link = link.replace("www.", "")
-        link = link.replace("instagram.com", "ddinstagram.com")
+        link = link.replace("instagram.com", "ig.itsnebula.net")
 
         await message.reply(f"[I hate instagram but here you go]({link})", mention_author=False)
         await asyncio.sleep(0.5)
