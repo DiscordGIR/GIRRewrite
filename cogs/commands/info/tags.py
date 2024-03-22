@@ -98,7 +98,7 @@ class Tags(commands.Cog):
         bucket = self.tag_cooldown.get_bucket(tag.name)
         current = datetime.now().timestamp()
         # ratelimit only if the invoker is not a moderator
-        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(guild_service.get_guild().role_sub_mod) in ctx.author.roles):
+        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(cfg.roles.sub_mod) in ctx.author.roles):
             raise commands.BadArgument("That tag is on cooldown.")
 
         # if the Tag has an image, add it to the embed
@@ -129,7 +129,7 @@ class Tags(commands.Cog):
         bucket = self.tag_cooldown.get_bucket(tag.name)
         current = datetime.now().timestamp()
         # ratelimit only if the invoker is not a moderator
-        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(guild_service.get_guild().role_sub_mod) in ctx.author.roles):
+        if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(cfg.roles.sub_mod) in ctx.author.roles):
             raise commands.BadArgument("That tag is on cooldown.")
 
         # if the Tag has an image, add it to the embed
