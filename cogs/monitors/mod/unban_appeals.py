@@ -55,6 +55,12 @@ class UnbanAppeals(commands.Cog):
         except:
             appealer = None
 
+
+        if appealer is None or message.guild.get_member(appealer.id) is None:
+            # the user did not join the server, don't create a thread
+            await message.reply(embed=discord.Embed(description=f"User {unban_username} ({unban_id}) is not in the server! Not creating a thread.", color=discord.Color.red()))
+            return
+
         thread = await message.create_thread(name=f"{unban_username} ({unban_id})")
         mods_to_ping = " ".join(member.mention for member in message.guild.get_role(
             cfg.ban_appeal_mod_role).members)
@@ -71,14 +77,9 @@ class UnbanAppeals(commands.Cog):
                 # await thread.send(embed=discord.Embed(color=discord.Color.green(), description="No cases found for this user."))
                 embeds_to_send.append(discord.Embed(
                     color=discord.Color.green(), description="No cases found for this user."))
-            if message.guild.get_member(appealer.id) is not None:
-                embeds_to_send.append(discord.Embed(
-                    description=f"{appealer.mention} is in the unban appeals server!", color=discord.Color.green()))
-                # await thread.send(embed=discord.Embed(f"{appealer.mention} is in the unban appeals server!", color=discord.Color.green()))
-            else:
-                embeds_to_send.append(discord.Embed(
-                    description=f"{appealer} did not join the unban appeals server!", color=discord.Color.red()))
-                # await thread.send(embed=discord.Embed(f"{appealer} did not join the unban appeals server!", color=discord.Color.red()))
+
+            embeds_to_send.append(discord.Embed(
+                description=f"{appealer.mention} is in the unban appeals server!", color=discord.Color.green()))
 
             embeds_chunks = list(chunks(embeds_to_send, 10))
             for chunk in embeds_chunks:
