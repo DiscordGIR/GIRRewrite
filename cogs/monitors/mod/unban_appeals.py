@@ -70,6 +70,9 @@ class UnbanAppeals(commands.Cog):
                 await message.delete()
                 await warning_message.delete()
                 return
+            else:
+                # they joined :D we can delete the warning and create the thread!
+                await warning_message.delete()
 
         thread = await message.create_thread(name=f"{unban_username} ({unban_id})")
         mods_to_ping = " ".join(member.mention for member in message.guild.get_role(
@@ -103,7 +106,7 @@ class UnbanAppeals(commands.Cog):
         await m.add_reaction("❌")
         await m.pin()
 
-        await thread.send(unban_id)
+        await thread.send(appealer.id)
 
     async def generate_userinfo(self, appealer: discord.User):
         results = user_service.get_user(appealer.id)
