@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord.utils import format_dt
 from utils import cfg
 from utils.framework import gatekeeper
+import asyncio
 
 
 def chunks(lst, n):
@@ -53,13 +54,22 @@ class UnbanAppeals(commands.Cog):
             unban_id_parsed = int(unban_id)
             appealer = await self.bot.fetch_user(unban_id_parsed)
         except:
-            appealer = None
-
-
-        if appealer is None or message.guild.get_member(appealer.id) is None:
-            # the user did not join the server, don't create a thread
-            await message.reply(embed=discord.Embed(description=f"User {unban_username} ({unban_id}) is not in the server! Not creating a thread.", color=discord.Color.red()))
+            # this is not a valid ID. delete the appeal
+            await message.delete()
             return
+
+        if message.guild.get_member(appealer.id) is None:
+            # the user did not join the server, don't create a thread
+            warning_message = await message.reply(embed=discord.Embed(description=f"User {unban_username} ({unban_id}) is not in the server! Not creating a thread.", color=discord.Color.red()))
+
+            # give the user 10 minutes to join the server
+            # if they don't join, delete the original message and warning
+            await asyncio.sleep(600)
+
+            if message.guild.get_member(appealer.id) is None:
+                await message.delete()
+                await warning_message.delete()
+                return
 
         thread = await message.create_thread(name=f"{unban_username} ({unban_id})")
         mods_to_ping = " ".join(member.mention for member in message.guild.get_role(
