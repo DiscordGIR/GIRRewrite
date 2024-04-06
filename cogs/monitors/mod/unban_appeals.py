@@ -5,7 +5,6 @@ from discord.ext import commands
 from discord.utils import format_dt
 from utils import cfg
 from utils.framework import gatekeeper
-import asyncio
 
 
 def chunks(lst, n):
@@ -54,25 +53,7 @@ class UnbanAppeals(commands.Cog):
             unban_id_parsed = int(unban_id)
             appealer = await self.bot.fetch_user(unban_id_parsed)
         except:
-            # this is not a valid ID. delete the appeal
-            await message.delete()
-            return
-
-        if message.guild.get_member(appealer.id) is None:
-            # the user did not join the server, don't create a thread
-            warning_message = await message.reply(embed=discord.Embed(description=f"User {unban_username} ({unban_id}) is not in the server! Not creating a thread.", color=discord.Color.red()))
-
-            # give the user 10 minutes to join the server
-            # if they don't join, delete the original message and warning
-            await asyncio.sleep(600)
-
-            if message.guild.get_member(appealer.id) is None:
-                await message.delete()
-                await warning_message.delete()
-                return
-            else:
-                # they joined :D we can delete the warning and create the thread!
-                await warning_message.delete()
+            appealer = None
 
         thread = await message.create_thread(name=f"{unban_username} ({unban_id})")
         mods_to_ping = " ".join(member.mention for member in message.guild.get_role(
@@ -90,9 +71,14 @@ class UnbanAppeals(commands.Cog):
                 # await thread.send(embed=discord.Embed(color=discord.Color.green(), description="No cases found for this user."))
                 embeds_to_send.append(discord.Embed(
                     color=discord.Color.green(), description="No cases found for this user."))
-
-            embeds_to_send.append(discord.Embed(
-                description=f"{appealer.mention} is in the unban appeals server!", color=discord.Color.green()))
+            if message.guild.get_member(appealer.id) is not None:
+                embeds_to_send.append(discord.Embed(
+                    description=f"{appealer.mention} is in the unban appeals server!", color=discord.Color.green()))
+                # await thread.send(embed=discord.Embed(f"{appealer.mention} is in the unban appeals server!", color=discord.Color.green()))
+            else:
+                embeds_to_send.append(discord.Embed(
+                    description=f"{appealer} did not join the unban appeals server!", color=discord.Color.red()))
+                # await thread.send(embed=discord.Embed(f"{appealer} did not join the unban appeals server!", color=discord.Color.red()))
 
             embeds_chunks = list(chunks(embeds_to_send, 10))
             for chunk in embeds_chunks:
