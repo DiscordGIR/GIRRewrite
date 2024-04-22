@@ -117,7 +117,7 @@ class FixSocials(commands.Cog):
 
     async def fix_instagram(self, message: discord.Message, link: str):
         link = link.replace("www.", "")
-        link = link.replace("instagram.com", "ig.itsnebula.net")
+        link = link.replace("instagram.com", "d.ddinstagram.com")
 
         await message.reply(f"[I hate instagram but here you go]({link})", mention_author=False)
         await asyncio.sleep(0.5)
