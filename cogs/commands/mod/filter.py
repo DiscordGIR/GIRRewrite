@@ -117,7 +117,7 @@ class Filters(commands.Cog):
     async def piracy(self, ctx: GIRContext, word: str):
         word = word.lower()
 
-        words = guild_service.get_filtered_words()
+        words = await guild_service.get_filtered_words()
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
