@@ -102,6 +102,9 @@ class Filter(commands.Cog):
         if not triggered_words:
             return
 
+        if ignorable_words(triggered_words):
+            return
+
         await member.edit(nick="change name pls")
         embed = discord.Embed(title="Nickname changed",
                               color=discord.Color.orange())

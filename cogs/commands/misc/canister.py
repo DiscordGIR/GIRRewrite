@@ -7,6 +7,7 @@ from discord.ext import commands
 from utils import GIRContext, canister_search_package, cfg, transform_context
 from utils.fetchers import canister_fetch_repos
 from utils.framework import gatekeeper, whisper_in_general, find_triggered_filters, find_triggered_raid_phrases
+from utils.framework.filter import ignorable_words
 from utils.views import TweakDropdown, default_repos, repo_autocomplete
 
 
@@ -22,7 +23,6 @@ class Canister(commands.Cog):
         author = message.guild.get_member(message.author.id)
         if author is None:
             return
-
         if not gatekeeper.has(message.guild, author, 5) and message.channel.id == cfg.channels.general:
             return
 
@@ -31,8 +31,10 @@ class Canister(commands.Cog):
         if not pattern.match(message.content):
             return
         
-        if await find_triggered_filters(message.content, message.author) or await find_triggered_raid_phrases(message.content, message.author):
-            return
+        if filter_words := await find_triggered_filters(message.content, message.author) or await find_triggered_raid_phrases(message.content, message.author):
+            # if any of the triggered filtered words are not silently filtered, don't show results
+            if not ignorable_words(filter_words):
+                return
 
         matches = pattern.findall(message.content)
         if not matches:
