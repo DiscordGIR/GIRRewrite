@@ -10,6 +10,7 @@ from data.services import guild_service
 from discord.ext import commands
 from utils import cfg, logger, scam_cache
 from utils.framework import gatekeeper, find_triggered_filters
+from utils.framework.filter import ignorable_words
 from utils.mod import mute
 from utils.views import manual_report, report
 
@@ -120,8 +121,6 @@ class Filter(commands.Cog):
         if not triggered_words:
             return
 
-        dev_role = message.guild.get_role(cfg.roles.developer)
-
         triggered = False
         for word in triggered_words:
             if word.piracy:
@@ -129,12 +128,19 @@ class Filter(commands.Cog):
                 if message.channel.id == cfg.roles.developer in message.author.roles:
                     continue
 
-            if word.notify:
+            if word.silent_filter:
+                # don't delete the word if it's silently filtered, 
+                # just notify the mods
+                await report(self.bot, message, word.word)
+                return
+            elif word.notify:
                 await self.delete(message)
                 await self.ratelimit(message)
                 await self.do_filter_notify(message, word)
+
                 if not word.piracy:
                     await report(self.bot, message, word.word)
+
                 return
 
             triggered = True
