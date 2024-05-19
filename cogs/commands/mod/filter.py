@@ -31,6 +31,12 @@ def format_filter_page(_, entries, current_page, all_pages):
     embed = discord.Embed(
         title=f'Filtered words', color=discord.Color.blurple())
     for word in entries:
+        if word.silent_filter:
+            embed.add_field(
+                name=word.word, value=f"🤫 silent filtered"
+            )
+            continue
+
         notify_flag = ""
         piracy_flag = ""
         flags_check = ""
