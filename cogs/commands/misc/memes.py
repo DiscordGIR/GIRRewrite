@@ -15,7 +15,7 @@ from utils.framework import (ImageAttachment, MessageTextBucket,
                              find_triggered_filters,
                              find_triggered_raid_phrases, gatekeeper,
                              memed_and_up, mempro_and_up, mod_and_up, whisper)
-from utils.framework.filter import ignorable_words
+from utils.framework.filter import has_only_silent_filtered_words
 from utils.views import GenericDescriptionModal, Menu, memes_autocomplete
 
 
@@ -465,7 +465,7 @@ class Memes(commands.Cog):
                     text = data.get("choices")[0].get("text")
                     text = discord.utils.escape_markdown(text)
                     if filter_words := await find_triggered_filters(text, ctx.author) or await find_triggered_raid_phrases(text, ctx.author):
-                        if not ignorable_words(filter_words):
+                        if not has_only_silent_filtered_words(filter_words):
                             text = "A filter was triggered by this response. Please try a different prompt."
 
                     embed = discord.Embed(color=discord.Color.random())

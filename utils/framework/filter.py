@@ -49,7 +49,7 @@ async def find_triggered_filters(input, member: discord.Member) -> List[FilterWo
             words_found.append(word)
     return words_found
 
-def ignorable_words(triggered_filter_words: List[FilterWord]):
+def has_only_silent_filtered_words(triggered_filter_words: List[FilterWord]):
     """
     We don't want to trigger the filter if the words are silently filtered
     return True if all triggered filtered words are silently filtered

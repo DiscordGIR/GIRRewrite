@@ -10,7 +10,7 @@ from data.services import guild_service
 from discord.ext import commands
 from utils import cfg, logger, scam_cache
 from utils.framework import gatekeeper, find_triggered_filters
-from utils.framework.filter import ignorable_words
+from utils.framework.filter import has_only_silent_filtered_words
 from utils.mod import mute
 from utils.views import manual_report, report
 
@@ -103,7 +103,7 @@ class Filter(commands.Cog):
         if not triggered_words:
             return
 
-        if ignorable_words(triggered_words):
+        if has_only_silent_filtered_words(triggered_words):
             return
 
         await member.edit(nick="change name pls")
