@@ -1,3 +1,4 @@
+from typing import List
 import discord
 from discord import app_commands
 from data.model import FilterWord
@@ -107,6 +108,26 @@ class Filters(commands.Cog):
         menu = Menu(ctx, filters, per_page=12,
                     page_formatter=format_filter_page, whisper=False)
         await menu.start()
+    
+    @mod_and_up()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Silently filter a word (ping mods without removing message)")
+    @app_commands.describe(word="The word to mark as silently filtered")
+    @app_commands.autocomplete(word=filterwords_autocomplete)
+    @transform_context
+    async def silent_filter(self, ctx: GIRContext, word: str):
+        word = word.lower()
+
+        words: List[FilterWord] = await guild_service.get_filtered_words()
+        words = list(filter(lambda w: w.word.lower() == word.lower(), words))
+
+        if len(words) > 0:
+            words[0].silent_filter = not words[0].silent_filter
+            await guild_service.update_filtered_word(words[0])
+
+            await ctx.send_success("Marked as a silently filtered word!" if words[0].silent_filter else "Removed as a silently filtered word!")
+        else:
+            await ctx.send_warning("You must filter that word before it can be marked as silently filtered.", delete_after=5)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
