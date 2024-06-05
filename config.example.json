@@ -1,0 +1,33 @@
+{
+  "channels": {
+    "applenews": 123,
+    "booster_emoji": 123,
+    "emoji_logs": 123,
+    "private_logs": 123,
+    "public_logs": 123,
+    "bot_commands": 123,
+    "jailbreak": 123,
+    "general": 123,
+    "development": 123,
+    "genius_bar": 123,
+    "reports": 123,
+    "rules": 123,
+    "common_issues": 123,
+    "sub_news": 123
+  },
+  "roles": {
+    "administrator": 123,
+    "moderator": 123,
+    "sub_mod": 123,
+    "genius": 123,
+    "developer": 123,
+    "birthday": 123,
+    "member_ultra": 123,
+    "member_one": 123,
+    "member_edition": 123,
+    "member_pro": 123,
+    "member_plus": 123,
+    "sub_news": 123,
+    "aaron_role": 123
+  }
+}

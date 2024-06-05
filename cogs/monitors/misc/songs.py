@@ -10,6 +10,7 @@ from spotipy.oauth2 import SpotifyOAuth
 
 from utils import cfg
 from utils.framework import find_triggered_filters, gatekeeper
+from utils.framework.filter import has_only_silent_filtered_words
 from utils.logging import logger
 from datetime import timezone
 
@@ -111,7 +112,7 @@ class Songs(commands.Cog):
         triggered_words = await find_triggered_filters(
             title, message.author)
 
-        if triggered_words:
+        if triggered_words and not has_only_silent_filtered_words(triggered_words):
             title = "<:fr:959135064657109012>"
 
         view = discord.ui.View()

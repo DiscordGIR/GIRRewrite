@@ -49,6 +49,13 @@ async def find_triggered_filters(input, member: discord.Member) -> List[FilterWo
             words_found.append(word)
     return words_found
 
+def has_only_silent_filtered_words(triggered_filter_words: List[FilterWord]):
+    """
+    We don't want to trigger the filter if the words are silently filtered
+    return True if all triggered filtered words are silently filtered
+    """
+    return all(filter_word.silent_filter for filter_word in triggered_filter_words)
+
 
 async def find_triggered_raid_phrases(input, member):
     symbols = (u"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
