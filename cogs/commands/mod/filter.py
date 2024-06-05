@@ -31,23 +31,22 @@ def format_filter_page(_, entries, current_page, all_pages):
     embed = discord.Embed(
         title=f'Filtered words', color=discord.Color.blurple())
     for word in entries:
-        if word.silent_filter:
-            embed.add_field(
-                name=word.word, value=f"🤫 silent filtered"
-            )
-            continue
-
         notify_flag = ""
         piracy_flag = ""
         flags_check = ""
-        if word.notify is True:
-            notify_flag = "🔔"
-        if word.piracy:
-            piracy_flag = " 🏴‍☠️"
-        if word.notify is False and not word.piracy:
-            flags_check = "None"
+        silent_filter_flag = ""
+
+        if word.silent_filter:
+            silent_filter_flag = "🤫 silent filtered"
+        else:
+            if word.notify is True:
+                notify_flag = "🔔"
+            if word.piracy:
+                piracy_flag = " 🏴‍☠️"
+            if word.notify is False and not word.piracy:
+                flags_check = "None"
         embed.add_field(
-            name=word.word, value=f"Bypassed by: {gatekeeper.level_info(word.bypass)}\nFlags: {flags_check}{notify_flag}{piracy_flag}")
+            name=word.word, value=f"Bypassed by: {gatekeeper.level_info(word.bypass)}\nFlags: {silent_filter_flag}{flags_check}{notify_flag}{piracy_flag}")
     embed.set_footer(
         text=f"Page {current_page} of {len(all_pages)}")
     return embed
