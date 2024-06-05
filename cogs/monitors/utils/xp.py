@@ -25,7 +25,7 @@ class Xp(commands.Cog):
 
         level = user.level
 
-        roles_to_add = self.assess_new_roles(level)
+        roles_to_add = self.assess_new_roles(level, member)
         await self.add_new_roles(member, roles_to_add)
 
     @commands.Cog.listener()
@@ -52,11 +52,14 @@ class Xp(commands.Cog):
         if new_level > level_before:
             user_service.inc_level(message.author.id)
 
-        roles_to_add = self.assess_new_roles(new_level)
+        roles_to_add = self.assess_new_roles(new_level, message.author)
         await self.add_new_roles(message, roles_to_add)
 
-    def assess_new_roles(self, new_level):
+    def assess_new_roles(self, new_level, member: discord.Member):
         roles_to_add = []
+        if 15 > new_level and cfg.roles.new_member is not None:
+            roles_to_add.append(cfg.roles.new_member)
+            self.bot.tasks.schedule_remove_new_member_role(cfg.roles.new_member, member.id)
         if 15 <= new_level:
             roles_to_add.append(cfg.roles.member_plus)
         if 30 <= new_level:

@@ -17,6 +17,7 @@ class Roles:
     developer: int
     sub_news: int
     aaron_role: int
+    new_member: int
 
     def __getitem__(self, key):
         return getattr(self, key)
