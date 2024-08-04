@@ -1,4 +1,5 @@
 import string
+import re
 from typing import List
 
 import discord
@@ -7,6 +8,17 @@ from data.services import guild_service
 from fold_to_ascii import fold
 from utils.framework import gatekeeper
 
+normalize_markdown_links_regex = re.compile(r"\[([^\]\[]+)\]\(([^)]+)\)")
+
+# input: It is [sunny](https://example.com) outside.
+# output: It is sunny outside. https://example.com
+def normalize_markdown_links(input):
+    global normalize_markdown_links_regex
+    matches = normalize_markdown_links_regex.findall(input)
+    input = normalize_markdown_links_regex.sub(r"\1", input)
+    for match in matches:
+        input += " " + match[1]
+    return input
 
 async def find_triggered_filters(input, member: discord.Member) -> List[FilterWord]:
     """
@@ -17,7 +29,8 @@ async def find_triggered_filters(input, member: discord.Member) -> List[FilterWo
 
     tr = {ord(a): ord(b) for a, b in zip(*symbols)}
 
-    input_lowercase = fold(input.translate(tr).lower()).lower().strip(":")   
+    input_with_normalized_links = normalize_markdown_links(input)
+    input_lowercase = fold(input_with_normalized_links.translate(tr).lower()).lower().strip(":") 
     folded_without_spaces = "".join(input_lowercase.split())
     folded_without_spaces_and_punctuation = folded_without_spaces.translate(
         str.maketrans('', '', string.punctuation))
