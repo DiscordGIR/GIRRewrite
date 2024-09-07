@@ -125,7 +125,7 @@ class Filter(commands.Cog):
         for word in triggered_words:
             if word.piracy:
                 # ignore if it's a dev saying piracy in #development
-                if message.channel.id == cfg.roles.developer in message.author.roles:
+                if message.channel.id == cfg.channels.development and cfg.roles.developer in message.author.roles:
                     continue
 
             if word.silent_filter:
