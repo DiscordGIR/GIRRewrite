@@ -59,7 +59,7 @@ class Xp(commands.Cog):
         roles_to_add = []
         if 15 > new_level and cfg.roles.new_member is not None:
             roles_to_add.append(cfg.roles.new_member)
-            self.bot.tasks.schedule_remove_new_member_role(cfg.roles.new_member, member.id)
+            self.bot.tasks.schedule_remove_new_member_role(member.id)
         if 15 <= new_level:
             roles_to_add.append(cfg.roles.member_plus)
         if 30 <= new_level:
