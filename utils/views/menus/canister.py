@@ -119,7 +119,7 @@ class TweakMenu(Menu):
             extra_buttons = [
                 discord.ui.Button(label='Add Repo to Sileo', emoji="<:sileo:679466569407004684>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={self.ctx.repo}&manager=sileo', style=discord.ButtonStyle.url, row=1),
-                discord.ui.Button(label='Add Repo to Zebra', emoji="🦓",
+                discord.ui.Button(label='Add Repo to Zebra', emoji="<:Zeeb:959129860603801630>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={self.ctx.repo}&manager=zebra', style=discord.ButtonStyle.url, row=1),
                 discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={self.ctx.repo}', style=discord.ButtonStyle.url, row=1)
@@ -128,7 +128,7 @@ class TweakMenu(Menu):
             extra_buttons = [
                 discord.ui.Button(label='Cannot add default repo', emoji="<:sileo:679466569407004684>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={self.ctx.repo}&manager=sileo', disabled=True, style=discord.ButtonStyle.url, row=1),
-                discord.ui.Button(label='Cannot add default repo', emoji="🦓",
+                discord.ui.Button(label='Cannot add default repo', emoji="<:Zeeb:959129860603801630>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={self.ctx.repo}&manager=zebra', disabled=True, style=discord.ButtonStyle.url, row=1),
                 discord.ui.Button(label='Cannot add default repo', emoji="<:Add:947354227171262534>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={self.ctx.repo}', style=discord.ButtonStyle.url, disabled=True, row=1)
@@ -256,7 +256,7 @@ class TweakDropdown(discord.ui.Select):
             extra_buttons = [
                 discord.ui.Button(label='Add Repo to Sileo', emoji="<:sileo:679466569407004684>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={repo}&manager=sileo', style=discord.ButtonStyle.url),
-                discord.ui.Button(label='Add Repo to Zebra', emoji="🦓",
+                discord.ui.Button(label='Add Repo to Zebra', emoji="<:Zeeb:959129860603801630>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={repo}&manager=zebra', style=discord.ButtonStyle.url),
                 discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={repo}', style=discord.ButtonStyle.url)
@@ -265,7 +265,7 @@ class TweakDropdown(discord.ui.Select):
             extra_buttons = [
                 discord.ui.Button(label='Cannot add default repo', emoji="<:sileo:679466569407004684>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={repo}&manager=sileo', disabled=True, style=discord.ButtonStyle.url),
-                discord.ui.Button(label='Cannot add default repo', emoji="🦓",
+                discord.ui.Button(label='Cannot add default repo', emoji="<:Zeeb:959129860603801630>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={repo}&manager=zebra', disabled=True, style=discord.ButtonStyle.url),
                 discord.ui.Button(label='Cannot add default repo', emoji="<:Add:947354227171262534>",
                                   url=f'https://repos.slim.rocks/repo/?repoUrl={repo}', disabled=True, style=discord.ButtonStyle.url)
