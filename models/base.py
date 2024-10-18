@@ -2,7 +2,7 @@ import datetime
 import enum
 
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Index, PrimaryKeyConstraint, Enum, DateTime
+from sqlalchemy import Column, BigInteger, String, Boolean, ForeignKey, Index, PrimaryKeyConstraint, Enum, DateTime
 
 
 class Base(DeclarativeBase):
@@ -12,7 +12,7 @@ class Base(DeclarativeBase):
 class GuildSetting(Base):
     __tablename__ = 'guild_setting'
 
-    guild_id = Column(Integer, primary_key=True)
+    guild_id = Column(BigInteger, primary_key=True)
     sabbath_mode = Column(Boolean)
     ban_today_spam = Column(Boolean)
 
@@ -23,13 +23,13 @@ class GuildSetting(Base):
 class User(Base):
     __tablename__ = 'user'
 
-    user_id = Column(Integer, primary_key=True)
+    user_id = Column(BigInteger, primary_key=True)
     username = Column(String)
     is_clem = Column(Boolean, default=False)
     was_warn_kicked = Column(Boolean, default=False)
     is_birthday_banned = Column(Boolean, default=False)
     is_raid_verified = Column(Boolean, default=False)
-    warn_points = Column(Integer, default=0)
+    warn_points = Column(BigInteger, default=0)
     timezone = Column(String)
     birthday = Column(String)
     should_offline_report_ping = Column(Boolean, default=False)
@@ -45,8 +45,8 @@ class User(Base):
 class StickyRole(Base):
     __tablename__ = 'sticky_role'
 
-    role_id = Column(Integer)
-    user_id = Column(Integer, ForeignKey('user.user_id'))
+    role_id = Column(BigInteger)
+    user_id = Column(BigInteger, ForeignKey('user.user_id'))
 
     __table_args__ = (
         PrimaryKeyConstraint('role_id', 'user_id'),
@@ -57,9 +57,9 @@ class StickyRole(Base):
 class UserXp(Base):
     __tablename__ = 'user_xp'
 
-    user_id = Column(Integer, ForeignKey('user.user_id'), primary_key=True)
-    xp = Column(Integer, default=0)
-    level = Column(Integer, default=0)
+    user_id = Column(BigInteger, ForeignKey('user.user_id'), primary_key=True)
+    xp = Column(BigInteger, default=0)
+    level = Column(BigInteger, default=0)
     is_xp_frozen = Column(Boolean, default=False)
 
     __table_args__ = (
@@ -85,16 +85,16 @@ class CaseType(enum.Enum):
 class Case(Base):
     __tablename__ = 'case'
 
-    case_id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('user.user_id'), nullable=False)
-    mod_id = Column(Integer, ForeignKey('user.user_id'), nullable=False)
+    case_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, nullable=False)
+    mod_id = Column(BigInteger, nullable=False)
     type = Column(Enum(CaseType), nullable=False)
     punishment = Column(String)
     reason = Column(String)
     date = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
     until = Column(DateTime)
     lifted = Column(Boolean, default=False)
-    lifted_by_id = Column(Integer, ForeignKey('user.user_id'))
+    lifted_by_id = Column(BigInteger)
     lifted_reason = Column(String)
     lifted_date = Column(DateTime)
 
@@ -111,8 +111,8 @@ class Tag(Base):
     __tablename__ = 'tag'
 
     phrase = Column(String, primary_key=True)
-    creator_id = Column(Integer, ForeignKey('user.user_id'))
-    uses = Column(Integer, default=0)
+    creator_id = Column(BigInteger, ForeignKey('user.user_id'))
+    uses = Column(BigInteger, default=0)
     image = Column(String)
     updated_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
     content = Column(String)
@@ -128,7 +128,7 @@ class Tag(Base):
 class TagButton(Base):
     __tablename__ = 'tag_button'
 
-    button_id = Column(Integer, primary_key=True, autoincrement=True)
+    button_id = Column(BigInteger, primary_key=True, autoincrement=True)
     tag_name = Column(String, ForeignKey('tag.phrase'), nullable=False)
     label = Column(String, nullable=False)
     link = Column(String, nullable=False)
@@ -144,7 +144,7 @@ class FilterWord(Base):
     phrase = Column(String, primary_key=True)
     should_notify = Column(Boolean, nullable=False)
     filter_without_removing = Column(Boolean, default=False)
-    bypass_level = Column(Integer, nullable=False)
+    bypass_level = Column(BigInteger, nullable=False)
     disable_extra_checks = Column(Boolean, default=False)
     is_piracy_phrase = Column(Boolean, default=False)
 
@@ -166,16 +166,16 @@ class RaidPhrase(Base):
 class LockedChannel(Base):
     __tablename__ = 'locked_channel'
 
-    channel_id = Column(Integer, primary_key=True)
+    channel_id = Column(BigInteger, primary_key=True)
 
 
 class FilterExcludedGuild(Base):
     __tablename__ = 'filter_excluded_guild'
 
-    guild_id = Column(Integer, primary_key=True)
+    guild_id = Column(BigInteger, primary_key=True)
 
 
 class LoggingExcludedChannel(Base):
     __tablename__ = 'logging_excluded_channel'
 
-    channel_id = Column(Integer, primary_key=True)
+    channel_id = Column(BigInteger, primary_key=True)
