@@ -16,6 +16,11 @@ expiringdict = "^1.2.2"
 humanize = "^4.11.0"
 mongoengine = "^0.29.1"
 python-dotenv = "^1.0.1"
+pytimeparse = "^1.1.8"
+aiocache = "^0.12.3"
+psutil = "^6.1.0"
+pillow = "^11.0.0"
+spotipy = "^2.24.0"
 
 
 [build-system]
