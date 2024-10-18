@@ -3,8 +3,8 @@ from typing import Union
 
 import discord
 import humanize
-from data.model import Case
-from data.services import guild_service, user_service
+from data_mongo.model import Case
+from data_mongo.services import guild_service, user_service
 from discord.utils import escape_markdown
 from utils import cfg
 

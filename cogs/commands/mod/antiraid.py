@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from data.services import guild_service, user_service
+from data_mongo.services import guild_service, user_service
 from utils import cfg, GIRContext, transform_context
 from utils.framework import admin_and_up, mod_and_up
 from utils.framework.checks import always_whisper

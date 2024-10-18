@@ -4,7 +4,7 @@ from discord.ext import commands
 
 import math
 from random import randint
-from data.services.user_service import user_service
+from data_mongo.services.user_service import user_service
 from utils.config import cfg
 
 

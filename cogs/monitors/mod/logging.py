@@ -8,8 +8,8 @@ from io import BytesIO
 from typing import List, Union
 
 import discord
-from data.services.guild_service import guild_service
-from data.services.user_service import user_service
+from data_mongo.services.guild_service import guild_service
+from data_mongo.services.user_service import user_service
 from utils.config import cfg
 
 
@@ -120,9 +120,9 @@ class Logging(commands.Cog):
         Parameters
         ----------
         before : discord.Message
-            Before edit message data-mongo
+            Before edit message data_mongo
         after : discord.Message
-            Aftere edit message data-mongo
+            Aftere edit message data_mongo
         """
 
         if not before.guild:

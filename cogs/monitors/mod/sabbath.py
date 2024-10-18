@@ -2,7 +2,7 @@ from datetime import timezone
 import discord
 from discord.ext import commands
 
-from data.services import guild_service
+from data_mongo.services import guild_service
 from utils import cfg, logger
 from utils.framework import gatekeeper
 

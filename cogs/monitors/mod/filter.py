@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 import aiohttp
 import discord
 from aiocache.decorators import cached
-from data.model import FilterWord
-from data.services import guild_service
+from data_mongo.model import FilterWord
+from data_mongo.services import guild_service
 from discord.ext import commands
 from utils import cfg, logger, scam_cache
 from utils.framework import gatekeeper, find_triggered_filters

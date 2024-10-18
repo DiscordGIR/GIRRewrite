@@ -11,7 +11,7 @@ from utils.framework import PermissionsFailure, gatekeeper, find_triggered_filte
 from cogs.commands.context_commands import setup_context_commands
 
 from typing import Union
-from data.services.user_service import user_service
+from data_mongo.services.user_service import user_service
 
 # Remove warning from songs cog
 import warnings

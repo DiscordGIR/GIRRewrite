@@ -4,8 +4,8 @@ import pytz
 
 import discord
 import humanize
-from data.model import Giveaway as GiveawayDB
-from data.services import guild_service
+from data_mongo.model import Giveaway as GiveawayDB
+from data_mongo.services import guild_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt

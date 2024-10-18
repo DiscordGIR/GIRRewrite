@@ -3,7 +3,7 @@ import re
 
 import aiohttp
 import discord
-from data.services import guild_service
+from data_mongo.services import guild_service
 from discord.ext import commands
 from utils import GIROldContext, PromptData, cfg
 from utils.framework import gatekeeper

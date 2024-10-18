@@ -3,8 +3,8 @@ from typing import Union
 
 import discord
 import pytimeparse
-from data.services import user_service
-from data.services.guild_service import guild_service
+from data_mongo.services import user_service
+from data_mongo.services.guild_service import guild_service
 from discord import ui
 from utils import GIRContext, cfg
 from utils.framework import gatekeeper

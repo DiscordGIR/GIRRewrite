@@ -5,8 +5,8 @@ from io import BytesIO
 
 import aiohttp
 import discord
-from data.model import Tag
-from data.services import guild_service
+from data_mongo.model import Tag
+from data_mongo.services import guild_service
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
@@ -123,7 +123,7 @@ class Memes(commands.Cog):
             await ctx.send_warning("Cancelled adding meme.")
             return
 
-        # prepare meme data-mongo for database
+        # prepare meme data_mongo.model for database
         meme = Tag()
         meme.name = name.lower()
         meme.content = description

@@ -2,8 +2,8 @@ import string
 from typing import List
 
 import discord
-from data.model import FilterWord
-from data.services import guild_service
+from data_mongo.model import FilterWord
+from data_mongo.services import guild_service
 from fold_to_ascii import fold
 from utils.framework import gatekeeper
 

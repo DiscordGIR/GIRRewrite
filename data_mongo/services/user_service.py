@@ -1,5 +1,5 @@
 from typing import Counter
-from data.model import Case, Cases, User
+from data_mongo.model import Case, Cases, User
 
 class UserService:
     def get_user(self, id: int) -> User:

@@ -3,8 +3,8 @@ from datetime import datetime
 from io import BytesIO
 
 import discord
-from data.model.tag import Tag
-from data.services.guild_service import guild_service
+from data_mongo.model import Tag
+from data_mongo.services.guild_service import guild_service
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping

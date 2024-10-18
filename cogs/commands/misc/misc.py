@@ -6,7 +6,7 @@ from typing import Union
 
 import discord
 import pytz
-from data.services import user_service
+from data_mongo.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt

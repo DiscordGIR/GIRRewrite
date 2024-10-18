@@ -1,7 +1,7 @@
 import re
 import discord
 
-from data.model import Tag
+from data_mongo.model import Tag
 
 
 class TagModal(discord.ui.Modal):
@@ -75,7 +75,7 @@ class TagModal(discord.ui.Modal):
                     await self.send_error(interaction, "A button cannot just be an emoji!")
                     return
 
-        # prepare tag data-mongo for database
+        # prepare tag data_mongo.model for database
         tag = Tag()
         tag.name = self.tag_name.lower()
         tag.content = description
@@ -167,7 +167,7 @@ class EditTagModal(discord.ui.Modal):
                     await self.send_error(interaction, "A button cannot just be an emoji!")
                     return
 
-        # prepare tag data-mongo for database
+        # prepare tag data_mongo.model for database
         self.tag.content = description
         self.tag.button_links = buttons
         self.edited = True

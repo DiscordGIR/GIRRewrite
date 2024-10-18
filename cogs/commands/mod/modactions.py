@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 import discord
 import humanize
 from apscheduler.jobstores.base import ConflictingIdError
-from data.model import Case
-from data.services import guild_service, user_service
+from data_mongo.model import Case
+from data_mongo.services import guild_service, user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions

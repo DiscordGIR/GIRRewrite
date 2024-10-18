@@ -19,10 +19,10 @@ services:
 #     image: mongo
 #     restart: unless-stopped
 #     environment:
-#       - MONGO_DATA_DIR=/data-mongo/db
+#       - MONGO_DATA_DIR=/data_mongo/db
 #       - MONGO_LOG_DIR=/dev/null
 #     volumes:
-#       - ./mongo_data:/data-mongo/db
+#       - ./mongo_data:/data_mongo/db
 
 
 # #### This is optional if you want a GUI to manage your database

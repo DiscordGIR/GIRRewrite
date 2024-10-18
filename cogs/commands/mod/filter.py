@@ -1,8 +1,8 @@
 from typing import List
 import discord
 from discord import app_commands
-from data.model import FilterWord
-from data.services import guild_service, user_service
+from data_mongo.model import FilterWord
+from data_mongo.services import guild_service, user_service
 from discord.ext import commands
 from utils import GIRContext, cfg, transform_context
 from utils.framework import (admin_and_up, always_whisper, gatekeeper,

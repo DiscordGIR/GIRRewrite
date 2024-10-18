@@ -11,4 +11,4 @@ services:
             POSTGRES_PASSWORD: postgres
             POSTGRES_DB: postgres
         volumes:
-            - ./data-mongo/db:/var/lib/postgresql/data-mongo
+            - ./pg/db:/var/lib/postgresql/data_mongo

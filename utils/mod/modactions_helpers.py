@@ -2,10 +2,9 @@ import asyncio
 import discord
 
 from typing import Union
-from data.model.case import Case
-from data.model.guild import Guild
-from data.services.guild_service import guild_service
-from data.services.user_service import user_service
+from data_mongo.model import Case, Guild
+from data_mongo.services.guild_service import guild_service
+from data_mongo.services.user_service import user_service
 from utils.context import GIRContext
 from utils.mod.mod_logs import prepare_ban_log, prepare_kick_log
 

@@ -5,7 +5,7 @@ import flag
 import pytz
 from discord import app_commands
 from discord.ext import commands
-from data.services import user_service
+from data_mongo.services import user_service
 from utils import GIRContext, cfg, transform_context
 from utils.framework import whisper, always_whisper
 from utils.views import timezone_autocomplete, Menu

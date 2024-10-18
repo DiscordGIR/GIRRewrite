@@ -1,5 +1,5 @@
 # GIR Rewrite
-![GIR banner](data-mongo/images/banner.png)
+![GIR banner](data_mongo/images/banner.png)
 
 GIR is a sophisticated moderation and miscellaneous utilities Discord bot created for the [r/Jailbreak Discord server](https://reddit.com/r/jailbreak). It features:
 

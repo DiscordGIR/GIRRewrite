@@ -6,7 +6,7 @@ from io import BytesIO
 import discord
 from cogs.commands.info.tags import prepare_tag_embed, prepare_tag_view
 from cogs.commands.info.userinfo import handle_userinfo
-from data.services import guild_service
+from data_mongo.services import guild_service
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
 from utils import GIRContext, cfg

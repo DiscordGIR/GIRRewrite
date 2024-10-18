@@ -2,7 +2,7 @@ import traceback
 import discord
 from discord import app_commands
 from discord.ext import commands
-from data.services import guild_service
+from data_mongo.services import guild_service
 from utils import GIRContext, cfg, transform_context, logger
 from utils.framework import admin_and_up, guild_owner_and_up
 from utils.framework.transformers import ImageAttachment

@@ -3,8 +3,8 @@ import typing
 
 import discord
 import pytz
-from data.model import Case
-from data.services import guild_service, user_service
+from data_mongo.model import Case
+from data_mongo.services import guild_service, user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
@@ -30,9 +30,9 @@ class ModUtils(commands.Cog):
 
     @admin_and_up()
     @app_commands.guilds(cfg.guild_id)
-    @app_commands.command(description="Transfer all data-mongo in the database between users")
-    @app_commands.describe(old_member="The user to transfer data-mongo from")
-    @app_commands.describe(new_member="The user to transfer data-mongo to")
+    @app_commands.command(description="Transfer all data_mongo.model in the database between users")
+    @app_commands.describe(old_member="The user to transfer data_mongo.model from")
+    @app_commands.describe(new_member="The user to transfer data_mongo.model to")
     @transform_context
     async def transferprofile(self, ctx: GIRContext, old_member: ModsAndAboveMemberOrUser, new_member: ModsAndAboveMemberOrUser):
         if isinstance(old_member, int):

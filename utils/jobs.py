@@ -6,8 +6,8 @@ import discord
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.jobstores.mongodb import MongoDBJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from data.model import Case
-from data.services import guild_service, user_service
+from data_mongo.model import Case
+from data_mongo.services import guild_service, user_service
 
 from pytz import utc
 

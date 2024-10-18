@@ -21,7 +21,7 @@ async def emoji_thing():
                 for row in table:
                     if len(row) > 4:
                         moji = row[3].replace('…', '').strip()
-                        emojis[row[2]] = moji.replace('data-mongo:image/png;base64,', '')
+                        emojis[row[2]] = moji.replace('data_mongo:image/png;base64,', '')
                         
     if emojis:
         with open('emojis.json', 'w') as f:

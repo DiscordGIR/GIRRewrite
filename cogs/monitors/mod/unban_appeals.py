@@ -1,6 +1,6 @@
 import discord
 from cogs.commands.info.userinfo import determine_emoji, pun_map
-from data.services import user_service
+from data_mongo.services import user_service
 from discord.ext import commands
 from discord.utils import format_dt
 from utils import cfg

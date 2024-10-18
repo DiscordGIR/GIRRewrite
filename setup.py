@@ -4,7 +4,7 @@ import os
 import mongoengine
 from dotenv import find_dotenv, load_dotenv
 
-from data.model.guild import Guild
+from data_mongo.guild import Guild
 
 load_dotenv(find_dotenv())
 

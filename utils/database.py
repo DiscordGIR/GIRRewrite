@@ -1,6 +1,6 @@
 import os
 import mongoengine
-from data.model import Guild
+from data_mongo.model import Guild
 from .config import cfg
 from .logging import logger
 

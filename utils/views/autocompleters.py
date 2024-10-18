@@ -4,8 +4,8 @@ from typing import List
 
 import discord
 import pytz
-from data.model import Case
-from data.services import guild_service, user_service
+from data_mongo.model import Case
+from data_mongo.services import guild_service, user_service
 from discord import app_commands
 from discord.ext.commands import Command
 from utils import get_ios_cfw, transform_groups, canister_fetch_repos

@@ -1,5 +1,5 @@
 from aiocache import cached, caches
-from data.model import FilterWord, Guild, Tag, Giveaway
+from data_mongo.model import FilterWord, Guild, Tag, Giveaway
 from utils import cfg
 
 class GuildService:
