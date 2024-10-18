@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "girrewrite"
+version = "3.0.0"
+description = "A Discord bot for r/Jailbreak"
+authors = ["SlimShadyIAm <aamir@farooq.xyz>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+discord-py = "^2.4.0"
+apscheduler = "^3.10.4"
+emoji-country-flag = "^2.0.1"
+fold-to-ascii = "^1.0.2.post1"
+expiringdict = "^1.2.2"
+humanize = "^4.11.0"
+mongoengine = "^0.29.1"
+python-dotenv = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
