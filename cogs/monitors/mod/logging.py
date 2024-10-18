@@ -120,9 +120,9 @@ class Logging(commands.Cog):
         Parameters
         ----------
         before : discord.Message
-            Before edit message data
+            Before edit message data-mongo
         after : discord.Message
-            Aftere edit message data
+            Aftere edit message data-mongo
         """
 
         if not before.guild:

@@ -76,7 +76,7 @@ async def canister_search_package(query):
     async with client_session.get(f'https://api.canister.me/v2/jailbreak/package/search?q={urllib.parse.quote(query)}') as resp:
         if resp.status == 200:
             response = json.loads(await resp.text())
-            packages = response.get('data')
+            packages = response.get('data-mongo')
             packages = [package for package in packages if package['repository']['slug'] not in ignored_repos]
             return packages
         else:
@@ -101,7 +101,7 @@ async def canister_search_repo(query):
     async with client_session.get(f'https://api.canister.me/v2/jailbreak/repository/search?q={urllib.parse.quote(query)}') as resp:
         if resp.status == 200:
             response = json.loads(await resp.text())
-            return response.get('data')
+            return response.get('data-mongo')
         else:
             return None
 
@@ -111,7 +111,7 @@ async def canister_fetch_repos():
     async with client_session.get('https://api.canister.me/v2/jailbreak/repository/ranking?rank=*') as resp:
         if resp.status == 200:
             response = await resp.json(content_type=None)
-            return response.get("data")
+            return response.get("data-mongo")
 
         return None
 

@@ -21,6 +21,8 @@ aiocache = "^0.12.3"
 psutil = "^6.1.0"
 pillow = "^11.0.0"
 spotipy = "^2.24.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.36"}
+alembic = "^1.13.3"
 
 
 [build-system]

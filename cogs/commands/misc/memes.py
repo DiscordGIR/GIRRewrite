@@ -123,7 +123,7 @@ class Memes(commands.Cog):
             await ctx.send_warning("Cancelled adding meme.")
             return
 
-        # prepare meme data for database
+        # prepare meme data-mongo for database
         meme = Tag()
         meme.name = name.lower()
         meme.content = description

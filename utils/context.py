@@ -288,7 +288,7 @@ class GIRContext:
         Parameters
         ----------
         info : PromptDataReaction
-            "Prompt data"
+            "Prompt data-mongo"
             
         """
         for reaction in info.reactions:
