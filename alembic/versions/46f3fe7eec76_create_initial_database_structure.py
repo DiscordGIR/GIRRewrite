@@ -1,8 +1,8 @@
 """Create initial database structure
 
-Revision ID: aa242258240c
+Revision ID: 46f3fe7eec76
 Revises: 
-Create Date: 2024-10-19 00:13:53.766324
+Create Date: 2024-10-19 19:57:03.142185
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'aa242258240c'
+revision: str = '46f3fe7eec76'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -79,7 +79,6 @@ def upgrade() -> None:
     sa.Column('is_raid_verified', sa.Boolean(), nullable=True),
     sa.Column('warn_points', sa.BigInteger(), nullable=True),
     sa.Column('timezone', sa.String(), nullable=True),
-    sa.Column('birthday', sa.String(), nullable=True),
     sa.Column('should_offline_report_ping', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('user_id')
     )
@@ -102,6 +101,14 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('phrase')
     )
     op.create_index('tag_name_index', 'tag', ['phrase'], unique=False)
+    op.create_table('user_birthday',
+    sa.Column('user_id', sa.BigInteger(), nullable=False),
+    sa.Column('day', sa.Integer(), nullable=True),
+    sa.Column('month', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['user.user_id'], ),
+    sa.PrimaryKeyConstraint('user_id')
+    )
+    op.create_index('user_birthday_index', 'user_birthday', ['month', 'day'], unique=False)
     op.create_table('user_xp',
     sa.Column('user_id', sa.BigInteger(), nullable=False),
     sa.Column('xp', sa.BigInteger(), nullable=True),
@@ -129,6 +136,8 @@ def downgrade() -> None:
     op.drop_table('tag_button')
     op.drop_index('user_xp_user_index', table_name='user_xp')
     op.drop_table('user_xp')
+    op.drop_index('user_birthday_index', table_name='user_birthday')
+    op.drop_table('user_birthday')
     op.drop_index('tag_name_index', table_name='tag')
     op.drop_table('tag')
     op.drop_index('sticky_role_user_id_index', table_name='sticky_role')
@@ -146,5 +155,5 @@ def downgrade() -> None:
     op.drop_index('case_user_id_index', table_name='case')
     op.drop_index('case_case_id_index', table_name='case')
     op.drop_table('case')
-    op.execute("DROP TYPE casetype")
+    op.execute('DROP TYPE casetype')
     # ### end Alembic commands ###

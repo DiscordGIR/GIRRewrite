@@ -70,12 +70,19 @@ async def setup():
             is_raid_verified=x.raid_verified,
             warn_points=x.warn_points,
             timezone=x.timezone,
-            birthday=x.birthday,
             should_offline_report_ping=x.offline_report_ping
         ) for x in users_mongo]
 
         session.add_all(users_pg)
+
         session.commit()
+
+        birthday_pg = [Base.UserBirthday(
+            user_id=x._id,
+            month=x.birthday[0],
+            day=x.birthday[1]
+        ) for x in users_mongo if x.birthday]
+        session.add_all(birthday_pg)
 
         sticky_roles = [Base.StickyRole(
             role_id=y,
@@ -104,7 +111,9 @@ async def setup():
             )
             if (read_image := tag.image.read()) is not None:
                 # upload to supabase S3 and get the link
-                response = supabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image, path=f"tags/{tag.name}.png", file_options={"content-type": tag.image.content_type})
+                ## generate random slug
+                slug = os.urandom(8).hex()
+                response = supabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image, path=f"tags/{slug}.png", file_options={"content-type": tag.image.content_type})
                 pg_tag.image = str(response.url)
 
             tags_pg.append(pg_tag)

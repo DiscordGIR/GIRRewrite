@@ -2,7 +2,8 @@ import datetime
 import enum
 
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Column, BigInteger, String, Boolean, ForeignKey, Index, PrimaryKeyConstraint, Enum, DateTime
+from sqlalchemy import Column, BigInteger, String, Boolean, ForeignKey, Index, PrimaryKeyConstraint, Enum, DateTime, \
+    Integer
 
 
 class Base(DeclarativeBase):
@@ -31,7 +32,6 @@ class User(Base):
     is_raid_verified = Column(Boolean, default=False)
     warn_points = Column(BigInteger, default=0)
     timezone = Column(String)
-    birthday = Column(String)
     should_offline_report_ping = Column(Boolean, default=False)
 
     __table_args__ = (
@@ -41,6 +41,17 @@ class User(Base):
     def __repr__(self):
         return f"<User(id={self.user_id}, username={self.username})>"
 
+
+class UserBirthday(Base):
+    __tablename__ = 'user_birthday'
+
+    user_id = Column(BigInteger, ForeignKey('user.user_id'), primary_key=True)
+    day = Column(Integer)
+    month = Column(Integer)
+
+    __table_args__ = (
+        Index('user_birthday_index', month, day),
+    )
 
 class StickyRole(Base):
     __tablename__ = 'sticky_role'
