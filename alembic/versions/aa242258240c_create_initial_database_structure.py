@@ -146,4 +146,5 @@ def downgrade() -> None:
     op.drop_index('case_user_id_index', table_name='case')
     op.drop_index('case_case_id_index', table_name='case')
     op.drop_table('case')
+    op.execute("DROP TYPE casetype")
     # ### end Alembic commands ###

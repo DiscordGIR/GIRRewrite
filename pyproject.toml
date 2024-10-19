@@ -14,7 +14,6 @@ emoji-country-flag = "^2.0.1"
 fold-to-ascii = "^1.0.2.post1"
 expiringdict = "^1.2.2"
 humanize = "^4.11.0"
-mongoengine = "^0.29.1"
 python-dotenv = "^1.0.1"
 pytimeparse = "^1.1.8"
 aiocache = "^0.12.3"
@@ -24,6 +23,9 @@ spotipy = "^2.24.0"
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.36"}
 alembic = "^1.13.3"
 psycopg2 = "^2.9.10"
+mongoengine = "0.27.0"
+pymongo = "4.6.1"
+supabase = "^2.9.1"
 
 
 [build-system]

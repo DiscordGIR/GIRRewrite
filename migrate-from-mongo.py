@@ -2,43 +2,49 @@ import asyncio
 import os
 from typing import List, Tuple
 
+import aiohttp
 import mongoengine
 from dotenv import find_dotenv, load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from data_mongo.model import User, Cases, Case
+from data_mongo.model import User, Cases, Case, Tag
 from data_mongo.model.guild import Guild
 from data_mongo.services import guild_service
 
 from models import base as Base
+from supabase import create_client, Client
+
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
 
 load_dotenv(find_dotenv())
 
 
 async def setup():
-    engine = create_engine("postgresql://postgres:postgres@localhost:5432/gir", echo=True)
+    engine = create_engine(os.environ.get("PG_CONNECTION_STRING"), echo=True)
 
     print("STARTING SETUP...")
 
     with Session(engine) as session:
         guild_mongo = guild_service.get_guild()
-        # guild_pg = Base.GuildSetting(
-        #     guild_id=int(os.environ.get("MAIN_GUILD_ID")),
-        #     sabbath_mode=guild_mongo.sabbath_mode,
-        #     ban_today_spam=guild_mongo.ban_today_spam_accounts,
-        # )
-        #
-        # session.add(guild_pg)
-        #
-        # locked_channels = [Base.LockedChannel(channel_id=x) for x in guild_mongo.locked_channels]
-        # session.add_all(locked_channels)
-        #
-        # filter_excluded_guild = [Base.FilterExcludedGuild(guild_id=x) for x in guild_mongo.filter_excluded_guilds]
-        # session.add_all(filter_excluded_guild)
-        #
-        # logging_excluded_channels = [Base.LoggingExcludedChannel(channel_id=x) for x in guild_mongo.logging_excluded_channels]
-        # session.add_all(logging_excluded_channels)
+        guild_pg = Base.GuildSetting(
+            guild_id=int(os.environ.get("MAIN_GUILD_ID")),
+            sabbath_mode=guild_mongo.sabbath_mode,
+            ban_today_spam=guild_mongo.ban_today_spam_accounts,
+        )
+
+        session.add(guild_pg)
+
+        locked_channels = [Base.LockedChannel(channel_id=x) for x in guild_mongo.locked_channels]
+        session.add_all(locked_channels)
+
+        filter_excluded_guild = [Base.FilterExcludedGuild(guild_id=x) for x in guild_mongo.filter_excluded_guilds]
+        session.add_all(filter_excluded_guild)
+
+        logging_excluded_channels = [Base.LoggingExcludedChannel(channel_id=x) for x in guild_mongo.logging_excluded_channels]
+        session.add_all(logging_excluded_channels)
 
         filter_words_pg = [Base.FilterWord(
             phrase=x.word,
@@ -69,6 +75,7 @@ async def setup():
         ) for x in users_mongo]
 
         session.add_all(users_pg)
+        session.commit()
 
         sticky_roles = [Base.StickyRole(
             role_id=y,
@@ -85,13 +92,23 @@ async def setup():
         ) for x in users_mongo]
         session.add_all(user_xp_pg)
 
-        tags_pg = [Base.Tag(
-            phrase=x.name,
-            content=x.content,
-            creator_id=x.added_by_id,
-            updated_at=x.added_date,
-            uses=x.use_count,
-        ) for x in guild_mongo.tags]
+        tags_pg = []
+        for _tag in guild_mongo.tags:
+            tag: Tag = _tag
+            pg_tag = Base.Tag(
+                phrase=tag.name,
+                content=tag.content,
+                creator_id=tag.added_by_id,
+                updated_at=tag.added_date,
+                uses=tag.use_count,
+            )
+            if (read_image := tag.image.read()) is not None:
+                # upload to supabase S3 and get the link
+                response = supabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image, path=f"tags/{tag.name}.png", file_options={"content-type": tag.image.content_type})
+                pg_tag.image = str(response.url)
+
+            tags_pg.append(pg_tag)
+
         session.add_all(tags_pg)
 
         tag_buttons = [Base.TagButton(
@@ -128,8 +145,6 @@ async def setup():
         session.add_all(cases_pg)
 
         session.commit()
-
-
 
         print("DONE!")
 
