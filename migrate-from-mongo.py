@@ -1,18 +1,16 @@
 import asyncio
 import os
-from typing import List, Tuple
+from typing import List
 
-import aiohttp
 import mongoengine
 from dotenv import find_dotenv, load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from core import database
 from data_mongo.model import User, Cases, Case, Tag
-from data_mongo.model.guild import Guild
 from data_mongo.services import guild_service
 
-from models import base as Base
 from supabase import create_client, Client
 
 url: str = os.environ.get("SUPABASE_URL")
@@ -29,7 +27,7 @@ async def setup():
 
     with Session(engine) as session:
         guild_mongo = guild_service.get_guild()
-        guild_pg = Base.GuildSetting(
+        guild_pg = database.GuildSetting(
             guild_id=int(os.environ.get("MAIN_GUILD_ID")),
             sabbath_mode=guild_mongo.sabbath_mode,
             ban_today_spam=guild_mongo.ban_today_spam_accounts,
@@ -37,16 +35,16 @@ async def setup():
 
         session.add(guild_pg)
 
-        locked_channels = [Base.LockedChannel(channel_id=x) for x in guild_mongo.locked_channels]
+        locked_channels = [database.LockedChannel(channel_id=x) for x in guild_mongo.locked_channels]
         session.add_all(locked_channels)
 
-        filter_excluded_guild = [Base.FilterExcludedGuild(guild_id=x) for x in guild_mongo.filter_excluded_guilds]
+        filter_excluded_guild = [database.FilterExcludedGuild(guild_id=x) for x in guild_mongo.filter_excluded_guilds]
         session.add_all(filter_excluded_guild)
 
-        logging_excluded_channels = [Base.LoggingExcludedChannel(channel_id=x) for x in guild_mongo.logging_excluded_channels]
+        logging_excluded_channels = [database.LoggingExcludedChannel(channel_id=x) for x in guild_mongo.logging_excluded_channels]
         session.add_all(logging_excluded_channels)
 
-        filter_words_pg = [Base.FilterWord(
+        filter_words_pg = [database.FilterWord(
             phrase=x.word,
             bypass_level=x.bypass,
             should_notify=x.notify,
@@ -56,13 +54,13 @@ async def setup():
         ) for x in guild_mongo.filter_words]
         session.add_all(filter_words_pg)
 
-        raid_phrase_pg = [Base.RaidPhrase(
+        raid_phrase_pg = [database.RaidPhrase(
             phrase=x.word
         ) for x in guild_mongo.raid_phrases]
         session.add_all(raid_phrase_pg)
 
         users_mongo: List[User] = User.objects().all()
-        users_pg = [Base.User(
+        users_pg = [database.User(
             user_id=x._id,
             is_clem=x.is_clem,
             was_warn_kicked=x.was_warn_kicked,
@@ -77,21 +75,21 @@ async def setup():
 
         session.commit()
 
-        birthday_pg = [Base.UserBirthday(
+        birthday_pg = [database.UserBirthday(
             user_id=x._id,
             month=x.birthday[0],
             day=x.birthday[1]
         ) for x in users_mongo if x.birthday]
         session.add_all(birthday_pg)
 
-        sticky_roles = [Base.StickyRole(
+        sticky_roles = [database.StickyRole(
             role_id=y,
             user_id=x._id
         ) for x in users_mongo for y in x.sticky_roles]
 
         session.add_all(sticky_roles)
 
-        user_xp_pg = [Base.UserXp(
+        user_xp_pg = [database.UserXp(
             user_id=x._id,
             xp=x.xp,
             level=x.level,
@@ -102,7 +100,7 @@ async def setup():
         tags_pg = []
         for _tag in guild_mongo.tags:
             tag: Tag = _tag
-            pg_tag = Base.Tag(
+            pg_tag = database.Tag(
                 phrase=tag.name,
                 content=tag.content,
                 creator_id=tag.added_by_id,
@@ -110,17 +108,17 @@ async def setup():
                 uses=tag.use_count,
             )
             if (read_image := tag.image.read()) is not None:
-                # upload to supabase S3 and get the link
+                # upload to supadatabase.S3 and get the link
                 ## generate random slug
                 slug = os.urandom(8).hex()
-                response = supabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image, path=f"tags/{slug}.png", file_options={"content-type": tag.image.content_type})
+                response = supadatabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image, path=f"tags/{slug}.png", file_options={"content-type": tag.image.content_type})
                 pg_tag.image = str(response.url)
 
             tags_pg.append(pg_tag)
 
         session.add_all(tags_pg)
 
-        tag_buttons = [Base.TagButton(
+        tag_buttons = [database.TagButton(
             tag_name=x.name,
             label=y[0],
             link=y[1]
@@ -136,7 +134,7 @@ async def setup():
 
         cases_with_user_id.sort(key=lambda x: x._id)
 
-        cases_pg = [Base.Case(
+        cases_pg = [database.Case(
             user_id=c.u,
             mod_id=c.mod_id,
             punishment=c.punishment,
