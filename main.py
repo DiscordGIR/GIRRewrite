@@ -56,7 +56,6 @@ async def app_command_error(interaction: discord.Interaction, error: AppCommandE
 
             await ctx.send_error(description=f"`{error}`\n```{tb_formatted}```", followup=True, whisper=True, delete_after=5)
 
-
 @bot.event
 async def on_ready():
     print("""
@@ -79,6 +78,9 @@ async def on_ready():
     await bot.rule_cache.fetch_rule_cache()
     await scam_cache.fetch_scam_cache()
 
+
+    from cogs.commands.context_commands import setup_context_commands
+    setup_context_commands(bot)
 
 async def main():
     async with bot:

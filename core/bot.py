@@ -1,7 +1,6 @@
 from discord.ext import commands
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-from cogs.commands.context_commands import setup_context_commands
 from core.database import get_engine
 from core.extensions import initial_extensions
 from utils import cfg, db, logger, BanCache, IssueCache, Tasks, RuleCache, init_client_session
@@ -32,8 +31,6 @@ class Bot(commands.Bot):
         self.remove_command("help")
         for extension in initial_extensions:
             await self.load_extension(extension)
-
-        setup_context_commands(self)
 
         self.tasks = Tasks(self)
         await init_client_session()

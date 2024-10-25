@@ -3,10 +3,14 @@ from math import floor
 from typing import Union
 
 import discord
-from data_mongo.services import user_service
+
+from core import Bot, get_session
+# from data_mongo.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
+
+from core.service import UserService
 from utils import GIRContext, cfg, transform_context
 from utils.framework import PermissionsFailure, gatekeeper, whisper
 from utils.views import Menu
@@ -132,7 +136,9 @@ def determine_emoji(type):
 
 
 class UserInfo(commands.Cog):
-    def __init__(self, bot):
+    bot: Bot
+
+    def __init__(self, bot: Bot):
         self.bot = bot
         self.start_time = datetime.now()
 
@@ -153,18 +159,20 @@ class UserInfo(commands.Cog):
         if member is None:
             member = ctx.author
 
-        results = user_service.get_user(member.id)
+        async with get_session(self.bot.engine) as session:
+            user_service = UserService(session)
+            user_xp = await user_service.get_leaderboard_rank(member.id)
 
         embed = discord.Embed(title="Level Statistics")
         embed.color = member.top_role.color
         embed.set_author(name=member, icon_url=member.display_avatar)
         embed.add_field(
-            name="Level", value=results.level if not results.is_clem else "0", inline=True)
+            name="Level", value=user_xp.level if not user_xp.is_clem else "0", inline=True)
         embed.add_field(
-            name="XP", value=f'{results.xp}/{xp_for_next_level(results.level)}' if not results.is_clem else "0/0", inline=True)
-        rank, overall = user_service.leaderboard_rank(results.xp)
+            name="XP", value=f'{user_xp.xp}/{xp_for_next_level(user_xp.level)}' if not user_xp.is_clem else "0/0", inline=True)
+
         embed.add_field(
-            name="Rank", value=f"{rank}/{overall}" if not results.is_clem else f"{overall}/{overall}", inline=True)
+            name="Rank", value=f"{user_xp.rank}/{user_xp.total_count}" if not user_xp.is_clem else f"{user_xp.total_count}/{user_xp.total_count}", inline=True)
 
         await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
