@@ -1,106 +1,22 @@
 import asyncio
 import os
 import traceback
-import discord
-from discord.ext import commands
-from discord import app_commands
-from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError, TransformerError
-from extensions import initial_extensions
-from utils import cfg, db, logger, GIRContext, BanCache, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
-from utils.framework import PermissionsFailure, gatekeeper, find_triggered_filters
-from cogs.commands.context_commands import setup_context_commands
-
-from typing import Union
-from data_mongo.services.user_service import user_service
-
 # Remove warning from songs cog
 import warnings
+
+import discord
+from discord.app_commands import AppCommandError, CommandInvokeError, TransformerError
+from discord.ext import commands
+
+from core import Bot, MyTree
+from utils import logger, GIRContext, scam_cache
+from utils.framework import PermissionsFailure
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 intents = discord.Intents.all()
 mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
-
-
-class Bot(commands.Bot):
-    engine:
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.ban_cache = BanCache(self)
-        self.issue_cache = IssueCache(self)
-        self.rule_cache = RuleCache(self)
-
-        # force the config object and database connection to be loaded
-        if cfg and db and gatekeeper:
-            logger.info("Presetup phase completed! Connecting to Discord...")
-
-    async def setup_hook(self):
-        bot.remove_command("help")
-        for extension in initial_extensions:
-            await self.load_extension(extension)
-
-        setup_context_commands(self)
-
-        self.tasks = Tasks(self)
-        await init_client_session()
-
-
-class MyTree(app_commands.CommandTree):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    async def interaction_check(self, interaction: discord.Interaction):
-        if interaction.user.bot:
-            return False
-
-        if gatekeeper.has(interaction.user.guild, interaction.user, 6):
-            return True
-
-        command = interaction.command
-
-        if isinstance(interaction.command, discord.app_commands.ContextMenu):
-            return True
-
-        if command is None or interaction.type != discord.InteractionType.application_command:
-            return True
-
-        if command.parent is not None:
-            command_name = f"{command.parent.name} {command.name}"
-        else:
-            command_name = command.name
-
-        db_user = user_service.get_user(interaction.user.id)
-
-        if db_user.command_bans.get(command_name):
-            ctx = GIRContext(interaction)
-            await ctx.send_error("You are not allowed to use that command!", whisper=True)
-            return False
-
-        options = interaction.data.get("options")
-        if options is None or not options:
-            return True
-
-        message_content = ""
-        for option in options:
-            if option.get("type") == 1:
-                for sub_option in option.get("options"):
-                    message_content += str(sub_option.get("value")) + " "
-            else:
-                message_content += str(option.get("value")) + " "
-
-        triggered_words = await find_triggered_filters(
-            message_content, interaction.user)
-
-        if triggered_words:
-            ctx = GIRContext(interaction)
-            await ctx.send_error("Your interaction contained a filtered word. Aborting!", whisper=True)
-            return
-
-        return True
-
 
 bot = Bot(command_prefix='!', intents=intents, allowed_mentions=mentions, tree_cls=MyTree)
 
