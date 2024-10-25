@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 from sqlalchemy import StaticPool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from core.database import get_session
+from core.database import get_session, get_engine
 import asyncio
 import os
 from typing import List
@@ -29,12 +29,7 @@ async def batch_add(session, data, batch_size):
 async def setup():
     print("STARTING SETUP...")
 
-    engine = create_async_engine(
-        os.environ.get("PG_CONNECTION_STRING"),
-        echo=True,
-        pool_pre_ping=True,
-        poolclass=StaticPool
-    )
+    engine = get_engine()
 
     guild_mongo = guild_service.get_guild()
     async with get_session(engine) as session:

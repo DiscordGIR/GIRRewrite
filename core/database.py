@@ -1,8 +1,17 @@
 import os
 from contextlib import asynccontextmanager
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+
+def get_engine():
+    engine = create_async_engine(
+        f"postgresql+asyncpg://{os.environ.get('PG_USERNAME')}:{os.environ.get('PG_PASSWORD')}@{os.environ.get('PG_HOST')}:{os.environ.get('PG_PORT')}/{os.environ.get('PG_DATABASE')}",
+        echo=True,
+        pool_pre_ping=True,
+    )
+
+    return engine
 
 
 @asynccontextmanager
