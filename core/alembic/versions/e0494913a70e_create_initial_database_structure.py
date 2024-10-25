@@ -1,8 +1,8 @@
 """Create initial database structure
 
-Revision ID: 6480a86d88f5
+Revision ID: e0494913a70e
 Revises: 
-Create Date: 2024-10-20 11:11:54.836681
+Create Date: 2024-10-25 19:36:50.295470
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6480a86d88f5'
+revision: str = 'e0494913a70e'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -83,6 +83,17 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('user_id')
     )
     op.create_index('user_user_id_index', 'user', ['user_id'], unique=False)
+    op.create_table('meme',
+    sa.Column('phrase', sa.String(), nullable=False),
+    sa.Column('creator_id', sa.BigInteger(), nullable=True),
+    sa.Column('uses', sa.BigInteger(), nullable=True),
+    sa.Column('image', sa.String(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('content', sa.String(), nullable=True),
+    sa.ForeignKeyConstraint(['creator_id'], ['user.user_id'], ),
+    sa.PrimaryKeyConstraint('phrase')
+    )
+    op.create_index('meme_name_index', 'meme', ['phrase'], unique=False)
     op.create_table('sticky_role',
     sa.Column('role_id', sa.BigInteger(), nullable=False),
     sa.Column('user_id', sa.BigInteger(), nullable=False),
@@ -142,6 +153,8 @@ def downgrade() -> None:
     op.drop_table('tag')
     op.drop_index('sticky_role_user_id_index', table_name='sticky_role')
     op.drop_table('sticky_role')
+    op.drop_index('meme_name_index', table_name='meme')
+    op.drop_table('meme')
     op.drop_index('user_user_id_index', table_name='user')
     op.drop_table('user')
     op.drop_index('raid_phrase_word_index', table_name='raid_phrase')
@@ -155,5 +168,4 @@ def downgrade() -> None:
     op.drop_index('case_user_id_index', table_name='case')
     op.drop_index('case_case_id_index', table_name='case')
     op.drop_table('case')
-    op.execute('DROP TYPE casetype')
     # ### end Alembic commands ###

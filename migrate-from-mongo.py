@@ -1,50 +1,61 @@
+from dotenv import load_dotenv
+from sqlalchemy import StaticPool
+from sqlalchemy.ext.asyncio import create_async_engine
+
+from core.database import get_session
 import asyncio
 import os
 from typing import List
 
 import mongoengine
-from dotenv import find_dotenv, load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
 
-from core import database
+from core import model
 from data_mongo.model import User, Cases, Case, Tag
 from data_mongo.services import guild_service
 
 from supabase import create_client, Client
 
+load_dotenv()
+
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
-load_dotenv(find_dotenv())
-
+async def batch_add(session, data, batch_size):
+    for i in range(0, len(data), batch_size):
+        session.add_all(data[i:i + batch_size])
+        await session.commit()
 
 async def setup():
-    engine = create_engine(os.environ.get("PG_CONNECTION_STRING"), echo=True)
-
     print("STARTING SETUP...")
 
-    with Session(engine) as session:
-        guild_mongo = guild_service.get_guild()
-        guild_pg = database.GuildSetting(
+    engine = create_async_engine(
+        os.environ.get("PG_CONNECTION_STRING"),
+        echo=True,
+        pool_pre_ping=True,
+        poolclass=StaticPool
+    )
+
+    guild_mongo = guild_service.get_guild()
+    async with get_session(engine) as session:
+        guild_pg = model.GuildSetting(
             guild_id=int(os.environ.get("MAIN_GUILD_ID")),
             sabbath_mode=guild_mongo.sabbath_mode,
             ban_today_spam=guild_mongo.ban_today_spam_accounts,
         )
-
         session.add(guild_pg)
 
-        locked_channels = [database.LockedChannel(channel_id=x) for x in guild_mongo.locked_channels]
+        locked_channels = [model.LockedChannel(channel_id=x) for x in guild_mongo.locked_channels]
         session.add_all(locked_channels)
 
-        filter_excluded_guild = [database.FilterExcludedGuild(guild_id=x) for x in guild_mongo.filter_excluded_guilds]
+        filter_excluded_guild = [model.FilterExcludedGuild(guild_id=x) for x in guild_mongo.filter_excluded_guilds]
         session.add_all(filter_excluded_guild)
 
-        logging_excluded_channels = [database.LoggingExcludedChannel(channel_id=x) for x in guild_mongo.logging_excluded_channels]
+        logging_excluded_channels = [model.LoggingExcludedChannel(channel_id=x) for x in
+                                     guild_mongo.logging_excluded_channels]
         session.add_all(logging_excluded_channels)
 
-        filter_words_pg = [database.FilterWord(
+        filter_words_pg = [model.FilterWord(
             phrase=x.word,
             bypass_level=x.bypass,
             should_notify=x.notify,
@@ -54,13 +65,14 @@ async def setup():
         ) for x in guild_mongo.filter_words]
         session.add_all(filter_words_pg)
 
-        raid_phrase_pg = [database.RaidPhrase(
+        raid_phrase_pg = [model.RaidPhrase(
             phrase=x.word
         ) for x in guild_mongo.raid_phrases]
         session.add_all(raid_phrase_pg)
+        await session.commit()
 
         users_mongo: List[User] = User.objects().all()
-        users_pg = [database.User(
+        users_pg = [model.User(
             user_id=x._id,
             is_clem=x.is_clem,
             was_warn_kicked=x.was_warn_kicked,
@@ -71,36 +83,37 @@ async def setup():
             should_offline_report_ping=x.offline_report_ping
         ) for x in users_mongo]
 
-        session.add_all(users_pg)
+        await batch_add(session, users_pg, 10000)
+        await session.commit()
 
-        session.commit()
-
-        birthday_pg = [database.UserBirthday(
+        birthday_pg = [model.UserBirthday(
             user_id=x._id,
             month=x.birthday[0],
             day=x.birthday[1]
         ) for x in users_mongo if x.birthday]
         session.add_all(birthday_pg)
 
-        sticky_roles = [database.StickyRole(
+        sticky_roles = [model.StickyRole(
             role_id=y,
             user_id=x._id
         ) for x in users_mongo for y in x.sticky_roles]
 
-        session.add_all(sticky_roles)
+        await batch_add(session, sticky_roles, 10000)
+        await session.commit()
 
-        user_xp_pg = [database.UserXp(
+        user_xp_pg = [model.UserXp(
             user_id=x._id,
             xp=x.xp,
             level=x.level,
             is_xp_frozen=x.is_xp_frozen
         ) for x in users_mongo]
-        session.add_all(user_xp_pg)
 
-        tags_pg = []
+        await batch_add(session, user_xp_pg, 10000)
+        await session.commit()
+
         for _tag in guild_mongo.tags:
             tag: Tag = _tag
-            pg_tag = database.Tag(
+            pg_tag = model.Tag(
                 phrase=tag.name,
                 content=tag.content,
                 creator_id=tag.added_by_id,
@@ -108,22 +121,46 @@ async def setup():
                 uses=tag.use_count,
             )
             if (read_image := tag.image.read()) is not None:
-                # upload to supadatabase.S3 and get the link
+                # upload to supabase.S3 and get the link
                 ## generate random slug
                 slug = os.urandom(8).hex()
-                response = supadatabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image, path=f"tags/{slug}.png", file_options={"content-type": tag.image.content_type})
+                response = supabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image,
+                                                                                            path=f"tags/{slug}.png",
+                                                                                            file_options={
+                                                                                                "content-type": tag.image.content_type})
                 pg_tag.image = str(response.url)
 
-            tags_pg.append(pg_tag)
+            session.add(pg_tag)
+            await session.commit()
 
-        session.add_all(tags_pg)
-
-        tag_buttons = [database.TagButton(
+        tag_buttons = [model.TagButton(
             tag_name=x.name,
             label=y[0],
             link=y[1]
         ) for x in guild_mongo.tags for y in x.button_links]
         session.add_all(tag_buttons)
+
+        for _tag in guild_mongo.memes:
+            meme: Tag = _tag
+            pg_meme = model.Meme(
+                phrase=meme.name,
+                content=meme.content,
+                creator_id=meme.added_by_id,
+                created_at=meme.added_date,
+                uses=meme.use_count,
+            )
+            if (read_image := meme.image.read()) is not None:
+                # upload to supabase.S3 and get the link
+                ## generate random slug
+                slug = os.urandom(8).hex()
+                response = supabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image,
+                                                                                            path=f"memes/{slug}.png",
+                                                                                            file_options={
+                                                                                                "content-type": meme.image.content_type})
+                pg_meme.image = str(response.url)
+
+            session.add(pg_meme)
+            await session.commit()
 
         user_cases_mongo: List[Cases] = Cases.objects().all()
         cases_with_user_id: List[Case] = []
@@ -134,7 +171,7 @@ async def setup():
 
         cases_with_user_id.sort(key=lambda x: x._id)
 
-        cases_pg = [database.Case(
+        cases_pg = [model.Case(
             user_id=c.u,
             mod_id=c.mod_id,
             punishment=c.punishment,
@@ -149,11 +186,11 @@ async def setup():
 
         ) for c in cases_with_user_id]
 
-        session.add_all(cases_pg)
+        await batch_add(session, cases_pg, 10000)
+        await session.commit()
 
-        session.commit()
 
-        print("DONE!")
+    print("DONE!")
 
 
 if __name__ == "__main__":
@@ -163,4 +200,4 @@ if __name__ == "__main__":
     else:
         mongoengine.register_connection(
             host=os.environ.get("DB_CONNECTION_STRING"), alias="default", name="botty")
-    res = asyncio.get_event_loop().run_until_complete(setup())
+    res = asyncio.run(setup())
