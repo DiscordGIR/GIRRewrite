@@ -24,6 +24,8 @@ mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
 
 
 class Bot(commands.Bot):
+    engine:
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

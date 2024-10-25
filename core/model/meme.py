@@ -1,0 +1,19 @@
+import datetime
+
+from sqlalchemy import Column, BigInteger, String, ForeignKey, Index, DateTime
+
+from . import Base
+
+
+class Meme(Base):
+    __tablename__ = 'meme'
+
+    phrase = Column(String, primary_key=True, index=True)
+    creator_id = Column(BigInteger, ForeignKey('user.user_id'))
+    uses = Column(BigInteger, default=-1)
+    image = Column(String)
+    created_at = Column(DateTime, default=datetime.datetime.now(datetime.timezone.utc))
+    content = Column(String)
+
+    def __repr__(self):
+        return f"<Meme(name={self.phrase}, owner_id={self.creator_id}, uses={self.uses}>"

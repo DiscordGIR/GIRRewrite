@@ -1,6 +1,4 @@
 from dotenv import load_dotenv
-from sqlalchemy import StaticPool
-from sqlalchemy.ext.asyncio import create_async_engine
 
 from core.database import get_session, get_engine
 import asyncio
