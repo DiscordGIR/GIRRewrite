@@ -57,7 +57,7 @@ class ModUtils(commands.Cog):
         embed.color = discord.Color.blurple()
         embed.add_field(name="Level", value=u.level)
         embed.add_field(name="XP", value=u.xp)
-        embed.add_field(name="Warnpoints", value=f"{u.warn_points} points")
+        embed.add_field(name="Warnpoints", value=f"{u.points} points")
         embed.add_field(
             name="Cases", value=f"We transferred {case_count} cases")
 
@@ -84,7 +84,7 @@ class ModUtils(commands.Cog):
         results = user_service.get_user(member.id)
         results.is_clem = True
         results.is_xp_frozen = True
-        results.warn_points = 599
+        results.points = 599
         results.save()
 
         case = Case(
@@ -311,7 +311,7 @@ class ModUtils(commands.Cog):
         embed.add_field(name="Account creation date",
                         value=f"{format_dt(user.created_at, style='F')} ({format_dt(user.created_at, style='R')})")
         embed.add_field(name="Warn points",
-                        value=user_info.warn_points, inline=True)
+                        value=user_info.points, inline=True)
 
         if user_info.is_clem:
             embed.add_field(

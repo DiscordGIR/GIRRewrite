@@ -2,17 +2,15 @@ from datetime import datetime
 from typing import Union
 
 import discord
-# from data_mongo.services import user_service
 from discord import app_commands
 from discord.ext import commands
 
-from core import get_session, xp_for_next_level
+from cogs.shared import handle_userinfo
+from core import get_session
 from core.bot import Bot
 from core.service import UserService, UserXpService, CaseService
-from core.ui import format_xptop_page, format_cases_page
 from utils import GIRContext, cfg, transform_context
 from utils.framework import PermissionsFailure, gatekeeper, whisper
-from utils.views import Menu
 
 
 class UserInfo(commands.Cog):
@@ -22,13 +20,14 @@ class UserInfo(commands.Cog):
         self.bot = bot
         self.start_time = datetime.now()
 
-    # @app_commands.guilds(cfg.guild_id)
-    # @app_commands.command(description="Get info of another user or yourself.")
-    # @app_commands.describe(user="User to get info of")
-    # @transform_context
-    # @whisper
-    # async def userinfo(self, ctx: GIRContext, user: Union[discord.Member, discord.User] = None) -> None:
-    #     await handle_userinfo(ctx, user)
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Get info of another user or yourself.")
+    @app_commands.describe(user="User to get info of")
+    @transform_context
+    @whisper
+    async def userinfo(self, ctx: GIRContext, user: Union[discord.Member, discord.User] = None) -> None:
+        embed = await handle_userinfo(ctx, user)
+        await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Show your or another user's XP")
@@ -43,20 +42,7 @@ class UserInfo(commands.Cog):
             user_xp_service = UserXpService(session)
             user_xp = await user_xp_service.get_xp(member.id)
 
-        embed = discord.Embed(title="Level Statistics")
-        embed.color = member.top_role.color
-        embed.set_author(name=member, icon_url=member.display_avatar)
-        embed.add_field(
-            name="Level", value=user_xp.level if not user_xp.is_clem else "0", inline=True)
-        embed.add_field(
-            name="XP", value=f'{user_xp.xp}/{xp_for_next_level(user_xp.level)}' if not user_xp.is_clem else "0/0",
-            inline=True)
-
-        embed.add_field(
-            name="Rank",
-            value=f"{user_xp.rank}/{user_xp.total_user_count}" if not user_xp.is_clem else f"{user_xp.total_user_count}/{user_xp.total_user_count}",
-            inline=True
-        )
+        embed = user_xp_service.get_xp_embed(member, user_xp)
 
         await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
@@ -77,15 +63,9 @@ class UserInfo(commands.Cog):
         # fetch user profile from database
         async with get_session(self.bot.engine) as session:
             user_service = UserService(session)
-            result = await user_service.get_user_warn_points(member.id)
+            warn_points = await user_service.get_user_warn_points(member.id)
 
-        embed = discord.Embed(title="Warn Points",
-                              color=discord.Color.orange())
-        embed.set_thumbnail(url=member.display_avatar)
-        embed.add_field(
-            name="Member", value=f'{member.mention}\n{member}\n({member.id})', inline=True)
-        embed.add_field(name="Warn Points",
-                        value=result.warn_points, inline=True)
+        embed = user_service.get_warn_points_embed(member, warn_points)
 
         await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
@@ -96,17 +76,13 @@ class UserInfo(commands.Cog):
     async def xptop(self, ctx: GIRContext):
         async with get_session(self.bot.engine) as session:
             user_xp_service = UserXpService(session)
-            results = await user_xp_service.get_leaderboard()
+            leaderboard = await user_xp_service.get_leaderboard()
 
-            results = [entry for entry in results if ctx.guild.get_member(
-                entry.user_id) is not None][0:100]
+        if not leaderboard:
+            return await ctx.send_warning("No users found in the leaderboard.", delete_after=5)
 
-            if not results:
-                return await ctx.send_warning("No users found in the leaderboard.", delete_after=5)
-
-            menu = Menu(ctx, results, per_page=10,
-                        page_formatter=format_xptop_page, whisper=ctx.whisper)
-            await menu.start()
+        menu = user_xp_service.create_xptop_menu(ctx, leaderboard)
+        await menu.start()
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Show your or another user's cases")
@@ -147,72 +123,10 @@ class UserInfo(commands.Cog):
         if not cases:
             return await ctx.send_warning(f'{user.mention} has no cases.', delete_after=5)
 
-        # filter out unmute cases because they are irrelevant
-        cases = [case for case in cases if case.punishment != "UNMUTE"]
-
-        ctx.target = user
-
-        menu = Menu(ctx, cases, per_page=10,
-                    page_formatter=format_cases_page, whisper=ctx.whisper)
+        menu = case_service.create_cases_menu(ctx, user, cases)
         await menu.start()
 
 
 async def setup(bot):
     await bot.add_cog(UserInfo(bot))
 
-
-async def handle_userinfo(ctx: GIRContext, user: Union[discord.Member, discord.User]):
-    pass
-    # is_mod = gatekeeper.has(ctx.guild, ctx.author, 5)
-    # if user is None:
-    #     user = ctx.author
-    #
-    # # is the invokee in the guild?
-    # if isinstance(user, discord.User) and not is_mod:
-    #     raise commands.BadArgument(
-    #         "You do not have permission to use this command.")
-    #
-    # # non-mods are only allowed to request their own userinfo
-    # if not is_mod and user.id != ctx.author.id:
-    #     raise commands.BadArgument(
-    #         "You do not have permission to use this command.")
-    #
-    # # prepare list of roles and join date
-    # roles = ""
-    # if isinstance(user, discord.Member) and user.joined_at is not None:
-    #     reversed_roles = user.roles
-    #     reversed_roles.reverse()
-    #
-    #     for role in reversed_roles[:-1]:
-    #         roles += role.mention + " "
-    #     joined = f"{format_dt(user.joined_at, style='F')} ({format_dt(user.joined_at, style='R')})"
-    # else:
-    #     roles = "No roles."
-    #     joined = f"User not in {ctx.guild}"
-    #
-    # results = user_service.get_user(user.id)
-    #
-    # embed = discord.Embed(title=f"User Information", color=user.color)
-    # embed.set_author(name=user)
-    # embed.set_thumbnail(url=user.display_avatar)
-    # embed.add_field(name="Username",
-    #                 value=f'{user} ({user.mention})', inline=True)
-    # embed.add_field(
-    #     name="Level", value=results.level if not results.is_clem else "0", inline=True)
-    # embed.add_field(
-    #     name="XP", value=results.xp if not results.is_clem else "0/0", inline=True)
-    # embed.add_field(
-    #     name="Roles", value=roles[:1024] if roles else "None", inline=False)
-    # embed.add_field(
-    #     name="Join date", value=joined, inline=True)
-    # embed.add_field(name="Account creation date",
-    #                 value=f"{format_dt(user.created_at, style='F')} ({format_dt(user.created_at, style='R')})",
-    #                 inline=True)
-    #
-    # if user.banner is None and isinstance(user, discord.Member):
-    #     user = await ctx.bot.fetch_user(user.id)
-    #
-    # if user.banner is not None:
-    #     embed.set_image(url=user.banner.url)
-    #
-    # await ctx.respond(embed=embed, ephemeral=ctx.whisper)

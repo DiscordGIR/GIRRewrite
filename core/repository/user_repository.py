@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.domain import UserXpAndLeaderboardRank, LeaderboardEntry
-from core.domain.user.warn_points_result import WarnPoints
+from core.domain.user.warn_points_result import WarnPointsResult
 from core.model import User
 
 
@@ -52,12 +52,12 @@ class UserRepository:
             total_user_count=total_user_count
         )
 
-    async def get_user_warn_points(self, user_id) -> WarnPoints:
+    async def get_user_warn_points(self, user_id) -> WarnPointsResult:
         stmt = select(User.warn_points).where(User.user_id == user_id)
         result = await self.session.execute(stmt)
         warn_points = result.scalar()
 
-        return WarnPoints(user_id=user_id, warn_points=warn_points)
+        return WarnPointsResult(user_id=user_id, points=warn_points)
 
     async def get_leaderboard(self, top_user_count) -> List[LeaderboardEntry]:
         stmt = (

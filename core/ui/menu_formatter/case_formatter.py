@@ -8,7 +8,7 @@ from core.model import CaseType
 from utils import GIRContext
 
 
-async def format_cases_page(ctx: GIRContext, entries: List[CaseResult], current_page: int, all_pages: List[List[CaseResult]]):
+def format_cases_page(ctx: GIRContext, entries: List[CaseResult], current_page: int, all_pages: List[List[CaseResult]]) -> discord.Embed:
     """Formats the page for the cases embed.
 
     Parameters
@@ -32,9 +32,7 @@ async def format_cases_page(ctx: GIRContext, entries: List[CaseResult], current_
     user = ctx.target
     warn_points = entries[0].warn_points
 
-    for page in all_pages:
-        for case in page:
-            page_count = page_count + 1
+    page_count = sum(len(page) for page in all_pages)
 
     embed = discord.Embed(
         title=f'Cases - {warn_points} warn points', color=discord.Color.blurple())

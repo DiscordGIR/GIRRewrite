@@ -188,7 +188,7 @@ def prepare_embed(target: Union[discord.Message, discord.Member], word: str = No
                     value=f"{discord.utils.format_dt(member.created_at, style='F')} ({discord.utils.format_dt(member.created_at, style='R')})", inline=True)
 
     embed.add_field(name="Warn points",
-                    value=user_info.warn_points, inline=True)
+                    value=user_info.points, inline=True)
 
     reversed_roles = member.roles
     reversed_roles.reverse()

@@ -109,7 +109,7 @@ class UnbanAppeals(commands.Cog):
         embed.add_field(
             name="XP", value=results.xp if not results.is_clem else "CLEMMED", inline=True)
         embed.add_field(
-            name="Punishments", value=f"{results.warn_points} warn points\n{len(user_service.get_cases(appealer.id).cases)} cases", inline=True)
+            name="Punishments", value=f"{results.points} warn points\n{len(user_service.get_cases(appealer.id).cases)} cases", inline=True)
 
         embed.add_field(name="Account creation date",
                         value=f"{format_dt(appealer.created_at, style='F')} ({format_dt(appealer.created_at, style='R')})", inline=True)

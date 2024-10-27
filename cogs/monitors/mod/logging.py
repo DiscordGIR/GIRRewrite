@@ -38,7 +38,7 @@ class Logging(commands.Cog):
         embed.add_field(
             name="User", value=f'{member} ({member.mention})', inline=True)
         embed.add_field(name="Warnpoints",
-                        value=db_user.warn_points, inline=True)
+                        value=db_user.points, inline=True)
         embed.add_field(
             name="Join date", value=f"{format_dt(member.joined_at, style='F')} ({format_dt(member.joined_at, style='R')})", inline=True)
         embed.add_field(name="Created",
