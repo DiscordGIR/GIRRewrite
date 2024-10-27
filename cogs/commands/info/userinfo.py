@@ -47,7 +47,7 @@ def format_xptop_page(ctx, entries, current_page, all_pages):
             if i == entries[2][0]:
                 trophy = ':third_place:'
 
-        embed.add_field(name=f"#{i+1} - Level {user.level}",
+        embed.add_field(name=f"#{i + 1} - Level {user.level}",
                         value=f"{trophy} {member.mention}", inline=False)
 
     embed.set_footer(text=f"Page {current_page} of {len(all_pages)}")
@@ -89,22 +89,28 @@ def format_cases_page(ctx, entries, current_page, all_pages):
         if case._type == "WARN" or case._type == "LIFTWARN":
             if case.lifted:
                 embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id} [LIFTED]',
-                                value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Lifted by**: {case.lifted_by_tag}\n**Lift reason**: {case.lifted_reason}\n**Warned on**: {formatted}', inline=True)
+                                value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Lifted by**: {case.lifted_by_tag}\n**Lift reason**: {case.lifted_reason}\n**Warned on**: {formatted}',
+                                inline=True)
             elif case._type == "LIFTWARN":
                 embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id} [LIFTED (legacy)]',
-                                value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Warned on**: {formatted}', inline=True)
+                                value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Warned on**: {formatted}',
+                                inline=True)
             else:
                 embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
-                                value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Warned on**: {formatted}', inline=True)
+                                value=f'**Points**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Warned on**: {formatted}',
+                                inline=True)
         elif case._type == "MUTE" or case._type == "REMOVEPOINTS":
             embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
-                            value=f'**{pun_map[case._type]}**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}', inline=True)
+                            value=f'**{pun_map[case._type]}**: {case.punishment}\n**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}',
+                            inline=True)
         elif case._type in pun_map:
             embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
-                            value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**{pun_map[case._type]} on**: {formatted}', inline=True)
+                            value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**{pun_map[case._type]} on**: {formatted}',
+                            inline=True)
         else:
             embed.add_field(name=f'{determine_emoji(case._type)} Case #{case._id}',
-                            value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}', inline=True)
+                            value=f'**Reason**: {case.reason}\n**Moderator**: {case.mod_tag}\n**Time**: {formatted}',
+                            inline=True)
     embed.set_footer(
         text=f"Page {current_page} of {len(all_pages)} - newest cases first ({page_count} total cases)")
     return embed
@@ -161,7 +167,7 @@ class UserInfo(commands.Cog):
 
         async with get_session(self.bot.engine) as session:
             user_service = UserService(session)
-            user_xp = await user_service.get_leaderboard_rank(member.id)
+            user_xp = await user_service.get_xp(member.id)
 
         embed = discord.Embed(title="Level Statistics")
         embed.color = member.top_role.color
@@ -169,10 +175,14 @@ class UserInfo(commands.Cog):
         embed.add_field(
             name="Level", value=user_xp.level if not user_xp.is_clem else "0", inline=True)
         embed.add_field(
-            name="XP", value=f'{user_xp.xp}/{xp_for_next_level(user_xp.level)}' if not user_xp.is_clem else "0/0", inline=True)
+            name="XP", value=f'{user_xp.xp}/{xp_for_next_level(user_xp.level)}' if not user_xp.is_clem else "0/0",
+            inline=True)
 
         embed.add_field(
-            name="Rank", value=f"{user_xp.rank}/{user_xp.total_count}" if not user_xp.is_clem else f"{user_xp.total_count}/{user_xp.total_count}", inline=True)
+            name="Rank",
+            value=f"{user_xp.rank}/{user_xp.total_user_count}" if not user_xp.is_clem else f"{user_xp.total_user_count}/{user_xp.total_user_count}",
+            inline=True
+        )
 
         await ctx.respond(embed=embed, ephemeral=ctx.whisper)
 
@@ -325,7 +335,8 @@ async def handle_userinfo(ctx: GIRContext, user: Union[discord.Member, discord.U
     embed.add_field(
         name="Join date", value=joined, inline=True)
     embed.add_field(name="Account creation date",
-                    value=f"{format_dt(user.created_at, style='F')} ({format_dt(user.created_at, style='R')})", inline=True)
+                    value=f"{format_dt(user.created_at, style='F')} ({format_dt(user.created_at, style='R')})",
+                    inline=True)
 
     if user.banner is None and isinstance(user, discord.Member):
         user = await ctx.bot.fetch_user(user.id)

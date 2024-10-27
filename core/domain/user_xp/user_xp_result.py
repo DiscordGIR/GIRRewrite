@@ -1,10 +1,10 @@
-class UserXpResult:
-    def __init__(self, xp: int, level: int, rank: int, total_count: int, is_clem: bool = False):
+class UserXpAndLeaderboardRank:
+    def __init__(self, xp: int, level: int, rank: int, total_user_count: int, is_clem: bool):
         self.xp = xp
         self.level = level
         self.rank = rank
-        self.total_count = total_count
-        self.is_clem = False
+        self.total_user_count = total_user_count
+        self.is_clem = is_clem
 
     def __repr__(self):
-        return f"<UserXpResult(xp={self.xp}, level={self.level}, rank={self.rank}, total_count={self.total_count})>"
+        return f"<UserXpAndLeaderboardRank(xp={self.xp}, level={self.level}, rank={self.rank}, total_user_count={self.total_user_count})>"
