@@ -7,7 +7,6 @@ class User(Base):
     __tablename__ = 'user'
 
     user_id = Column(BigInteger, primary_key=True, index=True)
-    username = Column(String)
     is_clem = Column(Boolean, default=False)
     xp = Column(Integer, default=-1)
     level = Column(Integer, default=-1)

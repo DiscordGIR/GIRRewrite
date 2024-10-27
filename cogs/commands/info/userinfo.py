@@ -1,17 +1,15 @@
 from datetime import datetime
-from math import floor
-from typing import Union, List
+from typing import Union
 
 import discord
-
-from core.database import get_session
 # from data_mongo.services import user_service
 from discord import app_commands
 from discord.ext import commands
 
-from core.service import UserService, UserXpService
+from core import get_session, xp_for_next_level
 from core.bot import Bot
-from core.ui import format_xptop_page
+from core.service import UserService, UserXpService, CaseService
+from core.ui import format_xptop_page, format_cases_page
 from utils import GIRContext, cfg, transform_context
 from utils.framework import PermissionsFailure, gatekeeper, whisper
 from utils.views import Menu
@@ -110,64 +108,53 @@ class UserInfo(commands.Cog):
                         page_formatter=format_xptop_page, whisper=ctx.whisper)
             await menu.start()
 
-    # @app_commands.guilds(cfg.guild_id)
-    # @app_commands.command(description="Show your or another user's cases")
-    # @app_commands.describe(user="User to get cases of")
-    # @transform_context
-    # @whisper
-    # async def cases(self, ctx: GIRContext, user: Union[discord.Member, discord.User] = None):
-    #     """Show list of cases of a user (mod only)
-    #
-    #     Example usage
-    #     --------------
-    #     /cases user:<@user/ID>
-    #
-    #     Parameters
-    #     ----------
-    #     user : discord.Member, optional
-    #         "User we want to get cases of, doesn't have to be in guild"
-    #
-    #     """
-    #
-    #     # if an invokee is not provided in command, call command on the invoker
-    #     # (get invoker's cases)
-    #     if user is None:
-    #         user = ctx.author
-    #
-    #     # users can only invoke on themselves if they aren't mods
-    #     if not gatekeeper.has(ctx.guild, ctx.author, 5) and user.id != ctx.author.id:
-    #         raise PermissionsFailure(
-    #             f"You don't have permissions to check others' cases.")
-    #
-    #     # fetch user's cases from our database
-    #     results = user_service.get_cases(user.id)
-    #     if len(results.cases) == 0:
-    #         return await ctx.send_warning(f'{user.mention} has no cases.', delete_after=5)
-    #
-    #     # filter out unmute cases because they are irrelevant
-    #     cases = [case for case in results.cases if case._type != "UNMUTE"]
-    #     # reverse so newest cases are first
-    #     cases.reverse()
-    #
-    #     ctx.case_user = user
-    #
-    #     menu = Menu(ctx, cases, per_page=10,
-    #                 page_formatter=format_cases_page, whisper=ctx.whisper)
-    #     await menu.start()
+    @app_commands.guilds(cfg.guild_id)
+    @app_commands.command(description="Show your or another user's cases")
+    @app_commands.describe(user="User to get cases of")
+    @transform_context
+    @whisper
+    async def cases(self, ctx: GIRContext, user: Union[discord.Member, discord.User] = None):
+        """Show list of cases of a user (mod only)
 
+        Example usage
+        --------------
+        /cases user:<@user/ID>
 
-def xp_for_next_level(_next):
-    """Magic formula to determine XP thresholds for levels
-    """
+        Parameters
+        ----------
+        ctx : GIRContext
+            "The context of the command"
+        user : discord.Member, optional
+            "User we want to get cases of, doesn't have to be in guild"
 
-    level = 0
-    xp = 0
+        """
 
-    for _ in range(0, _next):
-        xp = xp + 45 * level * (floor(level / 10) + 1)
-        level += 1
+        # if an invokee is not provided in command, call command on the invoker
+        # (get invoker's cases)
+        if user is None:
+            user = ctx.author
 
-    return xp
+        # users can only invoke on themselves if they aren't mods
+        if not gatekeeper.has(ctx.guild, ctx.author, 5) and user.id != ctx.author.id:
+            raise PermissionsFailure(
+                f"You don't have permissions to check others' cases.")
+
+        # fetch user's cases from our database
+        async with get_session(self.bot.engine) as session:
+            case_service = CaseService(session)
+            cases = await case_service.get_user_cases(user.id)
+
+        if not cases:
+            return await ctx.send_warning(f'{user.mention} has no cases.', delete_after=5)
+
+        # filter out unmute cases because they are irrelevant
+        cases = [case for case in cases if case.punishment != "UNMUTE"]
+
+        ctx.target = user
+
+        menu = Menu(ctx, cases, per_page=10,
+                    page_formatter=format_cases_page, whisper=ctx.whisper)
+        await menu.start()
 
 
 async def setup(bot):

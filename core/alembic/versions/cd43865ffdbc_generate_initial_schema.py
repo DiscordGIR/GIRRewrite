@@ -1,8 +1,8 @@
-"""Create initial database structure
+"""Generate initial schema
 
-Revision ID: e0494913a70e
+Revision ID: cd43865ffdbc
 Revises: 
-Create Date: 2024-10-25 19:36:50.295470
+Create Date: 2024-10-27 17:23:27.372162
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'e0494913a70e'
+revision: str = 'cd43865ffdbc'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,19 +24,21 @@ def upgrade() -> None:
     sa.Column('case_id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.BigInteger(), nullable=False),
     sa.Column('mod_id', sa.BigInteger(), nullable=False),
-    sa.Column('type', sa.Enum('BAN', 'KICK', 'MUTE', 'WARN', 'UNBAN', 'UNMUTE', 'LIFTWARN', 'REMOVEPOINTS', 'CLEM', name='casetype'), nullable=False),
+    sa.Column('mod_tag', sa.String(), nullable=True),
+    sa.Column('case_type', sa.Enum('BAN', 'KICK', 'MUTE', 'WARN', 'UNBAN', 'UNMUTE', 'LIFTWARN', 'REMOVEPOINTS', 'CLEM', name='casetype'), nullable=False),
     sa.Column('punishment', sa.String(), nullable=True),
     sa.Column('reason', sa.String(), nullable=True),
     sa.Column('date', sa.DateTime(), nullable=True),
     sa.Column('until', sa.DateTime(), nullable=True),
     sa.Column('lifted', sa.Boolean(), nullable=True),
     sa.Column('lifted_by_id', sa.BigInteger(), nullable=True),
+    sa.Column('lifted_by_tag', sa.String(), nullable=True),
     sa.Column('lifted_reason', sa.String(), nullable=True),
     sa.Column('lifted_date', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('case_id')
     )
-    op.create_index('case_case_id_index', 'case', ['case_id'], unique=False)
-    op.create_index('case_user_id_index', 'case', ['user_id'], unique=False)
+    op.create_index(op.f('ix_case_case_id'), 'case', ['case_id'], unique=False)
+    op.create_index(op.f('ix_case_user_id'), 'case', ['user_id'], unique=False)
     op.create_table('filter_excluded_guild',
     sa.Column('guild_id', sa.BigInteger(), nullable=False),
     sa.PrimaryKeyConstraint('guild_id')
@@ -45,12 +47,12 @@ def upgrade() -> None:
     sa.Column('phrase', sa.String(), nullable=False),
     sa.Column('should_notify', sa.Boolean(), nullable=False),
     sa.Column('filter_without_removing', sa.Boolean(), nullable=True),
-    sa.Column('bypass_level', sa.BigInteger(), nullable=False),
+    sa.Column('bypass_level', sa.Integer(), nullable=False),
     sa.Column('disable_extra_checks', sa.Boolean(), nullable=True),
     sa.Column('is_piracy_phrase', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('phrase')
     )
-    op.create_index('filter_word_word_index', 'filter_word', ['phrase'], unique=False)
+    op.create_index(op.f('ix_filter_word_phrase'), 'filter_word', ['phrase'], unique=False)
     op.create_table('guild_setting',
     sa.Column('guild_id', sa.BigInteger(), nullable=False),
     sa.Column('sabbath_mode', sa.Boolean(), nullable=True),
@@ -69,49 +71,51 @@ def upgrade() -> None:
     sa.Column('phrase', sa.String(), nullable=False),
     sa.PrimaryKeyConstraint('phrase')
     )
-    op.create_index('raid_phrase_word_index', 'raid_phrase', ['phrase'], unique=False)
+    op.create_index(op.f('ix_raid_phrase_phrase'), 'raid_phrase', ['phrase'], unique=False)
     op.create_table('user',
     sa.Column('user_id', sa.BigInteger(), nullable=False),
-    sa.Column('username', sa.String(), nullable=True),
     sa.Column('is_clem', sa.Boolean(), nullable=True),
+    sa.Column('xp', sa.Integer(), nullable=True),
+    sa.Column('level', sa.Integer(), nullable=True),
+    sa.Column('is_xp_frozen', sa.Boolean(), nullable=True),
     sa.Column('was_warn_kicked', sa.Boolean(), nullable=True),
     sa.Column('is_birthday_banned', sa.Boolean(), nullable=True),
     sa.Column('is_raid_verified', sa.Boolean(), nullable=True),
-    sa.Column('warn_points', sa.BigInteger(), nullable=True),
+    sa.Column('warn_points', sa.Integer(), nullable=True),
     sa.Column('timezone', sa.String(), nullable=True),
     sa.Column('should_offline_report_ping', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('user_id')
     )
-    op.create_index('user_user_id_index', 'user', ['user_id'], unique=False)
+    op.create_index(op.f('ix_user_user_id'), 'user', ['user_id'], unique=False)
     op.create_table('meme',
     sa.Column('phrase', sa.String(), nullable=False),
     sa.Column('creator_id', sa.BigInteger(), nullable=True),
-    sa.Column('uses', sa.BigInteger(), nullable=True),
+    sa.Column('uses', sa.Integer(), nullable=True),
     sa.Column('image', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('content', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['creator_id'], ['user.user_id'], ),
     sa.PrimaryKeyConstraint('phrase')
     )
-    op.create_index('meme_name_index', 'meme', ['phrase'], unique=False)
+    op.create_index(op.f('ix_meme_phrase'), 'meme', ['phrase'], unique=False)
     op.create_table('sticky_role',
     sa.Column('role_id', sa.BigInteger(), nullable=False),
     sa.Column('user_id', sa.BigInteger(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.user_id'], ),
     sa.PrimaryKeyConstraint('role_id', 'user_id')
     )
-    op.create_index('sticky_role_user_id_index', 'sticky_role', ['user_id'], unique=False)
+    op.create_index(op.f('ix_sticky_role_user_id'), 'sticky_role', ['user_id'], unique=False)
     op.create_table('tag',
     sa.Column('phrase', sa.String(), nullable=False),
     sa.Column('creator_id', sa.BigInteger(), nullable=True),
-    sa.Column('uses', sa.BigInteger(), nullable=True),
+    sa.Column('uses', sa.Integer(), nullable=True),
     sa.Column('image', sa.String(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.Column('content', sa.String(), nullable=True),
     sa.ForeignKeyConstraint(['creator_id'], ['user.user_id'], ),
     sa.PrimaryKeyConstraint('phrase')
     )
-    op.create_index('tag_name_index', 'tag', ['phrase'], unique=False)
+    op.create_index(op.f('ix_tag_phrase'), 'tag', ['phrase'], unique=False)
     op.create_table('user_birthday',
     sa.Column('user_id', sa.BigInteger(), nullable=False),
     sa.Column('day', sa.Integer(), nullable=True),
@@ -120,15 +124,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('user_id')
     )
     op.create_index('user_birthday_index', 'user_birthday', ['month', 'day'], unique=False)
-    op.create_table('user_xp',
-    sa.Column('user_id', sa.BigInteger(), nullable=False),
-    sa.Column('xp', sa.BigInteger(), nullable=True),
-    sa.Column('level', sa.BigInteger(), nullable=True),
-    sa.Column('is_xp_frozen', sa.Boolean(), nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['user.user_id'], ),
-    sa.PrimaryKeyConstraint('user_id')
-    )
-    op.create_index('user_xp_user_index', 'user_xp', ['user_id'], unique=False)
     op.create_table('tag_button',
     sa.Column('button_id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('tag_name', sa.String(), nullable=False),
@@ -137,36 +132,34 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['tag_name'], ['tag.phrase'], ),
     sa.PrimaryKeyConstraint('button_id')
     )
-    op.create_index('tag_button_tag_name_index', 'tag_button', ['tag_name'], unique=False)
+    op.create_index(op.f('ix_tag_button_tag_name'), 'tag_button', ['tag_name'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index('tag_button_tag_name_index', table_name='tag_button')
+    op.drop_index(op.f('ix_tag_button_tag_name'), table_name='tag_button')
     op.drop_table('tag_button')
-    op.drop_index('user_xp_user_index', table_name='user_xp')
-    op.drop_table('user_xp')
     op.drop_index('user_birthday_index', table_name='user_birthday')
     op.drop_table('user_birthday')
-    op.drop_index('tag_name_index', table_name='tag')
+    op.drop_index(op.f('ix_tag_phrase'), table_name='tag')
     op.drop_table('tag')
-    op.drop_index('sticky_role_user_id_index', table_name='sticky_role')
+    op.drop_index(op.f('ix_sticky_role_user_id'), table_name='sticky_role')
     op.drop_table('sticky_role')
-    op.drop_index('meme_name_index', table_name='meme')
+    op.drop_index(op.f('ix_meme_phrase'), table_name='meme')
     op.drop_table('meme')
-    op.drop_index('user_user_id_index', table_name='user')
+    op.drop_index(op.f('ix_user_user_id'), table_name='user')
     op.drop_table('user')
-    op.drop_index('raid_phrase_word_index', table_name='raid_phrase')
+    op.drop_index(op.f('ix_raid_phrase_phrase'), table_name='raid_phrase')
     op.drop_table('raid_phrase')
     op.drop_table('logging_excluded_channel')
     op.drop_table('locked_channel')
     op.drop_table('guild_setting')
-    op.drop_index('filter_word_word_index', table_name='filter_word')
+    op.drop_index(op.f('ix_filter_word_phrase'), table_name='filter_word')
     op.drop_table('filter_word')
     op.drop_table('filter_excluded_guild')
-    op.drop_index('case_user_id_index', table_name='case')
-    op.drop_index('case_case_id_index', table_name='case')
+    op.drop_index(op.f('ix_case_user_id'), table_name='case')
+    op.drop_index(op.f('ix_case_case_id'), table_name='case')
     op.drop_table('case')
     op.execute('DROP TYPE casetype')
     # ### end Alembic commands ###

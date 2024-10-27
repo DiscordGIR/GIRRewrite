@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from core.database import get_session, get_engine
+from core import get_session, get_engine
 import asyncio
 import os
 from typing import List
@@ -160,15 +160,17 @@ async def setup():
         cases_pg = [model.Case(
             user_id=c.u,
             mod_id=c.mod_id,
+            mod_tag=c.mod_tag,
             punishment=c.punishment,
             reason=c.reason,
             date=c.date,
             until=c.until,
             lifted=c.lifted,
             lifted_by_id=c.lifted_by_id,
+            lifted_by_tag=c.lifted_by_tag,
             lifted_reason=c.lifted_reason,
             lifted_date=c.lifted_date,
-            type=c._type
+            case_type=c._type
 
         ) for c in cases_with_user_id]
 
