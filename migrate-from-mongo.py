@@ -73,7 +73,10 @@ async def setup():
             is_raid_verified=x.raid_verified,
             warn_points=x.warn_points,
             timezone=x.timezone,
-            should_offline_report_ping=x.offline_report_ping
+            should_offline_report_ping=x.offline_report_ping,
+            xp=x.xp,
+            level=x.level,
+            is_xp_frozen=x.is_xp_frozen
         ) for x in users_mongo]
 
         await batch_add(session, users_pg, 10000)
@@ -92,16 +95,6 @@ async def setup():
         ) for x in users_mongo for y in x.sticky_roles]
 
         await batch_add(session, sticky_roles, 10000)
-        await session.commit()
-
-        user_xp_pg = [model.UserXp(
-            user_id=x._id,
-            xp=x.xp,
-            level=x.level,
-            is_xp_frozen=x.is_xp_frozen
-        ) for x in users_mongo]
-
-        await batch_add(session, user_xp_pg, 10000)
         await session.commit()
 
         for _tag in guild_mongo.tags:

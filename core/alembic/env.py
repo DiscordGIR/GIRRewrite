@@ -9,7 +9,10 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-from core.model import Base
+from core.model import Case, FilterExcludedGuild, FilterWord, GuildSetting, LoggingExcludedChannel, LockedChannel, Meme, RaidPhrase, StickyRole, Tag, TagButton, User, UserBirthday
+from core.model.base import Base
+
+models = [Case, FilterExcludedGuild, FilterWord, GuildSetting, LoggingExcludedChannel, LockedChannel, Meme, RaidPhrase, StickyRole, Tag, TagButton, User, UserBirthday]
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -27,7 +30,9 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 load_dotenv()
-config.set_main_option("sqlalchemy.url", f"postgresql+asyncpg://{os.environ.get('PG_USERNAME')}:{os.environ.get('PG_PASSWORD')}@{os.environ.get('PG_HOST')}:{os.environ.get('PG_PORT')}/{os.environ.get('PG_DATABASE')}")
+config.set_main_option("sqlalchemy.url",
+                       f"postgresql+asyncpg://{os.environ.get('PG_USERNAME')}:{os.environ.get('PG_PASSWORD')}@{os.environ.get('PG_HOST')}:{os.environ.get('PG_PORT')}/{os.environ.get('PG_DATABASE')}")
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

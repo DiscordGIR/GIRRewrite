@@ -12,4 +12,3 @@ from .tag import *
 from .tag_button import *
 from .user import *
 from .user_birthday import *
-from .user_xp import *
