@@ -30,6 +30,7 @@ class UserRepository:
             select(
                 User.xp,
                 User.level,
+                User.is_clem,
                 subquery_rank.label("rank"),
                 subquery_total_users.label("total_user_count")
             )
@@ -37,7 +38,13 @@ class UserRepository:
         )
 
         result = await self.session.execute(stmt)
-        xp, level, rank, total_user_count = result.one_or_none()
+        xp, level, is_clem, rank, total_user_count = result.one_or_none()
 
-        return UserXpAndLeaderboardRank(xp, level, rank, total_user_count, False)
+        return UserXpAndLeaderboardRank(
+            xp=xp,
+            level=level,
+            is_clem=is_clem,
+            rank=rank,
+            total_user_count=total_user_count
+        )
 

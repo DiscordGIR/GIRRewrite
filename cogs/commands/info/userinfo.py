@@ -4,13 +4,14 @@ from typing import Union
 
 import discord
 
-from core import Bot, get_session
+from core import get_session
 # from data_mongo.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
 
 from core.service import UserService
+from main import Bot
 from utils import GIRContext, cfg, transform_context
 from utils.framework import PermissionsFailure, gatekeeper, whisper
 from utils.views import Menu
