@@ -103,6 +103,7 @@ async def setup():
                 phrase=tag.name,
                 content=tag.content,
                 creator_id=tag.added_by_id,
+                creator_tag=tag.added_by_tag,
                 updated_at=tag.added_date,
                 uses=tag.use_count,
             )
@@ -132,6 +133,7 @@ async def setup():
                 phrase=meme.name,
                 content=meme.content,
                 creator_id=meme.added_by_id,
+                creator_tag=meme.added_by_tag,
                 created_at=meme.added_date,
                 uses=meme.use_count,
             )

@@ -1,8 +1,8 @@
 """Generate initial schema
 
-Revision ID: cd43865ffdbc
+Revision ID: 9956eb2d4a8c
 Revises: 
-Create Date: 2024-10-27 17:23:27.372162
+Create Date: 2024-10-27 20:36:34.497085
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'cd43865ffdbc'
+revision: str = '9956eb2d4a8c'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -90,6 +90,7 @@ def upgrade() -> None:
     op.create_table('meme',
     sa.Column('phrase', sa.String(), nullable=False),
     sa.Column('creator_id', sa.BigInteger(), nullable=True),
+    sa.Column('creator_tag', sa.String(), nullable=True),
     sa.Column('uses', sa.Integer(), nullable=True),
     sa.Column('image', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
@@ -108,6 +109,7 @@ def upgrade() -> None:
     op.create_table('tag',
     sa.Column('phrase', sa.String(), nullable=False),
     sa.Column('creator_id', sa.BigInteger(), nullable=True),
+    sa.Column('creator_tag', sa.String(), nullable=True),
     sa.Column('uses', sa.Integer(), nullable=True),
     sa.Column('image', sa.String(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
