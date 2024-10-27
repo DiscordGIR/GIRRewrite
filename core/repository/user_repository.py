@@ -1,7 +1,10 @@
+from typing import List
+
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.domain import UserXpAndLeaderboardRank
+from core.domain import UserXpAndLeaderboardRank, LeaderboardEntry
+from core.domain.user.warn_points_result import WarnPoints
 from core.model import User
 
 
@@ -41,10 +44,36 @@ class UserRepository:
         xp, level, is_clem, rank, total_user_count = result.one_or_none()
 
         return UserXpAndLeaderboardRank(
+            user_id=user_id,
             xp=xp,
             level=level,
             is_clem=is_clem,
             rank=rank,
             total_user_count=total_user_count
         )
+
+    async def get_user_warn_points(self, user_id) -> WarnPoints:
+        stmt = select(User.warn_points).where(User.user_id == user_id)
+        result = await self.session.execute(stmt)
+        warn_points = result.scalar()
+
+        return WarnPoints(user_id=user_id, warn_points=warn_points)
+
+    async def get_leaderboard(self, top_user_count) -> List[LeaderboardEntry]:
+        stmt = (
+            select(
+                User.user_id,
+                User.xp,
+                User.level,
+                func.row_number().over(order_by=User.xp.desc()).label("rank")
+            )
+            .order_by(User.xp.desc())
+            .limit(top_user_count)
+        )
+
+        result = await self.session.execute(stmt)
+        leaderboard_entries = result.all()
+
+        return [LeaderboardEntry(user_id=user_id, xp=xp, level=level, rank=rank) for user_id, xp, level, rank in leaderboard_entries]
+
 

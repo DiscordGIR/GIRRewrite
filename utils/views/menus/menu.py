@@ -7,7 +7,7 @@ from utils import GIRContext
 
 
 class Menu(ui.View):
-    def __init__(self, ctx: GIRContext, entries: list, per_page: int, page_formatter: Callable[[GIRContext, list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, timeout_function=None):
+    def __init__(self, ctx: GIRContext, entries: list, per_page: int, page_formatter: Callable[[GIRContext, list, int, list], discord.Embed], whisper: bool, show_skip_buttons: bool = True, start_page=1, timeout_function=None):
         super().__init__(timeout=60)
 
         self.ctx = ctx

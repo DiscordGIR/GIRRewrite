@@ -1,1 +1,2 @@
-from .user_xp import *
+from .user import *
+from .xp import *
