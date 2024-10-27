@@ -4,16 +4,12 @@ import traceback
 import discord
 from discord.ext import commands
 from discord import app_commands
-from discord.app_commands import AppCommandError, Command, ContextMenu, CommandInvokeError, TransformerError
-from sqlalchemy.ext.asyncio import AsyncEngine
+from discord.app_commands import AppCommandError, CommandInvokeError, TransformerError
 
-from core.database import get_engine
-from extensions import initial_extensions
-from utils import cfg, db, logger, GIRContext, BanCache, IssueCache, Tasks, RuleCache, init_client_session, scam_cache
+from core.bot import Bot
+from utils import logger, GIRContext, scam_cache
 from utils.framework import PermissionsFailure, gatekeeper, find_triggered_filters
-from cogs.commands.context_commands import setup_context_commands
 
-from typing import Union
 from data_mongo.services.user_service import user_service
 
 # Remove warning from songs cog
@@ -26,34 +22,6 @@ intents = discord.Intents.all()
 mentions = discord.AllowedMentions(everyone=False, users=True, roles=False)
 
 
-class Bot(commands.Bot):
-    engine: AsyncEngine
-    ban_cache: BanCache
-    issue_cache: IssueCache
-    rule_cache: RuleCache
-    tasks: Tasks
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.ban_cache = BanCache(self)
-        self.issue_cache = IssueCache(self)
-        self.rule_cache = RuleCache(self)
-        self.engine = get_engine()
-
-        # force the config object and database connection to be loaded
-        if cfg and db and gatekeeper:
-            logger.info("Presetup phase completed! Connecting to Discord...")
-
-    async def setup_hook(self):
-        bot.remove_command("help")
-        for extension in initial_extensions:
-            await self.load_extension(extension)
-
-        setup_context_commands(self)
-
-        self.tasks = Tasks(self)
-        await init_client_session()
 
 
 class MyTree(app_commands.CommandTree):
@@ -170,9 +138,6 @@ async def on_ready():
     await bot.rule_cache.fetch_rule_cache()
     await scam_cache.fetch_scam_cache()
 
-
-    from cogs.commands.context_commands import setup_context_commands
-    setup_context_commands(bot)
 
 async def main():
     async with bot:

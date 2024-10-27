@@ -4,14 +4,15 @@ from typing import Union
 
 import discord
 
-from core import get_session
+from core.database import get_session
 # from data_mongo.services import user_service
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import format_dt
 
 from core.service import UserService
-from main import Bot
+from core.bot import Bot
+from data_mongo.services import user_service
 from utils import GIRContext, cfg, transform_context
 from utils.framework import PermissionsFailure, gatekeeper, whisper
 from utils.views import Menu
@@ -167,8 +168,8 @@ class UserInfo(commands.Cog):
             member = ctx.author
 
         async with get_session(self.bot.engine) as session:
-            user_service = UserService(session)
-            user_xp = await user_service.get_xp(member.id)
+            pg_user_service = UserService(session)
+            user_xp = await pg_user_service.get_xp(member.id)
 
         embed = discord.Embed(title="Level Statistics")
         embed.color = member.top_role.color
