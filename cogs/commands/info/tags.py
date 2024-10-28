@@ -10,8 +10,9 @@ from core.service import TagService
 from core.ui import format_taglist_page
 from utils import GIRContext, cfg, transform_context
 from utils.framework import (MessageTextBucket, gatekeeper,
-                             whisper)
+                             whisper, genius_or_submod_and_up, ImageAttachment)
 from utils.views import Menu, tags_autocomplete
+from utils.views.modals.tag import TagModal
 
 
 class Tags(commands.Cog):
@@ -94,46 +95,47 @@ class Tags(commands.Cog):
 
     tags = app_commands.Group(name="tags", description="Interact with tags", guild_ids=[cfg.guild_id])
 
-    # @genius_or_submod_and_up()
-    # @tags.command(description="Create a tag")
-    # @app_commands.describe(name="Name of the tag")
-    # @app_commands.describe(image="Image to attach to the tag")
-    # @transform_context
-    # async def add(self, ctx: GIRContext, name: str, image: ImageAttachment = None) -> None:
-    #     if not name.isalnum():
-    #         raise commands.BadArgument("Tag name must be alphanumeric.")
-    #
-    #     if len(name.split()) > 1:
-    #         raise commands.BadArgument(
-    #             "Tag names can't be longer than 1 word.")
-    #
-    #     if (guild_service.get_tag(name.lower())) is not None:
-    #         raise commands.BadArgument("Tag with that name already exists.")
-    #
-    #     modal = TagModal(bot=self.bot, tag_name=name, author=ctx.author)
-    #     await ctx.interaction.response.send_modal(modal)
-    #     await modal.wait()
-    #
-    #     tag = modal.tag
-    #     if tag is None:
-    #         return
-    #
-    #     # did the user want to attach an image to this tag?
-    #     if image is not None:
-    #         tag.image.put(image, content_type=content_type)
-    #
-    #     # store tag in database
-    #     guild_service.add_tag(tag)
-    #
-    #     _file = tag.image.read()
-    #     if _file is not None:
-    #         _file = discord.File(BytesIO(
-    #             _file), filename="image.gif" if tag.image.content_type == "image/gif" else "image.png")
-    #
-    #     await ctx.send_followup(f"Added new tag!", file=_file or discord.utils.MISSING,
-    #                             embed=prepare_tag_embed(tag) or discord.utils.MISSING,
-    #                             view=prepare_tag_view(tag) or discord.utils.MISSING, delete_after=5)
-    #
+    @genius_or_submod_and_up()
+    @tags.command(description="Create a tag")
+    @app_commands.describe(name="Name of the tag")
+    @app_commands.describe(image="Image to attach to the tag")
+    @transform_context
+    async def add(self, ctx: GIRContext, name: str, image: ImageAttachment = None) -> None:
+        if not name.isalnum():
+            raise commands.BadArgument("Tag name must be alphanumeric.")
+
+        if len(name.split()) > 1:
+            raise commands.BadArgument(
+                "Tag names can't be longer than 1 word.")
+
+        async with get_session(self.bot.engine) as session:
+            tag_service = TagService(session)
+            existing_tag = await tag_service.get_tag(name)
+
+        if existing_tag is not None:
+            raise commands.BadArgument("That tag already exists.")
+
+        modal = TagModal(bot=self.bot, tag_name=name, author=ctx.author)
+        await ctx.interaction.response.send_modal(modal)
+        await modal.wait()
+
+        tag_to_create = modal.tag_to_create
+        if tag_to_create is None:
+            return
+
+        # did the user want to attach an image to this tag?
+        if image is not None:
+            tag_to_create.image = image
+
+        async with get_session(self.bot.engine) as session:
+            tag_service = TagService(session)
+            created_tag = await tag_service.create_tag(tag_to_create)
+
+        embed = TagService.prepare_tag_embed(created_tag)
+        view = TagService.prepare_tag_button_view(created_tag.buttons)
+
+        await ctx.send_followup(f"Added new tag!", embed=embed, view=view, delete_after=5)
+
     # @genius_or_submod_and_up()
     # @tags.command(description="Edit an existing tag")
     # @app_commands.describe(name="Name of the tag")

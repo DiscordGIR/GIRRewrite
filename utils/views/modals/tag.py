@@ -1,15 +1,19 @@
 import re
 import discord
 
-from data_mongo.model import Tag
+from core.bot import Bot
+from core.domain import TagToCreate
+from core.model import Tag, TagButton
 
 
 class TagModal(discord.ui.Modal):
-    def __init__(self, bot, tag_name, author: discord.Member) -> None:
+    tag_to_create: TagToCreate
+
+    def __init__(self, bot: Bot, tag_name: str, author: discord.Member) -> None:
+        self.tag_to_create = None
         self.bot = bot
         self.tag_name = tag_name
         self.author = author
-        self.tag = None
 
         super().__init__(title=f"Add tag {self.tag_name}")
 
@@ -74,16 +78,16 @@ class TagModal(discord.ui.Modal):
                 if not label:
                     await self.send_error(interaction, "A button cannot just be an emoji!")
                     return
+        tag = Tag(
+            phrase=self.tag_name,
+            content=description,
+            creator_id=self.author.id,
+            creator_tag = str(self.author),
+        )
+        buttons = [TagButton(label=button[0], link=button[1]) for button in buttons]
 
-        # prepare tag data_mongo.model for database
-        tag = Tag()
-        tag.name = self.tag_name.lower()
-        tag.content = description
-        tag.added_by_id = self.author.id
-        tag.added_by_tag = str(self.author)
-        tag.button_links = buttons
+        self.tag_to_create = TagToCreate(tag=tag, buttons=buttons)
 
-        self.tag = tag
         self.stop()
         try:
             await interaction.response.send_message()

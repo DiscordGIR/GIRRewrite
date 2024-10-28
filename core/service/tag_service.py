@@ -1,18 +1,22 @@
+import os
 import re
 from typing import Optional, List
 
 import discord
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.domain import TagToCreate
 from core.domain.tag import TagResult
 from core.model import TagButton, Tag
 from core.repository import TagRepository
 from utils import format_number
+from supabase import create_client, Client
 
 
 class TagService:
     def __init__(self, session: AsyncSession):
         self.tag_repository = TagRepository(session)
+        self.supabase: Client = create_client(os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_KEY"))
 
     @staticmethod
     def prepare_tag_embed(tag: Tag):
@@ -58,3 +62,18 @@ class TagService:
 
     async def get_all_tags(self) -> List[Tag]:
         return await self.tag_repository.get_all_tags()
+
+    async def create_tag(self, tag_to_create: TagToCreate):
+        # upload image to supabase
+        image = tag_to_create.image
+
+        if image is not None:
+            read_image = await image.read()
+            slug = os.urandom(8).hex()
+            response = self.supabase.storage.from_(os.environ.get("SUPABASE_BUCKET")).upload(file=read_image,
+                                                                                        path=f"tags/{slug}.png",
+                                                                                        file_options={
+                                                                                            "content-type": image.content_type})
+            tag_to_create.tag.image = str(response.url)
+
+        await self.tag_repository.create_tag(tag_to_create)
