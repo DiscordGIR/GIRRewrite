@@ -1,26 +1,24 @@
-import re
 from datetime import datetime
-from io import BytesIO
 
 import discord
+from discord import app_commands
+from discord.ext import commands
+from discord.ext.commands.cooldowns import CooldownMapping
 
 from core import get_session
 from core.service import TagService
 from core.ui import format_taglist_page
-from data_mongo.model import Tag
-from data_mongo.services.guild_service import guild_service
-from discord import app_commands
-from discord.ext import commands
-from discord.ext.commands.cooldowns import CooldownMapping
-from utils import GIRContext, cfg, transform_context, format_number
+from utils import GIRContext, cfg, transform_context
 from utils.framework import (MessageTextBucket, gatekeeper,
-                             genius_or_submod_and_up, whisper, ImageAttachment)
-from utils.views import Menu, tags_autocomplete, EditTagModal, TagModal
+                             whisper)
+from utils.views import Menu, tags_autocomplete
 
 
 class Tags(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.tag_cooldown = CooldownMapping.from_cooldown(
+            1, 5, MessageTextBucket.custom)
 
     @app_commands.guilds(cfg.guild_id)
     @app_commands.command(description="Display a tag")
@@ -30,10 +28,23 @@ class Tags(commands.Cog):
     @transform_context
     async def tag(self, ctx: GIRContext, name: str, user_to_mention: discord.Member = None):
         name = name.lower()
-        tag = guild_service.get_tag(name)
+        async with get_session(self.bot.engine) as session:
+            tag_service = TagService(session)
+            result = await tag_service.get_tag(name)
 
-        if tag is None:
+        if result is None:
             raise commands.BadArgument("That tag does not exist.")
+
+        tag = result.tag
+        buttons = result.buttons
+
+        # run cooldown so tag can't be spammed
+        bucket = self.tag_cooldown.get_bucket(tag.phrase)
+        current = datetime.now().timestamp()
+        # ratelimit only if the invoker is not a moderator
+        if bucket.update_rate_limit(current) and not (
+                gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(cfg.roles.sub_mod) in ctx.author.roles):
+            raise commands.BadArgument("That tag is on cooldown.")
 
         if user_to_mention is not None:
             title = f"Hey {user_to_mention.mention}, have a look at this!"
@@ -41,9 +52,9 @@ class Tags(commands.Cog):
             title = None
 
         embed = TagService.prepare_tag_embed(tag)
-        view = TagService.prepare_tag_button_view(tag.buttons)
+        view = TagService.prepare_tag_button_view(buttons)
 
-        await ctx.respond(content=title, embed=embed, view=view, file=_file)
+        await ctx.respond(content=title, embed=embed, view=view)
 
     @commands.guild_only()
     @commands.command(name="tag", aliases=["t"])

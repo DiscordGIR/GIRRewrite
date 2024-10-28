@@ -56,5 +56,5 @@ class TagService:
 
         return view
 
-    async def get_all_tags(self):
+    async def get_all_tags(self) -> List[Tag]:
         return await self.tag_repository.get_all_tags()

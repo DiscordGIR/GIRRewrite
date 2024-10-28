@@ -1,14 +1,14 @@
-import functools
 import random
 from datetime import datetime
-from io import BytesIO
 
 import discord
-from cogs.commands.info.tags import prepare_tag_embed, prepare_tag_view
-from cogs.commands.info.userinfo import handle_userinfo
-from data_mongo.services import guild_service
 from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
+
+from cogs.commands.info.userinfo import handle_userinfo
+from core import get_session
+from core.domain import TagResult
+from core.service import TagService
 from utils import GIRContext, cfg
 from utils.framework import MessageTextBucket, gatekeeper
 from utils.framework.checks import mod_and_up
@@ -16,9 +16,6 @@ from utils.framework.transformers import ModsAndAboveMember
 from utils.views import PFPButton, PFPView
 from utils.views.menus.report import manual_report
 from utils.views.menus.report_action import WarnView
-
-support_tags = [tag.name for tag in guild_service.get_guild(
-).tags if "support" in tag.name]
 
 tag_cooldown = CooldownMapping.from_cooldown(
     1, 5, MessageTextBucket.custom)
@@ -31,30 +28,28 @@ def whisper(ctx: GIRContext):
         ctx.whisper = False
 
 async def handle_support_tag(ctx: GIRContext, member: discord.Member) -> None:
-    if not support_tags:
+    async with get_session(ctx.bot.engine) as session:
+        tag_service = TagService(session)
+        result = await tag_service.get_tag("support")
+
+    if not result:
         raise commands.BadArgument("No support tags found.")
 
-    random_tag = random.choice(support_tags)
-    tag = guild_service.get_tag(random_tag)
-
-    if tag is None:
-        raise commands.BadArgument("That tag does not exist.")
+    tag = result.tag
+    buttons = result.buttons
 
     # run cooldown so tag can't be spammed
-    bucket = tag_cooldown.get_bucket(tag.name)
+    bucket = tag_cooldown.get_bucket(tag.phrase)
     current = datetime.now().timestamp()
     # ratelimit only if the invoker is not a moderator
     if bucket.update_rate_limit(current) and not (gatekeeper.has(ctx.guild, ctx.author, 5) or ctx.guild.get_role(cfg.roles.sub_mod) in ctx.author.roles):
         raise commands.BadArgument("That tag is on cooldown.")
 
-    # if the Tag has an image, add it to the embed
-    file = tag.image.read()
-    if file is not None:
-        file = discord.File(BytesIO(
-            file), filename="image.gif" if tag.image.content_type == "image/gif" else "image.png")
+    embed = tag_service.prepare_tag_embed(tag)
+    view = tag_service.prepare_tag_button_view(buttons)
 
     title = f"Hey {member.mention}, have a look at this!"
-    await ctx.respond_or_edit(content=title, embed=prepare_tag_embed(tag), file=file or discord.utils.MISSING, view=prepare_tag_view(tag))
+    await ctx.respond_or_edit(content=title, embed=embed, view=view)
 
 
 async def handle_avatar(ctx, member: discord.Member):
