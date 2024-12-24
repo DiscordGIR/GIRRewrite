@@ -170,48 +170,70 @@ async def canister(ctx: GIRContext, whisper: bool, result):
 class TweakDropdown(discord.ui.Select):
     def __init__(self, author, entries, interaction, should_whisper):
         self.repo_icons = {
-            "http://apt.thebigboss.org/repofiles/cydia": "<:colored_sileo_tweak_icon_bigboss:957470630956138496>",
-            "https://repo.chariz.com": "<:colored_sileo_tweak_icon_chariz:957470675411537980>",
-            "https://repo.chimera.sh": "<:colored_sileo_tweak_icon_chimera:957470798602440714>",
-            "https://repo.dynastic.co": "<:colored_sileo_tweak_icon_dynasti:957470833952043038>",
-            "https://apt.bingner.com": "<:colored_sileo_tweak_icon_elu:957471017578684496>",
-            "https://havoc.app": "<:colored_sileo_tweak_icon_havoc:957471075942428723>",
-            "https://repo.theodyssey.dev": "<:colored_sileo_tweak_icon_odyssey:957471133844799518>",
-            "https://repo.packix.com": "<:colored_sileo_tweak_icon_packix:957471186638479470>",
-            "https://apt.procurs.us": "<:colored_sileo_tweak_icon_procurs:957471236718460959>",
-            "https://repo.twickd.com": "<:colored_sileo_tweak_icon_twickd:957471321351135233>",
+            "https://repo.chariz.com": {"icon": "<:colored_sileo_tweak_icon_chariz:957470675411537980>", "priority": 1},
+            "http://apt.thebigboss.org/repofiles/cydia": {"icon": "<:colored_sileo_tweak_icon_bigboss:957470630956138496>", "priority": 2},
+            "https://repo.chimera.sh": {"icon": "<:colored_sileo_tweak_icon_chimera:957470798602440714>", "priority": 3},
+            "https://repo.dynastic.co": {"icon": "<:colored_sileo_tweak_icon_dynasti:957470833952043038>", "priority": 4},
+            "https://apt.bingner.com": {"icon": "<:colored_sileo_tweak_icon_elu:957471017578684496>", "priority": 5},
+            "https://havoc.app": {"icon": "<:colored_sileo_tweak_icon_havoc:957471075942428723>", "priority": 6},
+            "https://repo.theodyssey.dev": {"icon": "<:colored_sileo_tweak_icon_odyssey:957471133844799518>", "priority": 7},
+            "https://repo.packix.com": {"icon": "<:colored_sileo_tweak_icon_packix:957471186638479470>", "priority": 8},
+            "https://apt.procurs.us": {"icon": "<:colored_sileo_tweak_icon_procurs:957471236718460959>", "priority": 9},
+            "https://repo.twickd.com": {"icon": "<:colored_sileo_tweak_icon_twickd:957471321351135233>", "priority": 10},
         }
         self.author = author
         self.interaction = interaction
-        self.raw_entries = entries
+        self.raw_entries = sorted(entries, key=self._sort_by_repo_priority)
         self.should_whisper = should_whisper
-        entries = entries[:24]
+        entries = self.raw_entries[:24]
 
         self.current_entry = entries[0]
-        self.entries = {entry.get('uuid'): entry for entry in entries}
+        self.entries = {}
         options = []
         seen_packages = []
-        for option in entries:
+        
+        for index, option in enumerate(entries):
             if option.get("package") in seen_packages:
                 continue
+                
+            value = f"{index}_{option.get('uuid', str(random.randint(1000, 9999)))}"
+            
+            repo_uri = option.get('repository', {}).get('uri')
+            emoji = self.repo_icons.get(repo_uri, {}).get('icon', "<:sileo_tweak_icon:957456295898779678>")
+                
             options.append(
                 discord.SelectOption(
-                    label=(option.get("name") or option.get('package'))[:100] or "No title", 
-                    description=f"{option.get('author').split('<')[0] if option.get('author') is not None else option.get('maintainer').split('<')[0]} • {option.get('repository').get('name')}"[:100], 
-                    emoji=self.repo_icons.get(option.get("repository").get("uri")) if self.repo_icons.get(option.get("repository").get("uri")) else "<:sileo_tweak_icon:957456295898779678>",
-                    value=option.get("uuid")
+                    label=(option.get("name") or option.get('package'))[:100] or "No title",
+                    description=f"{option.get('author').split('<')[0] if option.get('author') is not None else option.get('maintainer').split('<')[0]} • {option.get('repository').get('name')}"[:100],
+                    emoji=emoji,
+                    value=value
                 )
             )
+            self.entries[value] = option
             seen_packages.append(option.get("package"))
             
         if len(self.raw_entries) > 24:
             options.append(discord.SelectOption(
-                label=f"View {len(self.raw_entries) - 24} more results...", value="view_more"))
+                label=f"View {len(self.raw_entries) - 24} more results...",
+                value="view_more"
+            ))
+        
+        if not options:
+            options.append(discord.SelectOption(
+                label="No results",
+                value="none"
+            ))
+            
         super().__init__(placeholder='Pick a tweak to view...',
-                         min_values=1, max_values=1, options=options)
+                        min_values=1, max_values=1, options=options)
 
     def start(self, ctx):
         self.ctx = ctx
+
+    def _sort_by_repo_priority(self, entry):
+        repo_uri = entry.get('repository', {}).get('uri')
+        repo_data = self.repo_icons.get(repo_uri, {'priority': 999})
+        return repo_data['priority']
 
     async def callback(self, interaction):
         if interaction.user != self.author and not gatekeeper.has(interaction.guild, interaction.user, 4):
@@ -254,12 +276,24 @@ class TweakDropdown(discord.ui.Select):
 
         if repo is not None:
             extra_buttons = [
-                discord.ui.Button(label='Add Repo to Sileo', emoji="<:sileo:679466569407004684>",
-                                  url=f'https://repos.slim.rocks/repo/?repoUrl={repo}&manager=sileo', style=discord.ButtonStyle.url),
-                discord.ui.Button(label='Add Repo to Zebra', emoji="<:Zeeb:959129860603801630>",
-                                  url=f'https://repos.slim.rocks/repo/?repoUrl={repo}&manager=zebra', style=discord.ButtonStyle.url),
-                discord.ui.Button(label='Other Package Managers', emoji="<:Add:947354227171262534>",
-                                  url=f'https://repos.slim.rocks/repo/?repoUrl={repo}', style=discord.ButtonStyle.url)
+                discord.ui.Button(
+                    label='Add Repo to Sileo',
+                    emoji="<:sileo:679466569407004684>",
+                    url=f'https://repos.slim.rocks/repo/?repoUrl={repo}&manager=sileo',
+                    style=discord.ButtonStyle.url
+                ),
+                discord.ui.Button(
+                    label='Add Repo to Zebra',
+                    emoji="<:Zeeb:959129860603801630>",
+                    url=f'https://repos.slim.rocks/repo/?repoUrl={repo}&manager=zebra',
+                    style=discord.ButtonStyle.url
+                ),
+                discord.ui.Button(
+                    label='Other Package Managers',
+                    emoji="<:Add:947354227171262534>",
+                    url=f'https://repos.slim.rocks/repo/?repoUrl={repo}',
+                    style=discord.ButtonStyle.url
+                )
             ]
         else:
             extra_buttons = [
