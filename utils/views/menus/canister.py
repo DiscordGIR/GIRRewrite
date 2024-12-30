@@ -169,7 +169,7 @@ async def canister(ctx: GIRContext, whisper: bool, result):
 
 class TweakDropdown(discord.ui.Select):
     def __init__(self, author, entries, interaction, should_whisper):
-        self.repo_icons = {
+        self.repo_icons_and_priority = {
             "https://havoc.app": {"icon": "<:colored_sileo_tweak_icon_havoc:957471075942428723>", "priority": 1},
             "https://repo.chariz.com": {"icon": "<:colored_sileo_tweak_icon_chariz:957470675411537980>", "priority": 2},
             "http://apt.thebigboss.org/repofiles/cydia": {"icon": "<:colored_sileo_tweak_icon_bigboss:957470630956138496>", "priority": 3},
@@ -199,7 +199,7 @@ class TweakDropdown(discord.ui.Select):
             value = option.get("id")
             
             repo_uri = option.get('repository', {}).get('uri')
-            emoji = self.repo_icons.get(repo_uri, {}).get('icon', "<:sileo_tweak_icon:957456295898779678>")
+            emoji = self.repo_icons_and_priority.get(repo_uri, {}).get('icon', "<:sileo_tweak_icon:957456295898779678>")
                 
             options.append(
                 discord.SelectOption(
@@ -232,7 +232,7 @@ class TweakDropdown(discord.ui.Select):
 
     def _sort_by_repo_priority(self, entry):
         repo_uri = entry.get('repository', {}).get('uri')
-        repo_data = self.repo_icons.get(repo_uri, {'priority': 999})
+        repo_data = self.repo_icons_and_priority.get(repo_uri, {'priority': 999})
         return repo_data['priority']
 
     async def callback(self, interaction):
