@@ -42,7 +42,7 @@ async def report(bot: discord.Client, message: discord.Message, word: str, invit
         await channel.send(ping_string, embed=embed, view=view)
 
 
-async def manual_report(mod: discord.Member, target: Union[discord.Message, discord.Member] = None):
+async def manual_report(mod: discord.Member, target: Union[discord.Message, discord.Member] = None, urgent=False):
     """Deals with a report
 
     Parameters
@@ -57,7 +57,12 @@ async def manual_report(mod: discord.Member, target: Union[discord.Message, disc
     """
     channel = target.guild.get_channel(cfg.channels.reports)
 
-    ping_string = f"{mod.mention} reported a member"
+    ping_string = ""
+    if urgent:
+        ping_string = prepare_ping_string(target)
+    else:
+        ping_string = f"{mod.mention} reported a member"
+
     if isinstance(target, discord.Message):
         view = ReportActions(target.author)
     else:

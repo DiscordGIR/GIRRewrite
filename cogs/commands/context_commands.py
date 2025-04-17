@@ -14,6 +14,7 @@ from utils.framework import MessageTextBucket, gatekeeper
 from utils.framework.checks import genius_and_up, mod_and_up
 from utils.framework.transformers import ModsAndAboveMember
 from utils.views import PFPButton, PFPView
+from utils.views.confirm import Confirm
 from utils.views.menus.report import manual_report
 from utils.views.menus.report_action import WarnView
 
@@ -129,7 +130,13 @@ def setup_context_commands(bot: commands.Bot):
         ctx = GIRContext(interaction)
         ctx.whisper = True
         member = await ModsAndAboveMember().transform(interaction, member)
-        await manual_report(ctx.author, member)
+
+        view = Confirm(ctx, true_response="Sending report with ping!", false_response="Sending report without ping!")
+        await ctx.respond("Is this report worth pinging moderators over?", view=view, ephemeral=True)
+        await view.wait()
+        urgent  = view.value
+
+        await manual_report(ctx.author, member, urgent)
         await ctx.send_success("Generated report!")
 
     @genius_and_up()
@@ -137,8 +144,13 @@ def setup_context_commands(bot: commands.Bot):
     async def generate_report_msg(interaction: discord.Interaction, message: discord.Message) -> None:
         ctx = GIRContext(interaction)
         ctx.whisper = True
-        member = await ModsAndAboveMember().transform(interaction, message.author)
-        await manual_report(ctx.author, message)
+
+        view = Confirm(ctx, true_response="Sending report with ping!", false_response="Sending report without ping!")
+        await ctx.respond("Is this report worth pinging moderators over?", view=view, ephemeral=True)
+        await view.wait()
+        urgent  = view.value
+
+        await manual_report(ctx.author, message, urgent)
         await ctx.send_success("Generated report!")
 
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Userinfo")
