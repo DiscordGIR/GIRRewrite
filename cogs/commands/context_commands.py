@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.ext.commands.cooldowns import CooldownMapping
 from utils import GIRContext, cfg
 from utils.framework import MessageTextBucket, gatekeeper
-from utils.framework.checks import mod_and_up
+from utils.framework.checks import genius_and_up, mod_and_up
 from utils.framework.transformers import ModsAndAboveMember
 from utils.views import PFPButton, PFPView
 from utils.views.menus.report import manual_report
@@ -123,7 +123,7 @@ def setup_context_commands(bot: commands.Bot):
         view = WarnView(ctx, message.author)
         await ctx.respond(embed=discord.Embed(description=f"Choose a warn reason for {message.author.mention}.", color=discord.Color.blurple()), view=view, ephemeral=True)
 
-    @mod_and_up()
+    @genius_and_up()
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Generate report")
     async def generate_report_rc(interaction: discord.Interaction, member: discord.Member) -> None:
         ctx = GIRContext(interaction)
@@ -132,7 +132,7 @@ def setup_context_commands(bot: commands.Bot):
         await manual_report(ctx.author, member)
         await ctx.send_success("Generated report!")
 
-    @mod_and_up()
+    @genius_and_up()
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Generate report")
     async def generate_report_msg(interaction: discord.Interaction, message: discord.Message) -> None:
         ctx = GIRContext(interaction)
