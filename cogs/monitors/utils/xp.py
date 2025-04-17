@@ -59,7 +59,7 @@ class Xp(commands.Cog):
     def assess_new_roles(self, new_level, member: discord.Member):
         roles_to_add = []
         if 15 > new_level and cfg.roles.new_member is not None:
-            member_joined_less_than_a_day_ago = datetime.datetime.now() - member.created_at < datetime.timedelta(days=1)
+            member_joined_less_than_a_day_ago = datetime.datetime.now(datetime.timezone.utc) - member.created_at < datetime.timedelta(days=1)
             if member_joined_less_than_a_day_ago:
                 roles_to_add.append(cfg.roles.new_member)
                 self.bot.tasks.schedule_remove_new_member_role(member.id)
