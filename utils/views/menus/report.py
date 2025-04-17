@@ -59,9 +59,9 @@ async def manual_report(mod: discord.Member, target: Union[discord.Message, disc
 
     ping_string = ""
     if urgent:
-        ping_string = prepare_ping_string(target)
-    else:
-        ping_string = f"{mod.mention} reported a member"
+        ping_string = f"{prepare_ping_string(target)} {mod.mention} reported a member!"
+    else: 
+        ping_string = f"{mod.mention} reported a member!"
 
     if isinstance(target, discord.Message):
         view = ReportActions(target.author)
