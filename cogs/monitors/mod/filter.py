@@ -382,7 +382,7 @@ class Filter(commands.Cog):
             if message.channel.id == cfg.channels.general:
                 embed = discord.Embed(color=discord.Color.orange())
                 embed.description = f"It appears you are asking about the jailbreak guild tag. To join the JB guild, go into your User Settings and navigate to Profiles. Under Server Tag, select the r/Jailbreak guild.\n\nYou can also get a holographic name tag by boosting the server."
-                embed.image.url = "https://cdn.discordapp.com/attachments/688121419980341282/1362751128961548399/image.png?ex=68038863&is=680236e3&hm=81c657b35239c2ed26cb21272336a00a056b7ad3541ed7233200a2317c66ac57&"
+                embed.set_image(url="https://cdn.discordapp.com/attachments/688121419980341282/1362751128961548399/image.png?ex=68038863&is=680236e3&hm=81c657b35239c2ed26cb21272336a00a056b7ad3541ed7233200a2317c66ac57&")
                 embed.set_footer(
                     text="This action was performed automatically. Please disregard if incorrect.")
                 await message.reply(embed=embed, delete_after=20)
