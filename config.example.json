@@ -30,5 +30,8 @@
     "sub_news": 123,
     "aaron_role": 123,
     "new_member": 123
+  },
+  "features": {
+    "guild_tag_detection": false
   }
 }

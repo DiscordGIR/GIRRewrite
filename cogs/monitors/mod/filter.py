@@ -94,7 +94,9 @@ class Filter(commands.Cog):
         if await self.do_spoiler_newline_filter(message):
             return
 
-        await self.detect_cij_or_eta(message)
+        res = await self.detect_cij_or_eta(message)
+        if not res:
+            await self.detect_guild_tag_nonsense(message)
 
     async def nick_filter(self, member):
         triggered_words = await find_triggered_filters(
@@ -333,13 +335,15 @@ class Filter(commands.Cog):
                                             url=f"https://discord.com/channels/349243932447604736/969343289641828382", style=discord.ButtonStyle.url))
             view.add_item(discord.ui.Button(label='Jailbreak Channel', emoji="<:Channel2:947546361715388417>",
                                             url=f"https://discord.com/channels/349243932447604736/688122301975363591", style=discord.ButtonStyle.url))
-            res = await message.reply(embed=embed, view=view, delete_after=20)
+            await message.reply(embed=embed, view=view, delete_after=20)
+            return True
         elif intent_news_triggered and subject_and_word_in_message:
             embed = discord.Embed(color=discord.Color.orange())
             embed.description = f"It appears you are asking about future jailbreaks. Nobody knows when a jailbreak will be released, but you can subscribe to notifications about releases by going to <id:customize>."
             embed.set_footer(
                 text="This action was performed automatically. Please disregard if incorrect.")
-            res = await message.reply(embed=embed, delete_after=20)
+            await message.reply(embed=embed, delete_after=20)
+            return True
         elif intent_cij_triggered and subject_and_word_in_message:
             embed = discord.Embed(color=discord.Color.orange())
             embed.description = "It appears you are asking if you can jailbreak your device, you can find out that information by using `/canijailbreak` or in the \"Get Started\" section of ios.cfw.guide."
@@ -352,7 +356,37 @@ class Filter(commands.Cog):
                                             url=f"https://docs.google.com/spreadsheets/d/e/2PACX-1vRXcZDsbk2j_AL5YCPnwAp6Ovf5xmLRwNK2wXrwGN__FCbkGWz6Be4l5JyHxEOyogjPnVl51nrDVOcC/pubhtml", style=discord.ButtonStyle.url))
 
             await message.reply(embed=embed, view=view, delete_after=20)
+            return True
 
+    async def detect_guild_tag_nonsense(self, message: discord.Message):
+        # recently we've been getting alot of messages about how to get the 
+        # JB guild tag. this uses a similar approach to the cij filter
+        # to detect if someone is asking about it
+
+        if not cfg.features.guild_tag_detection:
+            return
+        if message.edited_at is not None:
+            return
+        if gatekeeper.has(message.guild, message.author, 1):
+            return
+
+        intent = [
+            "how to get", "how do i get", "how do i", "how to", "how do", "how can i get", "how can i", "how can", "how to get",
+        ]
+
+        verb = [
+            "tag", "guild", "jb", "clan"
+        ]
+
+        if any(i in message.content.lower() for i in intent) and any(v in message.content.lower() for v in verb):
+            if message.channel.id == cfg.channels.general:
+                embed = discord.Embed(color=discord.Color.orange())
+                embed.description = f"It appears you are asking about the jailbreak guild tag. To join the JB guild, go into your User Settings and navigate to Profiles. Under Server Tag, select the r/Jailbreak guild.\n\nYou can also get a holographic name tag by boosting the server."
+                embed.image.url = "https://cdn.discordapp.com/attachments/688121419980341282/1362751128961548399/image.png?ex=68038863&is=680236e3&hm=81c657b35239c2ed26cb21272336a00a056b7ad3541ed7233200a2317c66ac57&"
+                embed.set_footer(
+                    text="This action was performed automatically. Please disregard if incorrect.")
+                await message.reply(embed=embed, delete_after=20)
+        
 
 async def setup(bot):
     await bot.add_cog(Filter(bot))

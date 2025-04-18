@@ -2,6 +2,8 @@ import os
 from dotenv.main import load_dotenv
 from .logging import logger
 
+class Features:
+    guild_tag_detection: bool
 
 class Roles:
     administrator: int 
@@ -105,6 +107,7 @@ class Config:
 
         self.roles = Roles()
         self.channels = Channels()
+        self.features = Features()
 
         # read config.json to populate roles and channels
         import json
@@ -114,6 +117,8 @@ class Config:
                 setattr(self.roles, k, v)
             for k, v in data['channels'].items():
                 setattr(self.channels, k, v)
+            for k, v in data['features'].items():
+                setattr(self.features, k, v)
 
         logger.info(
             f"GIR will be running in: {self.guild_id} in \033[1m{'DEVELOPMENT' if self.dev else 'PRODUCTION'}\033[0m mode")
