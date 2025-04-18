@@ -385,7 +385,7 @@ class Filter(commands.Cog):
                 embed.set_image(url="https://cdn.discordapp.com/attachments/688121419980341282/1362751128961548399/image.png?ex=68038863&is=680236e3&hm=81c657b35239c2ed26cb21272336a00a056b7ad3541ed7233200a2317c66ac57&")
                 embed.set_footer(
                     text="This action was performed automatically. Please disregard if incorrect.")
-                await message.reply(embed=embed, delete_after=20)
+                await message.reply(embed=embed)
         
 
 async def setup(bot):
