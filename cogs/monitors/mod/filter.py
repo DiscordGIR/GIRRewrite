@@ -59,8 +59,11 @@ class Filter(commands.Cog):
         await self.run_filter(message)
 
     @commands.Cog.listener()
-    async def on_member_update(self, _, member: discord.Member):
-        await self.nick_filter(member)
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        if before.display_name == after.display_name:
+            return
+
+        await self.nick_filter(after)
 
     async def run_filter(self, message: discord.Message):
         if not message.guild:
