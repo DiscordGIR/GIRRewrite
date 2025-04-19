@@ -33,6 +33,7 @@
   },
   "features": {
     "guild_tag_detection": false,
-    "disable_member_join_logging": false
+    "disable_member_join_logging": false,
+    "disable_role_add_logging_for_recent_joiners": false
   }
 }

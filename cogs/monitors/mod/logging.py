@@ -360,6 +360,12 @@ class Logging(commands.Cog):
         new_roles = [role.mention
                      for role in after.roles if role not in before.roles]
         if new_roles:
+            if cfg.features.disable_role_add_logging_for_recent_joiners:
+                # if the user joined in the past 5 minutes, don't log
+                # this is for high load situations
+                if (datetime.now(datetime.timezone.utc) - after.joined_at).total_seconds() < 300:
+                    return
+
             await self.member_roles_update(member=after, roles=new_roles, added=True)
             return
 

@@ -5,6 +5,7 @@ from .logging import logger
 class Features:
     guild_tag_detection: bool
     disable_member_join_logging: bool
+    disable_role_add_logging_for_recent_joiners: bool
 
 class Roles:
     administrator: int 
