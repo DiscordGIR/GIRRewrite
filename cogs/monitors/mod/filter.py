@@ -371,18 +371,18 @@ class Filter(commands.Cog):
             return
 
         intent = [
-            "how to get", "how do i get", "how do i", "how to", "how do", "how can i get", "how can i", "how can", "how to get",
+            "how to get", "how do i get", "how do i", "how to", "how do", "how can i get", "how can i", "how can", "how to get", "where can", "where to get", "where to", "where do i", "where do", "where can i",
         ]
 
         verb = [
-            "tag", "guild", "jb", "clan"
+            "tag", "guild", "jb", "clan", "ios"
         ]
 
         if any(i in message.content.lower() for i in intent) and any(v in message.content.lower() for v in verb):
             if message.channel.id == cfg.channels.general:
                 embed = discord.Embed(color=discord.Color.orange())
-                embed.description = f"It appears you are asking about the jailbreak guild tag. To join the JB guild, go into your User Settings and navigate to Profiles. Under Server Tag, select the r/Jailbreak guild.\n\nYou can also get a holographic name tag by boosting the server."
-                embed.set_image(url="https://cdn.discordapp.com/attachments/688121419980341282/1362751128961548399/image.png?ex=68038863&is=680236e3&hm=81c657b35239c2ed26cb21272336a00a056b7ad3541ed7233200a2317c66ac57&")
+                embed.description = f"It appears you are asking about the jailbreak guild tag. To join the iOS guild, go into your User Settings and navigate to Profiles. Under Server Tag, select the r/Jailbreak guild.\n\nYou can also get a holographic name tag by boosting the server."
+                embed.set_image(url="https://cdn.discordapp.com/attachments/688124796705177656/1363107930668531823/image.png?ex=6804d4af&is=6803832f&hm=e3663b8838399a98a04097df1d5174d3657d470cc4160fee28558d9173e47be1&https://cdn.discordapp.com/attachments/688121419980341282/1362751128961548399/image.png")
                 embed.set_footer(
                     text="This action was performed automatically. Please disregard if incorrect.")
                 await message.reply(embed=embed)
