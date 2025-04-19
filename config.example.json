@@ -32,6 +32,7 @@
     "new_member": 123
   },
   "features": {
-    "guild_tag_detection": false
+    "guild_tag_detection": false,
+    "disable_member_join_logging": false
   }
 }

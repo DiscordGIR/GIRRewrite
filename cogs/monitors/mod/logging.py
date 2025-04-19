@@ -25,6 +25,8 @@ class Logging(commands.Cog):
         member : discord.Member
             The member that joined
         """
+        if cfg.features.disable_member_join_logging:
+            return
 
         if member.guild.id != cfg.guild_id:
             return
