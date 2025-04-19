@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 from discord.utils import format_dt
 
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import List, Union
 
@@ -363,7 +363,7 @@ class Logging(commands.Cog):
             if cfg.features.disable_role_add_logging_for_recent_joiners:
                 # if the user joined in the past 5 minutes, don't log
                 # this is for high load situations
-                if (datetime.now(datetime.timezone.utc) - after.joined_at).total_seconds() < 300:
+                if (datetime.now(timezone.utc) - after.joined_at).total_seconds() < 300:
                     return
 
             await self.member_roles_update(member=after, roles=new_roles, added=True)
