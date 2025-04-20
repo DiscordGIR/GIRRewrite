@@ -26,7 +26,7 @@ class UnbanAppeals(commands.Cog):
         if main_guild_member is None:
             return
 
-        if not gatekeeper.has(main_guild, member, 5):
+        if not gatekeeper.has(main_guild, main_guild_member, 5):
             try:
                 await member.send(embed=discord.Embed(description=f"You cannot join {member.guild} unless you are banned!", color=discord.Color.orange()))
             except:
