@@ -340,12 +340,12 @@ class Genius(commands.Cog):
             return
         
         parent = thread.parent
-        existing_threads_by_author = [t for t in parent.threads if t.owner.id == thread.owner.id and not t.archived and t.id != thread.id]
+        existing_threads_by_author = [t for t in parent.threads if t.owner is not None and t.owner.id == thread.owner.id and not t.archived and t.id != thread.id]
 
         if not existing_threads_by_author:
-            await thread.send(f"{thread.owner.mention} thanks for creating a new thread!\n\n**Please use `/solved` to close this thread when you're done.**")
+            await thread.send(f"{thread.owner.mention} Thanks for creating a new thread!\n\n**Please use `/solved` to close this thread when you're done.**")
         else:
-            await thread.send(f"{thread.owner.mention} you already have an open thread in this category. Please use `/solved` to close that thread before creating a new one.")
+            await thread.send(f"{thread.owner.mention} You already have an open thread in this category. Please use `/solved` to close that thread before creating a new one.")
             await thread.edit(archived=True)
 
 
