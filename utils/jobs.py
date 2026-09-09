@@ -1,3 +1,4 @@
+import asyncio
 import os
 import random
 from datetime import datetime, timedelta
@@ -53,7 +54,8 @@ class Tasks():
             }
 
         self.tasks = AsyncIOScheduler(
-            jobstores=jobstores, executors=executors, job_defaults=job_defaults, event_loop=bot.loop, timezone=utc)
+            jobstores=jobstores, executors=executors, job_defaults=job_defaults,
+            event_loop=asyncio.get_running_loop(), timezone=utc)
         self.tasks.start()
 
     def schedule_untimeout(self, _id: int, date: datetime) -> None:

@@ -102,6 +102,14 @@ async def check_invokee(interaction: discord.Interaction, user: discord.Member):
         if user.id == interaction.client.user.id:
             raise PermissionsFailure("You can't call that on me :(")
 
+        if user.id == interaction.guild.owner_id:
+            raise PermissionsFailure("Discord does not allow bots to moderate the server owner.")
+
+        bot_member = interaction.guild.me
+        if bot_member is not None and user.top_role >= bot_member.top_role:
+            raise PermissionsFailure(
+                "Discord's role order blocks that action. In Server Settings → Roles, move GIR above this member's highest role.")
+
         if user:
             if user.top_role >= interaction.user.top_role:
                 raise PermissionsFailure(

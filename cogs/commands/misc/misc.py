@@ -141,11 +141,28 @@ class Misc(commands.Cog):
             await give_user_birthday_role(self.bot, ctx.author, ctx.guild)
 
     @app_commands.guilds(cfg.guild_id)
-    @app_commands.command(description="Get avatar of another user or yourself.")
-    @app_commands.describe(user="The user you want to get the avatar of")
+    @app_commands.command(description="Get a Discord user's profile picture.")
+    @app_commands.describe(
+        user="A member or user Discord can suggest",
+        discord_id="A numeric Discord user ID, including someone outside this server",
+    )
     @transform_context
     @whisper
-    async def avatar(self, ctx: GIRContext, user: Union[discord.Member, discord.User] = None) -> None:
+    async def avatar(
+        self,
+        ctx: GIRContext,
+        user: Union[discord.Member, discord.User] = None,
+        discord_id: str = None,
+    ) -> None:
+        if user is not None and discord_id is not None:
+            raise commands.BadArgument("Choose a user or enter a Discord ID, not both.")
+        if discord_id is not None:
+            if not discord_id.isdigit():
+                raise commands.BadArgument("Enter a numeric Discord user ID.")
+            try:
+                user = await self.bot.fetch_user(int(discord_id))
+            except (discord.NotFound, discord.HTTPException):
+                raise commands.BadArgument("I could not find that Discord user.")
         if user is None:
             user = ctx.author
 

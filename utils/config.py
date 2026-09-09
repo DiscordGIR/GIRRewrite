@@ -23,6 +23,10 @@ class Roles:
     aaron_role: int
     new_member: int
 
+    def __getattr__(self, key):
+        # Optional, server-specific mappings may be removed in the dashboard.
+        return None
+
     def __getitem__(self, key):
         return getattr(self, key)
 
@@ -40,6 +44,10 @@ class Channels:
     private_logs: int
     public_logs: int
     rules: int
+
+    def __getattr__(self, key):
+        # Features already treat an unmapped channel as disabled.
+        return None
     reports: int
     sub_news: int
     rules: int

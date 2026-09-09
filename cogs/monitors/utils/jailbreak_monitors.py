@@ -106,7 +106,7 @@ class Sileo(commands.Cog):
             return
 
         urlscheme = re.search(
-            "(sileo|zbra):\/\/package\/([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+(\.[a-zA-Z0-9]+)+)", message.content)
+                r"(sileo|zbra)://package/([a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+(\.[a-zA-Z0-9]+)+)", message.content)
 
         if urlscheme is None:
             return

@@ -28,22 +28,6 @@ class Permissions:
             
         """
 
-        roles_to_check = [
-            "member_plus",
-            "member_pro",
-            "member_edition",
-            "genius",
-            "moderator",
-            "administrator",
-        ]
-
-        for role in roles_to_check:
-            try:
-                getattr(cfg.roles, role)
-            except AttributeError:
-                raise AttributeError(
-                    f"Database is not set up properly! Role '{role}' is missing. Please refer to README.md.")
-
         self._permission_mapping = {
             1: cfg.roles.member_plus,
             2: cfg.roles.member_pro,
@@ -71,10 +55,10 @@ class Permissions:
                 and guild.get_role(cfg.roles.genius) in m.roles)),
 
             5: (lambda guild, m: self.has(guild, m, 6) or (guild.id == cfg.guild_id
-                and guild.get_role(cfg.roles.moderator) in m.roles)),
+                and (m.guild_permissions.manage_messages or self._has_mapped_role(m, "moderator")))),
 
             6: (lambda guild, m: self.has(guild, m, 7) or (guild.id == cfg.guild_id
-                and guild.get_role(cfg.roles.administrator) in m.roles)),
+                and (m.guild_permissions.administrator or self._has_mapped_role(m, "administrator")))),
 
             7: (lambda guild, m: self.has(guild, m, 9) or (guild.id == cfg.guild_id
                 and m == guild.owner)),
@@ -94,10 +78,19 @@ class Permissions:
             4: "Geniuses and up",
             5: "Moderators and up",
             6: "Administrators and up",
-            7: "Guild owner (Aaron) and up",
+            7: "Guild owner and up",
             9: "Bot owner",
             10: "Bot owner",
         }
+
+    @staticmethod
+    def _has_mapped_role(member: discord.Member, prefix: str) -> bool:
+        """Match the main role alias and any server-specific aliases."""
+        mapped = {
+            int(value) for key, value in vars(cfg.roles).items()
+            if (key == prefix or key.startswith(prefix + "_")) and str(value).isdigit()
+        }
+        return any(role.id in mapped for role in member.roles)
 
     @property
     def lowest_level(self) -> int:

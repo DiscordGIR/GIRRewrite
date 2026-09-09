@@ -45,6 +45,7 @@ class SecondStaffConfirm(ui.View):
         self.ctx = ctx
         self.value = None
         self.og_mod = og_mod
+        self.confirming_mod = None
 
     async def on_timeout(self) -> None:
         await self.ctx.send_warning("Timed out.")
@@ -59,6 +60,7 @@ class SecondStaffConfirm(ui.View):
     @ui.button(label='Yes', style=discord.ButtonStyle.success)
     async def confirm(self, interaction: discord.Interaction, _: ui.Button):
         self.ctx.interaction = interaction
+        self.confirming_mod = interaction.user
         self.value = True
         self.stop()
 

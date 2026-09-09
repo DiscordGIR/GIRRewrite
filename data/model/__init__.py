@@ -5,3 +5,4 @@ from .giveaway import *
 from .guild import *
 from .tag import *
 from .user import *
+from .identity_history import *

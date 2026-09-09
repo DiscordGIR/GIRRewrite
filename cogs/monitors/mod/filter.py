@@ -13,6 +13,7 @@ from utils.framework import gatekeeper, find_triggered_filters
 from utils.framework.filter import has_only_silent_filtered_words
 from utils.mod import mute
 from utils.views import manual_report, report
+from community_rules import normalize_obfuscated_text
 
 
 class Filter(commands.Cog):
@@ -158,7 +159,7 @@ class Filter(commands.Cog):
         return triggered
 
     async def do_invite_filter(self, message):
-        invites = re.findall(self.invite_filter, message.content, flags=re.S)
+        invites = re.findall(self.invite_filter, normalize_obfuscated_text(message.content), flags=re.S)
         if not invites:
             return
 

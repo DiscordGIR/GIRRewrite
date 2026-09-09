@@ -139,19 +139,13 @@ def setup_context_commands(bot: commands.Bot):
         await manual_report(ctx.author, member, urgent)
         await ctx.send_success("Generated report!")
 
-    @genius_and_up()
-    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Generate report")
+    @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Report message")
     async def generate_report_msg(interaction: discord.Interaction, message: discord.Message) -> None:
-        ctx = GIRContext(interaction)
-        ctx.whisper = True
-
-        view = Confirm(ctx, true_response="Sending report with ping!", false_response="Sending report without ping!")
-        await ctx.respond("Is this report worth pinging moderators over?", view=view, ephemeral=True)
-        await view.wait()
-        urgent  = view.value
-
-        await manual_report(ctx.author, message, urgent)
-        await ctx.send_success("Generated report!")
+        suite = bot.get_cog("CommunitySuite")
+        if suite is None:
+            await interaction.response.send_message("Message reporting is temporarily unavailable.", ephemeral=True)
+            return
+        await suite.report_message(interaction, message)
 
     @bot.tree.context_menu(guild=discord.Object(id=cfg.guild_id), name="Userinfo")
     async def userinfo_rc(interaction: discord.Interaction, user: discord.Member) -> None:
