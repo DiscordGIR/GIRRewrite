@@ -6,8 +6,8 @@ from tests.support import load_module
 
 class BanOutcomeTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        self.users = Mock()
-        guilds = Mock()
+        self.users = AsyncMock()
+        guilds = AsyncMock()
         guilds.allocate_case_id.return_value = 42
         self.module = load_module("utils/mod/modactions_helpers.py", {
             "data.services.guild_service": SimpleNamespace(guild_service=guilds),

@@ -7,7 +7,7 @@ from tests.support import load_module
 class BirthdayTests(unittest.IsolatedAsyncioTestCase):
     async def test_departed_member_does_not_skip_remaining_birthdays(self):
         grant = AsyncMock()
-        users = Mock()
+        users = AsyncMock()
         users.retrieve_birthdays.return_value = [
             SimpleNamespace(_id=1, birthday_excluded=False),
             SimpleNamespace(_id=2, birthday_excluded=False),

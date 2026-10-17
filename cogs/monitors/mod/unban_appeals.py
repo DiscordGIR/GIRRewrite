@@ -115,7 +115,7 @@ class UnbanAppeals(commands.Cog):
         await thread.send(str(unban_id_parsed))
 
     async def generate_userinfo(self, appealer: discord.User):
-        results = user_service.get_user(appealer.id)
+        results = await user_service.get_user(appealer.id)
 
         embed = discord.Embed(title=f"User Information",
                               color=discord.Color.blue())
@@ -128,14 +128,14 @@ class UnbanAppeals(commands.Cog):
         embed.add_field(
             name="XP", value=results.xp if not results.is_clem else "CLEMMED", inline=True)
         embed.add_field(
-            name="Punishments", value=f"{results.warn_points} warn points\n{len(user_service.get_cases(appealer.id).cases)} cases", inline=True)
+            name="Punishments", value=f"{results.warn_points} warn points\n{len((await user_service.get_cases(appealer.id)).cases)} cases", inline=True)
 
         embed.add_field(name="Account creation date",
                         value=f"{format_dt(appealer.created_at, style='F')} ({format_dt(appealer.created_at, style='R')})", inline=True)
         return embed
 
     async def generate_cases(self, appealer: discord.User):
-        results = user_service.get_cases(appealer.id)
+        results = await user_service.get_cases(appealer.id)
         if not results.cases:
             return None
         cases = [case for case in results.cases if case._type != "UNMUTE"]

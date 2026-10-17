@@ -1,3 +1,4 @@
+from data.database import run_database
 from datetime import datetime, timedelta, timezone
 
 import discord
@@ -203,13 +204,13 @@ class ModActions(commands.Cog):
         self.bot.ban_cache.unban(user.id)
 
         case = Case(
-            _id=guild_service.allocate_case_id(),
+            _id=await guild_service.allocate_case_id(),
             _type="UNBAN",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
             reason=reason,
         )
-        user_service.add_case(user.id, case)
+        await user_service.add_case(user.id, case)
 
         log = prepare_unban_log(ctx.author, user, case)
         await ctx.respond_or_edit(embed=log, delete_after=10)
@@ -242,7 +243,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(reason="Reason for lifting the warn")
     @transform_context
     async def liftwarn(self, ctx: GIRContext, member: ModsAndAboveMember, case_id: str, reason: str) -> None:
-        cases = user_service.get_cases(member.id)
+        cases = await user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
 
         reason = escape_markdown(reason)
@@ -259,7 +260,7 @@ class ModActions(commands.Cog):
             raise commands.BadArgument(
                 message=f"Case with ID {case_id} already lifted.")
 
-        u = user_service.get_user(id=member.id)
+        u = await user_service.get_user(id=member.id)
         if u.warn_points - int(case.punishment) < 0:
             raise commands.BadArgument(
                 message=f"Can't lift Case #{case_id} because it would make {member.mention}'s points negative.")
@@ -270,10 +271,10 @@ class ModActions(commands.Cog):
         case.lifted_by_tag = str(ctx.author)
         case.lifted_by_id = ctx.author.id
         case.lifted_date = datetime.now()
-        cases.save()
+        await run_database(lambda: cases.save())
 
         # remove the warn points from the user in DB
-        user_service.inc_points(member.id, -1 * int(case.punishment))
+        await user_service.inc_points(member.id, -1 * int(case.punishment))
         dmed = True
         # prepare log embed, send to #public-mod-logs, user, channel where invoked
         log = prepare_liftwarn_log(ctx.author, member, case)
@@ -292,7 +293,7 @@ class ModActions(commands.Cog):
     @transform_context
     async def editreason(self, ctx: GIRContext, member: ModsAndAboveMemberOrUser, case_id: str, new_reason: str) -> None:
         # retrieve user's case with given ID
-        cases = user_service.get_cases(member.id)
+        cases = await user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
 
         new_reason = escape_markdown(new_reason)
@@ -305,7 +306,7 @@ class ModActions(commands.Cog):
 
         old_reason = case.reason
         case.reason = new_reason
-        cases.save()
+        await run_database(lambda: cases.save())
 
         dmed = True
         log = prepare_editreason_log(ctx.author, member, case, old_reason)
@@ -356,17 +357,17 @@ class ModActions(commands.Cog):
         if points < 1:
             raise commands.BadArgument("Points can't be lower than 1.")
 
-        u = user_service.get_user(id=member.id)
+        u = await user_service.get_user(id=member.id)
         if u.warn_points - points < 0:
             raise commands.BadArgument(
                 message=f"Can't remove {points} points because it would make {member.mention}'s points negative.")
 
         # passed sanity checks, so update the case in DB
         # remove the warn points from the user in DB
-        user_service.inc_points(member.id, -1 * points)
+        await user_service.inc_points(member.id, -1 * points)
 
         case = Case(
-            _id=guild_service.allocate_case_id(),
+            _id=await guild_service.allocate_case_id(),
             _type="REMOVEPOINTS",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
@@ -375,7 +376,7 @@ class ModActions(commands.Cog):
         )
 
         # add case to db
-        user_service.add_case(member.id, case)
+        await user_service.add_case(member.id, case)
 
         # prepare log embed, send to #public-mod-logs, user, channel where invoked
         log = prepare_removepoints_log(ctx.author, member, case)

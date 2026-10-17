@@ -29,8 +29,7 @@ class Birthday(commands.Cog):
         # the date we will check for in the database
         date = [today.month, today.day]
         # get list of users whose birthday it is today
-        birthdays = await self.bot.database_io.run(
-            lambda: list(user_service.retrieve_birthdays(date)))
+        birthdays = await user_service.retrieve_birthdays(date)
 
         guild = self.bot.get_guild(cfg.guild_id)
         if not guild:

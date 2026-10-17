@@ -71,7 +71,7 @@ def format_cases_page(ctx, entries, current_page, all_pages):
     page_count = 0
 
     user = ctx.case_user
-    u = user_service.get_user(user.id)
+    u = ctx.case_profile
 
     for page in all_pages:
         for case in page:
@@ -153,7 +153,7 @@ class UserInfo(commands.Cog):
         if member is None:
             member = ctx.author
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
 
         embed = discord.Embed(title="Level Statistics")
         embed.color = member.top_role.color
@@ -162,7 +162,7 @@ class UserInfo(commands.Cog):
             name="Level", value=results.level if not results.is_clem else "0", inline=True)
         embed.add_field(
             name="XP", value=f'{results.xp}/{xp_for_next_level(results.level)}' if not results.is_clem else "0/0", inline=True)
-        rank, overall = user_service.leaderboard_rank(results.xp)
+        rank, overall = await user_service.leaderboard_rank(results.xp)
         embed.add_field(
             name="Rank", value=f"{rank}/{overall}" if not results.is_clem else f"{overall}/{overall}", inline=True)
 
@@ -184,7 +184,7 @@ class UserInfo(commands.Cog):
                 f"You don't have permissions to check others' warnpoints.")
 
         # fetch user profile from database
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
 
         embed = discord.Embed(title="Warn Points",
                               color=discord.Color.orange())
@@ -201,7 +201,7 @@ class UserInfo(commands.Cog):
     @transform_context
     @whisper
     async def xptop(self, ctx: GIRContext):
-        results = enumerate(user_service.leaderboard())
+        results = enumerate(await user_service.leaderboard())
         results = [(i, m) for (i, m) in results if ctx.guild.get_member(
             m._id) is not None][0:100]
 
@@ -239,7 +239,7 @@ class UserInfo(commands.Cog):
                 f"You don't have permissions to check others' cases.")
 
         # fetch user's cases from our database
-        results = user_service.get_cases(user.id)
+        results = await user_service.get_cases(user.id)
         if len(results.cases) == 0:
             return await ctx.send_warning(f'{user.mention} has no cases.', delete_after=5)
 
@@ -249,6 +249,7 @@ class UserInfo(commands.Cog):
         cases.reverse()
 
         ctx.case_user = user
+        ctx.case_profile = await user_service.get_user(user.id)
 
         menu = Menu(ctx, cases, per_page=10,
                     page_formatter=format_cases_page, whisper=ctx.whisper)
@@ -301,7 +302,7 @@ async def handle_userinfo(ctx: GIRContext, user: Union[discord.Member, discord.U
         roles = "No roles."
         joined = f"User not in {ctx.guild}"
 
-    results = user_service.get_user(user.id)
+    results = await user_service.get_user(user.id)
 
     embed = discord.Embed(title=f"User Information", color=user.color)
     embed.set_author(name=user)
