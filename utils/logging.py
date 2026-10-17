@@ -10,6 +10,48 @@ from dotenv.main import load_dotenv
 
 load_dotenv()
 
+_webhook_queue = None
+_webhook_task = None
+_webhook_loop = None
+webhook_logs_dropped = 0
+
+
+def enqueue_webhook(url, body):
+    global webhook_logs_dropped
+    if _webhook_queue is None:
+        return  # Startup/shutdown records are still written to stdout.
+    try:
+        _webhook_queue.put_nowait((url, body))
+    except asyncio.QueueFull:
+        webhook_logs_dropped += 1
+
+
+async def dispatch_webhooks():
+    while True:
+        url, body = await _webhook_queue.get()
+        try:
+            await post_content(url, body)
+        finally:
+            _webhook_queue.task_done()
+
+
+def start_webhook_logging():
+    global _webhook_queue, _webhook_task, _webhook_loop
+    if _webhook_task is not None:
+        return
+    _webhook_loop = asyncio.get_running_loop()
+    _webhook_queue = asyncio.Queue(maxsize=200)
+    _webhook_task = asyncio.create_task(dispatch_webhooks(), name="webhook-logs")
+
+
+async def stop_webhook_logging():
+    global _webhook_queue, _webhook_task, _webhook_loop
+    task = _webhook_task
+    if task is not None:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+    _webhook_task = _webhook_queue = _webhook_loop = None
+
 class Formatter(logging.Formatter):
     def __init__(self):
         self.style_list = {
@@ -93,6 +135,8 @@ class WebhookLogger(logging.Handler):
             return '```'
 
     def emit(self, record: logging.LogRecord):
+        if record.name.startswith("discord.webhook"):
+            return  # A webhook delivery failure must not log back to itself.
         self.send(self.record_formatter.format(record), record)
             
     def send(self, formatted, record):
@@ -109,21 +153,18 @@ class WebhookLogger(logging.Handler):
                 "content": content
             }
 
-            try:
-                loop = asyncio.get_event_loop()
-                asyncio.ensure_future(post_content(self.webhook_url, message_body))
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(post_content(self.webhook_url, message_body))
+            if _webhook_loop is not None and not _webhook_loop.is_closed():
+                _webhook_loop.call_soon_threadsafe(enqueue_webhook, self.webhook_url, message_body)
 
 async def post_content(webhook_url, message_body):
-    async with aiohttp.ClientSession() as session:
-        the_webhook: discord.Webhook = discord.Webhook.from_url(webhook_url, session=session)
-        try:
+    from .fetchers import shared_session
+    try:
+        async with shared_session() as session:
+            the_webhook = discord.Webhook.from_url(webhook_url, session=session)
             await the_webhook.send(**message_body)
-        except Exception:
-            pass
+    except Exception:
+        # Do not recurse through the logger on a failed logging destination.
+        pass
 
 class Logger:
     def __init__(self):
