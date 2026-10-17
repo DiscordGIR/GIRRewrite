@@ -3,16 +3,15 @@ from types import SimpleNamespace
 import unittest
 
 import mongoengine
-import mongomock
 
 from data.model import Guild
-from tests.support import load_module
+from tests.support import load_module, connect_test_database
 
 
 class CaseNumberTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        mongoengine.connect("gir_tests", mongo_client_class=mongomock.MongoClient)
+        connect_test_database()
         module = load_module("data/services/guild_service.py", {
             "utils": SimpleNamespace(cfg=SimpleNamespace(guild_id=123)),
         })
