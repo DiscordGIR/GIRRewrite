@@ -48,3 +48,20 @@ class ImageQueueTests(unittest.IsolatedAsyncioTestCase):
         finally:
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
+
+    async def test_inspection_timeout_does_not_apply_punishment(self):
+        self.monitor.inspect_images = AsyncMock(side_effect=asyncio.TimeoutError)
+        self.monitor.apply_content_moderation = AsyncMock()
+        with self.assertRaises(asyncio.TimeoutError):
+            await self.monitor.image_spam(self.message())
+        self.monitor.apply_content_moderation.assert_not_called()
+
+    async def test_valid_finding_reaches_moderation_and_reporting(self):
+        finding = dict(reason="scam", title="test", trigger="match", evidence=[])
+        self.monitor.inspect_images = AsyncMock(return_value=finding)
+        self.monitor.apply_content_moderation = AsyncMock(return_value=("deleted", None))
+        self.monitor.send_content_report = AsyncMock()
+        message = self.message()
+        self.assertTrue(await self.monitor.image_spam(message))
+        self.monitor.send_content_report.assert_awaited_once_with(
+            message, **finding, actions="deleted", timeout_until=None)
