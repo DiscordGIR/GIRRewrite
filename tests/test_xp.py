@@ -3,15 +3,14 @@ import unittest
 from unittest.mock import patch
 
 import mongoengine
-import mongomock
 from data.model import User
-from tests.support import load_module
+from tests.support import load_module, connect_test_database
 
 
 class XpTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        mongoengine.connect("gir_tests", mongo_client_class=mongomock.MongoClient)
+        connect_test_database()
         cls.module = load_module("data/services/xp_service.py")
 
     @classmethod

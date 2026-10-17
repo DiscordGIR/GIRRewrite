@@ -5,14 +5,13 @@ import unittest
 from unittest.mock import patch
 
 import mongoengine
-import mongomock
 from data.model import Guild, User, Cases
-from tests.support import load_module
+from tests.support import load_module, connect_test_database
 
 
 class BootstrapTests(unittest.TestCase):
     def setUp(self):
-        mongoengine.connect("gir_tests", mongo_client_class=mongomock.MongoClient)
+        connect_test_database()
         for model in (Guild, User, Cases):
             model.drop_collection()
 
