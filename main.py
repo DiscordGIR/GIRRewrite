@@ -2,6 +2,7 @@ import asyncio
 from contextlib import suppress
 import os
 import traceback
+from uuid import uuid4
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -16,6 +17,7 @@ from deploy.healthcheck import report_health
 from data.services.user_service import user_service
 from utils.fetchers import close_client_session
 from utils.worker import BlockingIOPool
+from utils.health import monitor_runtime
 
 # Remove warning from songs cog
 import warnings
@@ -48,12 +50,14 @@ class Bot(commands.Bot):
         await init_client_session()
         self.database_io = BlockingIOPool(workers=4, name="gir-db")
         self.integration_io = BlockingIOPool(workers=2, name="gir-external")
+        await self.database_io.run(db.connect)
         for extension in initial_extensions:
             await self.load_extension(extension)
 
         setup_context_commands(self)
 
         self.tasks = Tasks(self)
+        self.health_task = asyncio.create_task(monitor_runtime(self, logger), name="runtime-health")
         if health_path := os.environ.get("GIR_HEALTH_FILE"):
             self._deployment_health_task = asyncio.create_task(report_health(self, health_path))
 
@@ -88,6 +92,10 @@ class Bot(commands.Bot):
             with suppress(asyncio.CancelledError):
                 await self._deployment_health_task
         try:
+            health_task = getattr(self, "health_task", None)
+            if health_task is not None:
+                health_task.cancel()
+                await asyncio.gather(health_task, return_exceptions=True)
             if hasattr(self, "tasks"):
                 self.tasks.close()
             await super().close()
@@ -180,16 +188,9 @@ async def app_command_error(interaction: discord.Interaction, error: AppCommandE
         try:
             raise error
         except:
-            tb = traceback.format_exc()
-            logger.error(tb)
-            if len(tb.split('\n')) > 8:
-                tb = '\n'.join(tb.split('\n')[-8:])
-
-            tb_formatted = tb
-            if len(tb_formatted) > 1000:
-                tb_formatted = "...\n" + tb_formatted[-1000:]
-
-            await ctx.send_error(description=f"`{error}`\n```{tb_formatted}```", followup=True, whisper=True, delete_after=5)
+            error_id = uuid4().hex[:12]
+            logger.error("Command failed error_id=%s\n%s", error_id, traceback.format_exc())
+            await ctx.send_error(description=f"Something went wrong. Please give a moderator this reference: `{error_id}`.", followup=True, whisper=True, delete_after=15)
 
 
 @bot.event
