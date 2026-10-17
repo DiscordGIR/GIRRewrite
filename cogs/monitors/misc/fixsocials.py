@@ -24,7 +24,7 @@ class FixSocials(commands.Cog):
 
         # regex for twitter urls
         self.twitter_pattern = re.compile(r"(https:\/\/(www.)?(twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+)")
-
+        
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -117,7 +117,7 @@ class FixSocials(commands.Cog):
 
     async def fix_instagram(self, message: discord.Message, link: str):
         link = link.replace("www.", "")
-        link = link.replace("instagram.com", "d.ddinstagram.com")
+        link = link.replace("instagram.com", "kkinstagram.com")
 
         await message.reply(f"[I hate instagram but here you go]({link})", mention_author=False)
         await asyncio.sleep(0.5)
@@ -150,8 +150,7 @@ class FixSocials(commands.Cog):
             await message.reply(f"[I hate {random.choice(['twitter', '𝕏', 'Elon Musk'])} but here you go]({link})", mention_author=False)
             await asyncio.sleep(0.5)
             await message.edit(suppress=True)
-
-
+            
 
 async def setup(bot):
     await bot.add_cog(FixSocials(bot))
