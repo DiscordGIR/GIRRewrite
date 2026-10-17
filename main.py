@@ -160,6 +160,7 @@ async def on_ready():
     await bot.issue_cache.fetch_issue_cache()
     await bot.rule_cache.fetch_rule_cache()
     await scam_cache.fetch_scam_cache()
+    bot.tasks.resume()
 
 
 async def main():
