@@ -68,7 +68,7 @@ class Giveaway(commands.Cog):
 
         await ctx.send_success(f"Giveaway created!", delete_after=5)
 
-        ctx.tasks.schedule_end_giveaway(
+        await ctx.tasks.schedule_end_giveaway(
             channel_id=channel.id, message_id=message.id, date=end_time, winners=winners)
 
     @admin_and_up()
@@ -118,7 +118,7 @@ class Giveaway(commands.Cog):
         elif giveaway.is_ended:
             raise commands.BadArgument("That giveaway has already ended.")
 
-        ctx.tasks.tasks.remove_job(str(int(message_id) + 2), 'default')
+        await ctx.tasks.cancel_giveaway(int(message_id))
         await end_giveaway(giveaway.channel, message_id, giveaway.winners)
 
         await ctx.send_success("Giveaway ended!", delete_after=5)

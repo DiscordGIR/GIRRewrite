@@ -1,5 +1,8 @@
 from data.database import run_database
+import asyncio
 import os
+import threading
+from functools import wraps
 import random
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone
@@ -23,7 +26,7 @@ job_defaults = {
 BOT_GLOBAL = None
 
 
-class Tasks():
+class _Scheduler:
     """Job scheduler for unmute, using APScheduler"""
 
     def __init__(self, bot: discord.Client):
@@ -44,15 +47,15 @@ class Tasks():
 
         if os.environ.get("DB_CONNECTION_STRING") is None:
             jobstores = {
-                'default': MongoDBJobStore(database="botty", collection="jobs", host=os.environ.get("DB_HOST"), port=int(os.environ.get("DB_PORT"))),
+                'default': MongoDBJobStore(database="botty", collection="jobs", host=os.environ.get("DB_HOST"), port=int(os.environ.get("DB_PORT")), serverSelectionTimeoutMS=5000, connectTimeoutMS=5000, socketTimeoutMS=10000),
             }
         else:
             jobstores = {
-                'default': MongoDBJobStore(database="botty", collection="jobs", host=os.environ.get("DB_CONNECTION_STRING")),
+                'default': MongoDBJobStore(database="botty", collection="jobs", host=os.environ.get("DB_CONNECTION_STRING"), serverSelectionTimeoutMS=5000, connectTimeoutMS=5000, socketTimeoutMS=10000),
             }
 
         self.tasks = AsyncIOScheduler(
-            jobstores=jobstores, executors={"default": AsyncIOExecutor()}, job_defaults=job_defaults, event_loop=bot.loop, timezone=utc)
+            jobstores=jobstores, executors={"default": AsyncIOExecutor()}, job_defaults=job_defaults, event_loop=asyncio.get_running_loop(), timezone=utc)
         self.tasks.start(paused=True)
 
     def schedule_untimeout(self, _id: int, date: datetime) -> None:
@@ -183,6 +186,10 @@ class Tasks():
         for job in legacy:
             self._remove_job(job.id)
 
+    def cancel_giveaway(self, message_id):
+        self._remove_job(f"giveaway:{message_id}")
+        self._remove_legacy_job(message_id + 2, end_giveaway_callback)
+
     def resume(self):
         if self.tasks.running:
             self.tasks.resume()
@@ -192,6 +199,136 @@ class Tasks():
             self.tasks.shutdown(wait=False)
 
 
+def scheduler_method(name):
+    async def invoke(self, *args, **kwargs):
+        return await self._call(getattr(self._scheduler, name), *args, **kwargs)
+    return invoke
+
+
+class Tasks:
+    """Own the scheduler's blocking job store on a dedicated event-loop thread.
+
+    Only scheduling runs there. Persisted callbacks dispatch Discord work back
+    to the bot loop; their original module/function references remain valid.
+    """
+    def __init__(self, bot):
+        self.bot = bot
+        self._loop = None
+        self._thread = None
+        self._scheduler = None
+        self._slots = asyncio.Semaphore(1)
+        self._closed = False
+        self._running_callbacks = set()
+
+    @property
+    def tasks(self):
+        # Read-only diagnostic access. Use the awaitable methods for mutations.
+        return self._scheduler.tasks
+
+    async def start(self):
+        if self._thread is not None:
+            return
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(target=self._loop.run_forever,
+                                        name="gir-scheduler", daemon=True)
+        self._thread.start()
+        def initialize():
+            self._scheduler = _Scheduler(self.bot)
+
+        try:
+            await self._call(initialize)
+        except BaseException:
+            await self.close()
+            raise
+
+    async def _call(self, function, *args, **kwargs):
+        if self._closed:
+            raise RuntimeError("Scheduler is closed")
+        await self._slots.acquire()
+        if self._closed:
+            self._slots.release()
+            raise RuntimeError("Scheduler is closed")
+
+        async def invoke():
+            return function(*args, **kwargs)
+
+        try:
+            future = asyncio.wrap_future(asyncio.run_coroutine_threadsafe(invoke(), self._loop))
+        except BaseException:
+            self._slots.release()
+            raise
+
+        def finished(result):
+            self._slots.release()
+            if not result.cancelled():
+                result.exception()
+
+        future.add_done_callback(finished)
+        return await asyncio.shield(future)
+
+    schedule_untimeout = scheduler_method("schedule_untimeout")
+    schedule_remove_bday = scheduler_method("schedule_remove_bday")
+    cancel_unmute = scheduler_method("cancel_unmute")
+    cancel_unbirthday = scheduler_method("cancel_unbirthday")
+    schedule_end_giveaway = scheduler_method("schedule_end_giveaway")
+    cancel_giveaway = scheduler_method("cancel_giveaway")
+    schedule_reminder = scheduler_method("schedule_reminder")
+    schedule_remove_new_member_role = scheduler_method("schedule_remove_new_member_role")
+    resume = scheduler_method("resume")
+
+    async def close(self):
+        if self._closed:
+            return
+        self._closed = True
+        if self._loop is None:
+            return
+        # Drain already accepted mutations before closing the store.
+        async with self._slots:
+            async def shutdown():
+                if self._scheduler is not None:
+                    self._scheduler.close()
+                    await asyncio.sleep(0)  # AsyncIOScheduler.shutdown is queued.
+                pending = [task for task in asyncio.all_tasks()
+                           if task is not asyncio.current_task()]
+                for task in pending:
+                    task.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
+
+            await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(shutdown(), self._loop))
+            # Wait for cancellation of the actual Discord coroutines as well as
+            # their cross-thread proxy futures before closing database/HTTP pools.
+            pending = list(self._running_callbacks)
+            for task in pending:
+                task.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+            self._loop.call_soon_threadsafe(self._loop.stop)
+            await asyncio.to_thread(self._thread.join)
+            self._loop.close()
+
+
+def on_bot_loop(function):
+    @wraps(function)
+    async def dispatch(*args, **kwargs):
+        if asyncio.get_running_loop() is BOT_GLOBAL.loop:
+            return await function(*args, **kwargs)
+
+        async def execute():
+            owner = BOT_GLOBAL.tasks
+            if owner._closed:
+                return
+            task = asyncio.current_task()
+            owner._running_callbacks.add(task)
+            try:
+                return await function(*args, **kwargs)
+            finally:
+                owner._running_callbacks.discard(task)
+
+        future = asyncio.run_coroutine_threadsafe(execute(), BOT_GLOBAL.loop)
+        return await asyncio.wrap_future(future)
+    return dispatch
+
+
+@on_bot_loop
 async def untimeout_callback(_id: int) -> None:
     """Callback function for actually unmuting. Creates asyncio task
     to do the actual unmute.
@@ -251,6 +388,7 @@ async def remove_timeout(_id: int) -> None:
     await public_chan.send(user.mention if not dmed else "", embed=log)
 
 
+@on_bot_loop
 async def reminder_callback(id: int, reminder: str):
     await remind(id, reminder)
 
@@ -283,6 +421,7 @@ async def remind(_id, reminder):
         await channel.send(member.mention, embed=embed)
 
 
+@on_bot_loop
 async def remove_bday_callback(_id: int) -> None:
     """Callback function for actually unmuting. Creates asyncio task
     to do the actual unmute.
@@ -321,6 +460,7 @@ async def remove_bday(_id: int) -> None:
         await user.remove_roles(bday_role)
 
 
+@on_bot_loop
 async def end_giveaway_callback(channel_id: int, message_id: int, winners: int) -> None:
     """
     Callback function for ending a giveaway
@@ -410,6 +550,7 @@ async def end_giveaway(channel_id: int, message_id: int, winners: int) -> None:
     else:
         await channel.send(f"Congratulations {', '.join(mentions)}! You won the giveaway of **{g.name}**! Please DM or contact <@{g.sponsor}> to collect.")
 
+@on_bot_loop
 async def remove_new_member_role_callback(member_id: int) -> None:
     """Callback function for actually removing new member role. Creates asyncio task
     to do the actual removal.

@@ -43,7 +43,7 @@ class TimeoutOwnershipTests(unittest.IsolatedAsyncioTestCase):
     async def test_scheduler_failure_does_not_erase_successful_mute(self):
         member = Mock(id=1, timeout=AsyncMock())
         ctx = Mock()
-        ctx.bot.tasks.schedule_untimeout.side_effect = RuntimeError("database unavailable")
+        ctx.bot.tasks.schedule_untimeout = AsyncMock(side_effect=RuntimeError("database unavailable"))
         mod = SimpleNamespace(id=2)
         deadline = await self.module.mute(ctx, member, mod, dur_seconds=60)
         self.assertIsNotNone(deadline)
