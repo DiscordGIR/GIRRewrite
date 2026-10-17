@@ -45,7 +45,7 @@ async def notify_user(target_member, text, log):
     return True
 
 
-async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: discord.Member, db_user, db_guild, cur_points: int, log):
+async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: discord.Member, db_user, cur_points: int, log):
     """Notifies a specified user about a warn
 
     Parameters

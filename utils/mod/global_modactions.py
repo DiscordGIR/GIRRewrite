@@ -38,7 +38,6 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     else:
         time = now + timedelta(days=14)
 
-    db_guild = guild_service.get_guild()
     case = Case(
         _id=guild_service.allocate_case_id(),
         _type="MUTE",
@@ -105,7 +104,6 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
     """
 
     await target_member.edit(timed_out_until=None)
-    db_guild = guild_service.get_guild()
 
     try:
         if isinstance(ctx, discord.Interaction):
@@ -145,7 +143,6 @@ async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: disc
 
 
 async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, reason):
-    db_guild = guild_service.get_guild()
 
     reason = escape_markdown(reason)
 
@@ -173,7 +170,7 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     log.add_field(name="Current points", value=cur_points, inline=True)
 
     # also send response in channel where command was called
-    dmed = await notify_user_warn(ctx, target_member, mod, db_user, db_guild, cur_points, log)
+    dmed = await notify_user_warn(ctx, target_member, mod, db_user, cur_points, log)
     await response_log(ctx, log)
     await submit_public_log(ctx, target_member, log, dmed)
 

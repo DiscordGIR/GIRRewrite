@@ -47,7 +47,6 @@ class ModActions(commands.Cog):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
 
-        db_guild = guild_service.get_guild()
 
         await ctx.defer(ephemeral=False)
         log = await execute_kick(member, ctx.author, reason,
@@ -64,7 +63,6 @@ class ModActions(commands.Cog):
     async def roblox(self, ctx: GIRContext, member: ModsAndAboveMember) -> None:
         reason = "This Discord server is for iOS jailbreaking, not Roblox. Please join https://discord.gg/jailbreak instead, thank you!"
 
-        db_guild = guild_service.get_guild()
 
         await ctx.defer(ephemeral=False)
         log = await execute_kick(member, ctx.author, reason,
@@ -121,7 +119,6 @@ class ModActions(commands.Cog):
     async def ban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
-        db_guild = guild_service.get_guild()
 
         member_is_external = isinstance(user, discord.User)
 
@@ -151,7 +148,6 @@ class ModActions(commands.Cog):
     async def staffban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
-        db_guild = guild_service.get_guild()
 
         member_is_external = isinstance(user, discord.User)
 
@@ -206,7 +202,6 @@ class ModActions(commands.Cog):
 
         self.bot.ban_cache.unban(user.id)
 
-        db_guild = guild_service.get_guild()
         case = Case(
             _id=guild_service.allocate_case_id(),
             _type="UNBAN",
@@ -370,7 +365,6 @@ class ModActions(commands.Cog):
         # remove the warn points from the user in DB
         user_service.inc_points(member.id, -1 * points)
 
-        db_guild = guild_service.get_guild()
         case = Case(
             _id=guild_service.allocate_case_id(),
             _type="REMOVEPOINTS",
