@@ -8,16 +8,25 @@ from utils.framework import admin_and_up, mod_and_up
 from utils.framework.checks import always_whisper
 from utils.framework.transformers import ModsAndAboveMemberOrUser
 from utils.mod.modactions_helpers import add_ban_case, submit_public_log
-from utils.views import Confirm, GenericDescriptionModal
+from utils.views import Confirm, GenericDescriptionModal, Menu, raidphrases_autocomplete
+
+
+def format_raid_page(_, entries, current_page, all_pages):
+    embed = discord.Embed(
+        title="Raid phrases", color=discord.Color.blurple(),
+        description="\n".join(discord.utils.escape_markdown(phrase.word[:250]) for phrase in entries))
+    embed.set_footer(text=f"Page {current_page} of {len(all_pages)}")
+    return embed
 
 
 class AntiRaid(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    _raid = app_commands.Group(name="raid", description="Manage raid phrases", guild_ids=[cfg.guild_id])
+
     @mod_and_up()
-    @app_commands.guilds(cfg.guild_id)
-    @app_commands.command(description="Add a new phrase to the raid filter")
+    @_raid.command(name="add", description="Add a new phrase to the raid filter")
     @app_commands.describe(phrase="Phrase to add")
     @transform_context
     async def raid(self, ctx: GIRContext, phrase: str) -> None:
@@ -28,6 +37,20 @@ class AntiRaid(commands.Cog):
             raise commands.BadArgument("That phrase is already in the list.")
         else:
             await ctx.send_success(description=f"Added `{phrase}` to the raid phrase list!", delete_after=5)
+
+    @mod_and_up()
+    @_raid.command(name="list", description="List raid phrases")
+    @transform_context
+    async def list_raid(self, ctx: GIRContext):
+        phrases = await guild_service.get_raid_phrases()
+        if not phrases:
+            raise commands.BadArgument(
+                "The raid phrase list is currently empty. Please add a phrase using `/raid add`.")
+
+        phrases = sorted(phrases, key=lambda phrase: phrase.word.lower())
+        menu = Menu(ctx, phrases, per_page=12,
+                    page_formatter=format_raid_page, whisper=False)
+        await menu.start()
 
     @admin_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -80,9 +103,9 @@ class AntiRaid(commands.Cog):
             await ctx.send_warning("Cancelled.")
 
     @mod_and_up()
-    @app_commands.guilds(cfg.guild_id)
-    @app_commands.command(description="Remove a phrase from the raid filter.")
+    @_raid.command(name="remove", description="Remove a phrase from the raid filter.")
     @app_commands.describe(phrase="Phrase to remove")
+    @app_commands.autocomplete(phrase=raidphrases_autocomplete)
     @transform_context
     async def removeraid(self, ctx: GIRContext, phrase: str) -> None:
         word = phrase.lower()
