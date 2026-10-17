@@ -23,15 +23,7 @@ These instructions *should* work on macOS, Windows and Linux.
 
 ### Antiraid content checks
 
-The antiraid monitor deletes messages with hidden Discord invite links and applies a seven-day timeout. It strips Unicode format/control characters and normalizes compatibility characters before checking; ordinary invite links continue through the existing invite filter and Discord AutoMod.
-
-For members without the configured Member Plus role, it also deletes and times out messages with four or more image attachments, an image named `1.*`, or a visual match to a stored scam image. Administrators and bots are exempt from these content checks. The image scanner uses both a 256-bit difference hash and a 16×16 RGB comparison; references live in `data/antiraid/scam_images.json` and require no startup downloads. Downloads are limited to 8 MiB and ten seconds, decoded images to 25 megapixels, and animated images are scanned using their first frame. Failed scans alone do not trigger moderation.
-
-Reports use `channels.reports` and `roles.moderator` from `config.json`, ping online moderators (falling back to the moderator role), and include up to four preserved images. A five-minute cooldown per user limits reports while moderation still runs on subsequent messages. Reports show whether deletion and timeout succeeded. **Ban** uses GIR's ban helper, including its case history, notifications, ban cache, and moderation logs. **Dismiss** deletes the report and leaves the timeout in place.
-
-Install the updated requirements or rebuild your deployment before running this version. The pinned `pyvips`/`pyvips-binary` dependencies supply the libvips image engine used by Sharp. The bot needs Manage Messages and Moderate Members for the automatic actions, Ban Members for the review button, and access to send embeds and files in the reports channel. Its role must be above members it moderates. The existing `Intents.all()` setup enables member and presence caching; enable the corresponding privileged intents in the Discord developer portal.
-
-Run the isolated antiraid tests with `python -m unittest discover -s tests -v`; they do not connect to Discord or MongoDB.
+Antiraid detects hidden invite links, image spam, and known scam images, deleting the message and applying a seven-day timeout. Reports include image evidence and a Ban button that uses GIR's moderation system. Install the updated requirements or rebuild your deployment to include the image-scanning dependencies.
 
 ### Setting up the `.env` file
 1. Copy the `.env.example` to a file called `.env`
