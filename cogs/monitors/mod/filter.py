@@ -192,13 +192,14 @@ class Filter(commands.Cog):
                 pass
 
             await self.delete(message)
+            timeout_until = None
             try:
                 ctx = await self.bot.get_context(message)
-                await mute(ctx, message.author, mod=message.guild.me,
+                timeout_until = await mute(ctx, message.author, mod=message.guild.me,
                            dur_seconds=7 * 24 * 60 * 60, reason="Invite filter")
             except Exception:
                 logger.exception("Failed to mute member for posting an invite")
-            await report(self.bot, message, invite, invite=invite)
+            await report(self.bot, message, invite, invite=invite, timeout_until=timeout_until)
             return True
 
         return False
