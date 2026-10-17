@@ -26,7 +26,7 @@ class Xp(commands.Cog):
 
         level = user.level
 
-        roles_to_add = self.assess_new_roles(level, member)
+        roles_to_add = await self.assess_new_roles(level, member)
         await self.add_new_roles(member, roles_to_add)
 
     @commands.Cog.listener()
@@ -45,16 +45,16 @@ class Xp(commands.Cog):
         result = await self.bot.database_io.run(award_xp, message.author.id, xp_to_add)
         if result is None:
             return
-        roles_to_add = self.assess_new_roles(result.level, message.author)
+        roles_to_add = await self.assess_new_roles(result.level, message.author)
         await self.add_new_roles(message, roles_to_add)
 
-    def assess_new_roles(self, new_level, member: discord.Member):
+    async def assess_new_roles(self, new_level, member: discord.Member):
         roles_to_add = []
         if 15 > new_level and cfg.roles.new_member is not None:
             member_joined_less_than_a_day_ago = datetime.datetime.now(datetime.timezone.utc) - member.created_at < datetime.timedelta(days=1)
             if member_joined_less_than_a_day_ago:
                 roles_to_add.append(cfg.roles.new_member)
-                self.bot.tasks.schedule_remove_new_member_role(
+                await self.bot.tasks.schedule_remove_new_member_role(
                     member.id, member.created_at + datetime.timedelta(days=1))
         if 15 <= new_level:
             roles_to_add.append(cfg.roles.member_plus)

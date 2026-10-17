@@ -393,7 +393,7 @@ class SpamReportActions(ui.View):
                 await ctx.send_warning("I couldn't parse that duration.")
 
             await self.target_member.edit(timed_out_until=None)
-            ctx.bot.tasks.cancel_unmute(self.target_member.id)
+            await ctx.bot.tasks.cancel_unmute(self.target_member.id)
             await mute(ctx, self.target_member, mod=interaction.user, dur_seconds=duration, reason="A moderator has reviewed your spam report.")
             await interaction.message.delete()
             self.stop()

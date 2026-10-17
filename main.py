@@ -55,6 +55,7 @@ class Bot(commands.Bot):
         setup_context_commands(self)
 
         self.tasks = Tasks(self)
+        await self.tasks.start()
         self.health_task = asyncio.create_task(monitor_runtime(self, logger), name="runtime-health")
 
     async def close(self):
@@ -64,7 +65,7 @@ class Bot(commands.Bot):
                 health_task.cancel()
                 await asyncio.gather(health_task, return_exceptions=True)
             if hasattr(self, "tasks"):
-                self.tasks.close()
+                await self.tasks.close()
             await super().close()
         finally:
             await stop_webhook_logging()
@@ -180,7 +181,7 @@ async def on_ready():
         f'Logged in as: {bot.user.name} - {bot.user.id} ({discord.__version__})')
     logger.info(f'Successfully logged in and booted...!')
 
-    bot.tasks.resume()
+    await bot.tasks.resume()
     for refresh in (bot.ban_cache.fetch_ban_cache, bot.issue_cache.fetch_issue_cache,
                     bot.rule_cache.fetch_rule_cache, scam_cache.fetch_scam_cache):
         try:

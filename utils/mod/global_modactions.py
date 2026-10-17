@@ -54,7 +54,7 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     await user_service.add_case(target_member.id, case)
     try:
         bot = ctx.client if isinstance(ctx, discord.Interaction) else ctx.bot
-        bot.tasks.schedule_untimeout(target_member.id, time)
+        await bot.tasks.schedule_untimeout(target_member.id, time)
     except Exception:
         # Discord expires the timeout itself; losing the optional expiry log
         # must not erase the successful punishment's audit record.
@@ -107,9 +107,9 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
 
     try:
         if isinstance(ctx, discord.Interaction):
-            ctx.client.tasks.cancel_unmute(target_member.id)
+            await ctx.client.tasks.cancel_unmute(target_member.id)
         else:
-            ctx.tasks.cancel_unmute(target_member.id)
+            await ctx.tasks.cancel_unmute(target_member.id)
     except Exception as e:
         pass
 
