@@ -327,7 +327,6 @@ class ModActions(commands.Cog):
 
         old_reason = case.reason
         case.reason = new_reason
-        case.date = datetime.now()
         cases.save()
 
         dmed = True
