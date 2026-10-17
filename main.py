@@ -15,6 +15,7 @@ from typing import Union
 from data.services.user_service import user_service
 from utils.fetchers import close_client_session
 from utils.worker import BlockingIOPool
+from data.database import configure_database_pool
 from utils.health import monitor_runtime
 from utils.logging import start_webhook_logging, stop_webhook_logging
 
@@ -46,6 +47,7 @@ class Bot(commands.Bot):
         start_webhook_logging()
         self.database_io = BlockingIOPool(workers=4, name="gir-db")
         self.integration_io = BlockingIOPool(workers=2, name="gir-external")
+        configure_database_pool(self.database_io)
         await self.database_io.run(db.connect)
         for extension in initial_extensions:
             await self.load_extension(extension)
@@ -99,7 +101,7 @@ class MyTree(app_commands.CommandTree):
         else:
             command_name = command.name
 
-        db_user = await interaction.client.database_io.run(user_service.get_user, interaction.user.id)
+        db_user = await user_service.get_user(interaction.user.id)
 
         if db_user.command_bans.get(command_name):
             ctx = GIRContext(interaction)

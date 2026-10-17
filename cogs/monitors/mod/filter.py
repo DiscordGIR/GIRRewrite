@@ -169,7 +169,7 @@ class Filter(commands.Cog):
         if not invites:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         whitelist = db_guild.filter_excluded_guilds
         for invite in invites:

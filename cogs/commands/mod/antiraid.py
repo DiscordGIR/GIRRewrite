@@ -1,3 +1,4 @@
+from data.database import run_database
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -126,9 +127,9 @@ class AntiRaid(commands.Cog):
     @transform_context
     async def spammode(self, ctx: GIRContext, mode: bool = None) -> None:
         if mode is None:
-            mode = not guild_service.get_guild().ban_today_spam_accounts
+            mode = not (await guild_service.get_guild()).ban_today_spam_accounts
 
-        guild_service.set_spam_mode(mode)
+        await guild_service.set_spam_mode(mode)
         await ctx.send_success(description=f"We {'**will ban**' if mode else 'will **not ban**'} accounts created today in join spam filter.")
 
     @admin_and_up()
@@ -138,13 +139,13 @@ class AntiRaid(commands.Cog):
     @app_commands.describe(mode="True if you want to verify, false otherwise")
     @transform_context
     async def verify(self, ctx: GIRContext, user: discord.Member, mode: bool = None) -> None:
-        profile = user_service.get_user(user.id)
+        profile = await user_service.get_user(user.id)
         if mode is None:
             profile.raid_verified = not profile.raid_verified
         else:
             profile.raid_verified = mode
 
-        profile.save()
+        await run_database(lambda: profile.save())
 
         await ctx.send_success(description=f"{'**Verified**' if profile.raid_verified else '**Unverified**'} user {user.mention}.")
 
@@ -184,10 +185,10 @@ class AntiRaid(commands.Cog):
     @transform_context
     async def freezeable(self,  ctx: GIRContext, channel: discord.TextChannel = None):
         channel = channel or ctx.channel
-        if channel.id in guild_service.get_locked_channels():
+        if channel.id in await guild_service.get_locked_channels():
             raise commands.BadArgument("That channel is already lockable.")
         
-        guild_service.add_locked_channels(channel.id)
+        await guild_service.add_locked_channels(channel.id)
         await ctx.send_success(f"Added {channel.mention} as lockable channel!")
 
     @admin_and_up()
@@ -197,10 +198,10 @@ class AntiRaid(commands.Cog):
     @transform_context
     async def unfreezeable(self,  ctx: GIRContext, channel: discord.TextChannel = None):
         channel = channel or ctx.channel
-        if channel.id not in guild_service.get_locked_channels():
+        if channel.id not in await guild_service.get_locked_channels():
             raise commands.BadArgument("That channel isn't already lockable.")
         
-        guild_service.remove_locked_channels(channel.id)
+        await guild_service.remove_locked_channels(channel.id)
         await ctx.send_success(f"Removed {channel.mention} as lockable channel!")
             
     @admin_and_up()
@@ -208,7 +209,7 @@ class AntiRaid(commands.Cog):
     @app_commands.command(description="Freeze all channels")
     @transform_context
     async def freeze(self, ctx):
-        channels = guild_service.get_locked_channels()
+        channels = await guild_service.get_locked_channels()
         if not channels:
             raise commands.BadArgument("No freezeable channels! Set some using `/freezeable`.")
         
@@ -231,7 +232,7 @@ class AntiRaid(commands.Cog):
     @app_commands.command(description="Unfreeze all channels")
     @transform_context
     async def unfreeze(self, ctx):
-        channels = guild_service.get_locked_channels()
+        channels = await guild_service.get_locked_channels()
         if not channels:
             raise commands.BadArgument("No unfreezeable channels! Set some using `/freezeable`.")
         

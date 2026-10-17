@@ -11,7 +11,7 @@ class TimeoutOwnershipTests(unittest.IsolatedAsyncioTestCase):
         helpers = SimpleNamespace(execute_ban=AsyncMock(), notify_user=AsyncMock(),
                                   notify_user_warn=AsyncMock(), response_log=AsyncMock(),
                                   submit_public_log=AsyncMock())
-        self.services = SimpleNamespace(guild_service=Mock(), user_service=Mock())
+        self.services = SimpleNamespace(guild_service=AsyncMock(), user_service=AsyncMock())
         self.services.guild_service.allocate_case_id.return_value = 1
         self.module = load_module("utils/mod/global_modactions.py", {
             "utils": SimpleNamespace(cfg=Mock(), logger=Mock()),

@@ -1,3 +1,4 @@
+from data.database import run_database
 import datetime
 from typing import List
 import discord
@@ -66,9 +67,9 @@ class Timezones(commands.Cog):
         if zone not in pytz.common_timezones_set:
             raise commands.BadArgument("Timezone was not found!")
 
-        db_user = user_service.get_user(ctx.author.id)
+        db_user = await user_service.get_user(ctx.author.id)
         db_user.timezone = zone
-        db_user.save()
+        await run_database(lambda: db_user.save())
 
         footer = None
         if self.timezone_country.get(zone) is None:
@@ -80,9 +81,9 @@ class Timezones(commands.Cog):
     @transform_context
     @whisper
     async def remove(self, ctx: GIRContext):
-        db_user = user_service.get_user(ctx.author.id)
+        db_user = await user_service.get_user(ctx.author.id)
         db_user.timezone = None
-        db_user.save()
+        await run_database(lambda: db_user.save())
 
         await ctx.send_success(f"We have removed your timezone from the database.", ephemeral=ctx.whisper)
 
@@ -90,7 +91,7 @@ class Timezones(commands.Cog):
     @app_commands.describe(member="Member to view time of")
     @transform_context
     async def view(self, ctx: GIRContext, member: discord.Member):
-        db_user = user_service.get_user(member.id)
+        db_user = await user_service.get_user(member.id)
         if db_user.timezone is None:
             raise commands.BadArgument(f"{member.mention} has not set a timezone!")
 

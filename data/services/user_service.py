@@ -1,3 +1,4 @@
+from data.database import database_method
 from typing import Counter
 from data.model import Case, Cases, User
 
@@ -26,7 +27,7 @@ class UserService:
         return user
     
     def leaderboard(self) -> list:
-        return User.objects[0:130].only('_id', 'xp').order_by('-xp', '-_id').select_related()
+        return User.objects[0:130].only('_id', 'xp', 'level').order_by('-xp', '-_id').select_related()
 
     def leaderboard_rank(self, xp):
         users = User.objects().only('_id', 'xp')
@@ -153,7 +154,7 @@ class UserService:
         return cases[0:3]
 
     def retrieve_birthdays(self, date):
-        return User.objects(birthday=date)
+        return list(User.objects(birthday=date))
     
     def transfer_profile(self, oldmember, newmember):
         u = self.get_user(oldmember)
@@ -228,4 +229,28 @@ class UserService:
         self.get_user(_id)
         User.objects(_id=_id).update_one(set__sticky_roles=roles)
 
-user_service = UserService()
+
+_repository = UserService()
+
+
+class AsyncUserService:
+    """Bot-facing API; all persistence runs in the bounded database pool."""
+    get_user = database_method(_repository.get_user)
+    leaderboard = database_method(_repository.leaderboard)
+    leaderboard_rank = database_method(_repository.leaderboard_rank)
+    inc_points = database_method(_repository.inc_points)
+    inc_xp = database_method(_repository.inc_xp)
+    inc_level = database_method(_repository.inc_level)
+    get_cases = database_method(_repository.get_cases)
+    add_case = database_method(_repository.add_case)
+    set_warn_kicked = database_method(_repository.set_warn_kicked)
+    rundown = database_method(_repository.rundown)
+    retrieve_birthdays = database_method(_repository.retrieve_birthdays)
+    transfer_profile = database_method(_repository.transfer_profile)
+    fetch_raids = database_method(_repository.fetch_raids)
+    fetch_cases_by_mod = database_method(_repository.fetch_cases_by_mod)
+    fetch_cases_by_keyword = database_method(_repository.fetch_cases_by_keyword)
+    set_sticky_roles = database_method(_repository.set_sticky_roles)
+
+
+user_service = AsyncUserService()

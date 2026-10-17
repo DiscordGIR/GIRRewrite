@@ -1,3 +1,4 @@
+from data.database import run_database
 from utils.fetchers import shared_session
 import aiohttp
 import discord
@@ -32,7 +33,7 @@ class Logging(commands.Cog):
         if member.guild.id != cfg.guild_id:
             return
 
-        db_user = user_service.get_user(member.id)
+        db_user = await user_service.get_user(member.id)
         channel = member.guild.get_channel(cfg.channels.private_logs)
 
         embed = discord.Embed(title="Member joined")
@@ -93,7 +94,7 @@ class Logging(commands.Cog):
             return
 
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         webhook = db_guild.emoji_logging_webhook
         if webhook is None:
             channel = member.guild.get_channel(cfg.channels.emoji_logs)
@@ -102,7 +103,7 @@ class Logging(commands.Cog):
 
             webhook = (await channel.create_webhook(name=f"Webhook {channel.name}")).url
             db_guild.emoji_logging_webhook = webhook
-            db_guild.save()
+            await run_database(lambda: db_guild.save())
 
         content = f"{reaction.emoji}\n\n{reaction.message.channel.mention} | [Link to message]({reaction.message.jump_url}) | **{member.id}**"
         body = {
@@ -135,7 +136,7 @@ class Logging(commands.Cog):
         if not before.content or not after.content or before.content == after.content:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         if before.channel.id in db_guild.logging_excluded_channels:
             return
 
@@ -183,7 +184,7 @@ class Logging(commands.Cog):
         if message.content == "" or not message.content:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         if message.channel.id in db_guild.logging_excluded_channels:
             return
 
@@ -231,7 +232,7 @@ class Logging(commands.Cog):
             return
 
         members = set()
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
         if messages[0].channel.id in db_guild.logging_excluded_channels:
             return
 

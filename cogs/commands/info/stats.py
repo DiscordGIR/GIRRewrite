@@ -107,7 +107,7 @@ class Stats(commands.Cog):
     async def raidstats(self, ctx: GIRContext) -> None:
         embed = discord.Embed(title="Raid Statistics",
                               color=discord.Color.blurple())
-        raids = user_service.fetch_raids()
+        raids = await user_service.fetch_raids()
 
         total = 0
         for raid_type, cases in raids.items():
@@ -135,7 +135,7 @@ class Stats(commands.Cog):
         embed.set_author(name=f"{mod}'s case statistics",
                          icon_url=mod.display_avatar)
 
-        cases = user_service.fetch_cases_by_mod(mod.id)
+        cases = await user_service.fetch_cases_by_mod(mod.id)
         if keyword is None:
             string = ""
             for reason, count in cases.get("counts")[:5]:
@@ -168,7 +168,7 @@ class Stats(commands.Cog):
         embed.set_author(name=f"Case keyword statistics",
                          icon_url=ctx.guild.icon.url)
 
-        cases = user_service.fetch_cases_by_keyword(keyword)
+        cases = await user_service.fetch_cases_by_keyword(keyword)
 
         keyword = keyword.lower()
 
