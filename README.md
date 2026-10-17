@@ -14,6 +14,9 @@ GIR is a sophisticated moderation and miscellaneous utilities Discord bot create
 
 GIR is custom made for the r/Jailbreak server and therefore there is no publicly running bot you can invite to your own server. However, you can self-host it as is or fork the code and modify it to your own requirements!
 
+The current modernization work, test commands, rollout checks, and remaining
+architecture changes are tracked in [the modernization plan](docs/modernization.md).
+
 > See also: [Bloo](https://github.com/DiscordGIR/Bloo) and [GIR](https://github.com/DiscordGIR/GIR)
 
 ---
