@@ -9,7 +9,7 @@ from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
 from utils import GIRContext, cfg, transform_context
 from utils.framework import mod_and_up, ModsAndAboveMemberOrUser, Duration, ModsAndAboveMember, UserOnly
-from utils.mod import (execute_ban, add_kick_case, notify_user,
+from utils.mod import (execute_ban, execute_kick, notify_user,
                        prepare_editreason_log, prepare_liftwarn_log,
                        prepare_mute_log, prepare_removepoints_log,
                        prepare_unban_log, prepare_unmute_log,
@@ -49,11 +49,9 @@ class ModActions(commands.Cog):
 
         db_guild = guild_service.get_guild()
 
-        log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
-        await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
-
         await ctx.defer(ephemeral=False)
-        await member.kick(reason=reason)
+        log = await execute_kick(member, ctx.author, reason,
+                                 dm_text=f"You were kicked from {ctx.guild.name}")
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, member, log)
@@ -68,11 +66,9 @@ class ModActions(commands.Cog):
 
         db_guild = guild_service.get_guild()
 
-        log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
-        await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
-
         await ctx.defer(ephemeral=False)
-        await member.kick(reason=reason)
+        log = await execute_kick(member, ctx.author, reason,
+                                 dm_text=f"You were kicked from {ctx.guild.name}")
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, member, log)

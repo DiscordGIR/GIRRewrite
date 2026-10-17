@@ -35,3 +35,15 @@ class BanOutcomeTests(unittest.IsolatedAsyncioTestCase):
         self.users.add_case.assert_called_once()
         self.bot.ban_cache.ban.assert_called_once_with(1)
         self.assertEqual(self.guild.ban.call_args.kwargs["reason"], "reason")
+
+    async def test_failed_kick_does_not_create_case(self):
+        member = SimpleNamespace(id=1, kick=AsyncMock(side_effect=RuntimeError("forbidden")))
+        with self.assertRaises(RuntimeError):
+            await self.module.execute_kick(member, self.mod, "reason")
+        self.users.add_case.assert_not_called()
+
+    async def test_successful_kick_creates_case(self):
+        member = SimpleNamespace(id=1, kick=AsyncMock())
+        await self.module.execute_kick(member, self.mod, "reason")
+        member.kick.assert_awaited_once_with(reason="reason")
+        self.users.add_case.assert_called_once()
