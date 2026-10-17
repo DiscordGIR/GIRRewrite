@@ -29,6 +29,8 @@ Each change is committed separately, in dependency order:
 | `4ebe3f6` | Real MongoDB service for integration tests in CI |
 | `d7ec0f2` | Apply image deadlines before moderation begins |
 | `8c4e6a7` | Run concurrency assertions against real MongoDB, not mongomock |
+| `979ae2c` | Awaitable MongoEngine services, document saves, and GridFS operations throughout handlers |
+| `ed422c4` | Dedicated scheduler thread for persistent job storage; callbacks stay on the bot loop |
 
 The local signing agent failed during this work. The rebased commits are unsigned;
 the repository's signing configuration is unchanged.
@@ -41,9 +43,11 @@ python -m unittest discover -s tests -v
 python -m compileall -q main.py cogs data utils tests
 ```
 
-Local result: 39 discovered tests, 36 passed, 3 explicitly skipped because they
+Local result: 47 discovered tests, 44 passed, 3 explicitly skipped because they
 require a real MongoDB server. The tests load all configured extensions and close
 the bot with example configuration, no credentials, and no Discord connection.
+Regression tests also exercise slow database/job-store operations, callback loop
+affinity, shutdown cancellation, GridFS, and materialized birthday reads.
 Local execution used Python 3.9 and the repository's pinned runtime packages;
 CI uses Python 3.10. The full image build and real-MongoDB test run were not
 verified locally because the Docker daemon was unavailable. CI has been configured
@@ -67,6 +71,12 @@ so its threaded results cannot establish production concurrency guarantees.
   thresholds are preserved; no XP cooldown or lossy batching was introduced.
 - Database workers are limited to four and Spotify workers to two. Cancellation
   does not free a worker slot until its synchronous operation has actually ended.
+  All bot-facing user/guild service methods are awaitable. Queries, cache misses,
+  document saves, GridFS reads/writes, and GridFS metadata access run in that pool.
+  Birthday queries are materialized before returning, case pagination uses a
+  prefetched profile, and importing context commands no longer queries MongoDB.
+  MongoEngine remains synchronous internally; this isolates its blocking I/O
+  without changing the driver or schema.
 - Image processing has two workers and at most 32 queued messages. On saturation,
   additional scans are skipped and counted; overload is never evidence of abuse.
   Inspection and evidence collection have a 30-second deadline. Discord actions
@@ -82,6 +92,12 @@ so its threaded results cannot establish production concurrency guarantees.
 - Scheduler callback names remain compatible with stored jobs. New IDs are
   namespaced, and matching old IDs are removed when jobs are replaced/cancelled.
   Old randomly named new-member jobs are consolidated when rescheduled.
+  Scheduler polling, startup, job mutations, and shutdown run on a dedicated
+  event-loop thread with one outstanding mutation at a time. Callbacks dispatch
+  Discord work onto the bot loop and propagate completion/errors to APScheduler.
+  Shutdown drains accepted mutations and cancels/awaits active callbacks before
+  closing shared database and HTTP resources. Giveaway cancellation handles both
+  namespaced and matching legacy IDs.
 - Application webhook logging queues at most 200 fragments. On overload, excess
   fragments are dropped; stdout remains the authoritative log. Startup/shutdown
   logs are not forwarded, and queued fragments are not guaranteed on shutdown.
@@ -126,15 +142,17 @@ unfinished notifications. Restore report views with stable component IDs on
 startup. Test crashes at every persistence/Discord boundary and competing clicks.
 Current report views still live in memory and do not survive restart.
 
-### 2. Extend the async persistence boundary
+### 2. Refine persistence snapshots and measure database throughput
 
-Move remaining synchronous queries, saves, cache misses, and report/history reads
-behind explicit async repositories. The worker pool is an incremental bridge;
-most legacy service methods remain synchronous. Return immutable snapshots rather
-than lazy MongoEngine querysets across worker boundaries. Add operation timing
-and query-count instrumentation, then assess native PyMongo Async against the
-same replay workload. Do not introduce a second driver without compatibility and
-schema tests.
+The async boundary now covers handlers, GridFS, and scheduler storage. Keep
+synchronous repository classes internal; callers must await the exported service
+instances. Documents returned from workers belong to their caller, and saves must
+also use `run_database`. Replace mutable documents with explicit immutable
+snapshots where practical, especially cached filter configuration. Add per-query
+latency/count instrumentation and assess a native async driver against the same
+replay workload. Worker isolation protects responsiveness but does not make slow
+queries faster or establish a production throughput improvement. Do not introduce
+a second driver without compatibility and schema tests.
 
 ### 3. Inspect production query shapes before changing storage
 

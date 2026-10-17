@@ -22,11 +22,13 @@ async def check():
         os.environ.clear()
         os.environ.update(MAIN_GUILD_ID="123", OWNER_ID="123", AARON_ID="123",
                           DB_HOST="localhost", DB_PORT="27017")
-        mongoengine.connect("botty", mongo_client_class=mongomock.MongoClient)
-        Guild(_id=123, case_id=1).save()
-        with patch("dotenv.main.load_dotenv"), patch("mongoengine.register_connection"):
+        # Import must not require a connection or execute database queries.
+        with patch("dotenv.main.load_dotenv"):
             import main
             import utils.jobs
+        mongoengine.connect("botty", mongo_client_class=mongomock.MongoClient)
+        Guild(_id=123, case_id=1).save()
+        with patch("mongoengine.register_connection"):
             with patch.object(utils.jobs, "MongoDBJobStore", side_effect=lambda **kwargs: MemoryJobStore()):
                 async with main.bot:
                     await main.bot.setup_hook()
