@@ -10,8 +10,8 @@ from tests.support import load_module
 
 class SchedulerTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        self.users = Mock()
-        self.guilds = Mock()
+        self.users = AsyncMock()
+        self.guilds = AsyncMock()
         self.module = load_module("utils/jobs.py", {
             "utils": SimpleNamespace(cfg=SimpleNamespace(guild_id=123)),
             "data.services": SimpleNamespace(user_service=self.users, guild_service=self.guilds),

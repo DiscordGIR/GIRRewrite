@@ -39,7 +39,7 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
         time = now + timedelta(days=14)
 
     case = Case(
-        _id=guild_service.allocate_case_id(),
+        _id=await guild_service.allocate_case_id(),
         _type="MUTE",
         date=now,
         mod_id=mod.id,
@@ -51,7 +51,7 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     case.punishment = humanize.naturaldelta(
         time - now, minimum_unit="seconds")
     await target_member.timeout(time, reason=reason)
-    user_service.add_case(target_member.id, case)
+    await user_service.add_case(target_member.id, case)
     try:
         bot = ctx.client if isinstance(ctx, discord.Interaction) else ctx.bot
         bot.tasks.schedule_untimeout(target_member.id, time)
@@ -114,14 +114,14 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
         pass
 
     case = Case(
-        _id=guild_service.allocate_case_id(),
+        _id=await guild_service.allocate_case_id(),
         _type="UNMUTE",
         mod_id=mod.id,
         mod_tag=str(mod),
         reason=reason,
     )
 
-    user_service.add_case(target_member.id, case)
+    await user_service.add_case(target_member.id, case)
 
     log = prepare_unmute_log(mod, target_member, case)
     await response_log(ctx, log)
@@ -148,7 +148,7 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
 
     # prepare the case object for database
     case = Case(
-        _id=guild_service.allocate_case_id(),
+        _id=await guild_service.allocate_case_id(),
         _type="WARN",
         mod_id=mod.id,
         mod_tag=str(mod),
@@ -157,12 +157,12 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     )
 
     # add new case to DB
-    user_service.add_case(target_member.id, case)
+    await user_service.add_case(target_member.id, case)
     # add warnpoints to the user in DB
-    user_service.inc_points(target_member.id, points)
+    await user_service.inc_points(target_member.id, points)
 
     # fetch latest document about user from DB
-    db_user = user_service.get_user(target_member.id)
+    db_user = await user_service.get_user(target_member.id)
     cur_points = db_user.warn_points
 
     # prepare log embed, send to #public-mod-logs, user, channel where invoked

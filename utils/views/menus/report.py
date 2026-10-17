@@ -32,14 +32,14 @@ async def report(bot: discord.Client, message: discord.Message, word: str, invit
     """
     channel = message.guild.get_channel(cfg.channels.reports)
 
-    ping_string = prepare_ping_string(message)
+    ping_string = await prepare_ping_string(message)
     view = ReportActions(target_member=message.author, unmute_on_dismiss=bool(invite), timeout_until=timeout_until)
 
     if invite:
-        embed = prepare_embed(message, word, title="Invite filter")
+        embed = await prepare_embed(message, word, title="Invite filter")
         await channel.send(f"{ping_string}\nMessage contained invite: {invite}", embed=embed, view=view)
     else:
-        embed = prepare_embed(message, word)
+        embed = await prepare_embed(message, word)
         await channel.send(ping_string, embed=embed, view=view)
 
 
@@ -60,7 +60,7 @@ async def manual_report(mod: discord.Member, target: Union[discord.Message, disc
 
     ping_string = ""
     if urgent:
-        ping_string = f"{prepare_ping_string(target)}, {mod.mention} reported a member!"
+        ping_string = f"{await prepare_ping_string(target)}, {mod.mention} reported a member!"
     else: 
         ping_string = f"{mod.mention} reported a member!"
 
@@ -69,7 +69,7 @@ async def manual_report(mod: discord.Member, target: Union[discord.Message, disc
     else:
         view = ReportActions(target)
 
-    embed = prepare_embed(target, title="A moderator reported a member")
+    embed = await prepare_embed(target, title="A moderator reported a member")
     await channel.send(ping_string, embed=embed, view=view)
 
 
@@ -90,20 +90,20 @@ async def report_raid_phrase(bot: discord.Client, message: discord.Message, doma
     """
     channel = message.guild.get_channel(cfg.channels.reports)
 
-    ping_string = prepare_ping_string(message)
+    ping_string = await prepare_ping_string(message)
     view = RaidPhraseReportActions(message.author, domain)
 
-    embed = prepare_embed(
+    embed = await prepare_embed(
         message, domain, title=f"Possible new raid phrase detected\n{domain}")
     await channel.send(ping_string, embed=embed, view=view)
 
 
 async def report_spam(bot, msg, user, title):
     channel = msg.guild.get_channel(cfg.channels.reports)
-    ping_string = prepare_ping_string(msg)
+    ping_string = await prepare_ping_string(msg)
 
     view = SpamReportActions(user)
-    embed = prepare_embed(msg, title=title)
+    embed = await prepare_embed(msg, title=title)
 
     await channel.send(ping_string, embed=embed, view=view)
 
@@ -122,7 +122,7 @@ async def report_raid(user, msg=None):
     await reports_channel.send(f"<@&{cfg.roles.moderator}>", embed=embed, allowed_mentions=discord.AllowedMentions(roles=True))
 
 
-def prepare_ping_string(message):
+async def prepare_ping_string(message):
     """Prepares modping string
 
     Parameters
@@ -137,14 +137,14 @@ def prepare_ping_string(message):
 
     role = message.guild.get_role(cfg.roles.moderator)
     for member in role.members:
-        offline_ping = (user_service.get_user(member.id)).offline_report_ping
+        offline_ping = ((await user_service.get_user(member.id))).offline_report_ping
         if member.status == discord.Status.online or offline_ping:
             ping_string += f"{member.mention} "
 
     return ping_string
 
 
-def prepare_embed(target: Union[discord.Message, discord.Member], word: str = None, title="Word filter"):
+async def prepare_embed(target: Union[discord.Message, discord.Member], word: str = None, title="Word filter"):
     """Prepares embed
 
     Parameters
@@ -162,8 +162,8 @@ def prepare_embed(target: Union[discord.Message, discord.Member], word: str = No
     else:
         member = target
 
-    user_info = user_service.get_user(member.id)
-    rd = user_service.rundown(member.id)
+    user_info = await user_service.get_user(member.id)
+    rd = await user_service.rundown(member.id)
     rd_text = ""
     for r in rd:
         if r._type == "WARN":

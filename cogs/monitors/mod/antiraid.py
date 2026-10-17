@@ -161,7 +161,7 @@ class AntiRaidMonitor(commands.Cog):
 
         # skip user if we manually verified them, i.e they were approved by a moderator
         # using the !verify command when they appealed a ban.
-        if user_service.get_user(member.id).raid_verified:
+        if (await user_service.get_user(member.id)).raid_verified:
             return
 
         # skip if it's an older account (before May 1st 2021)
@@ -171,7 +171,7 @@ class AntiRaidMonitor(commands.Cog):
         # this setting disables the filter for accounts created from "Today"
         # useful when we get alot of new users, for example when a new Jailbreak is released.
         # this setting is controlled using !spammode
-        if not guild_service.get_guild().ban_today_spam_accounts:
+        if not (await guild_service.get_guild()).ban_today_spam_accounts:
             now = datetime.today()
             now = [now.year, now.month, now.day]
             member_now = [member.created_at.year,
@@ -501,7 +501,7 @@ class AntiRaidMonitor(commands.Cog):
         """Freeze all channels marked as freezeable during a raid, meaning only people with the Member+ role and up
         can talk (temporarily lock out whitenames during a raid)"""
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         for channel in db_guild.locked_channels:
             channel = guild.get_channel(channel)

@@ -1,3 +1,4 @@
+from data.database import run_database
 import os
 import random
 from uuid import uuid4
@@ -225,13 +226,13 @@ async def remove_timeout(_id: int) -> None:
         return
 
     case = Case(
-        _id=guild_service.allocate_case_id(),
+        _id=await guild_service.allocate_case_id(),
         _type="UNMUTE",
         mod_id=BOT_GLOBAL.user.id,
         mod_tag=str(BOT_GLOBAL.user),
         reason="Temporary mute expired.",
     )
-    user_service.add_case(_id, case)
+    await user_service.add_case(_id, case)
 
     # i know. this sucks.
     from utils.mod import prepare_unmute_log
@@ -391,11 +392,11 @@ async def end_giveaway(channel_id: int, message_id: int, winners: int) -> None:
             mentions.append(member.mention)
             winner_ids.append(member.id)
 
-    g = guild_service.get_giveaway(_id=message.id)
+    g = await guild_service.get_giveaway(_id=message.id)
     g.entries = reacted_ids
     g.is_ended = True
     g.previous_winners = winner_ids
-    g.save()
+    await run_database(lambda: g.save())
 
     await message.edit(embed=embed)
     await message.clear_reactions()
