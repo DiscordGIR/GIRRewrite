@@ -9,7 +9,7 @@ from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
 from utils import GIRContext, cfg, transform_context
 from utils.framework import mod_and_up, ModsAndAboveMemberOrUser, Duration, ModsAndAboveMember, UserOnly
-from utils.mod import (add_ban_case, add_kick_case, notify_user,
+from utils.mod import (execute_ban, add_kick_case, notify_user,
                        prepare_editreason_log, prepare_liftwarn_log,
                        prepare_mute_log, prepare_removepoints_log,
                        prepare_unban_log, prepare_unmute_log,
@@ -135,19 +135,13 @@ class ModActions(commands.Cog):
                 raise commands.BadArgument("That user is already banned!")
 
         await ctx.defer(ephemeral=False)
-        self.bot.ban_cache.ban(user.id)
-        log = await add_ban_case(user, ctx.author, reason, db_guild)
-
+        dm_text = None
         if not member_is_external:
-            if cfg.ban_appeal_url is None:
-                await notify_user(user, f"You have been banned from {ctx.guild.name}", log)
-            else:
-                await notify_user(user, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
-
-            await user.ban(reason=reason)
-        else:
-            # hackban for user not currently in guild
-            await ctx.guild.ban(discord.Object(id=user.id))
+            dm_text = f"You have been banned from {ctx.guild.name}"
+            if cfg.ban_appeal_url is not None:
+                dm_text += f"\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>"
+        log = await execute_ban(self.bot, ctx.guild, user, ctx.author, reason,
+                                dm_text=dm_text, anonymous=False)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, user, log)
@@ -179,20 +173,13 @@ class ModActions(commands.Cog):
             await ctx.send_warning(f"Cancelled staff banning {user.mention}.")
             return
 
-        self.bot.ban_cache.ban(user.id)
-        log = await add_ban_case(user, ctx.author, reason, db_guild)
-
-        log.set_field_at(1, name="Mod", value=f"{ctx.guild.name} Staff")
-
+        dm_text = None
         if not member_is_external:
-            if cfg.ban_appeal_url is None:
-                await notify_user(user, f"You have been banned from {ctx.guild.name}", log)
-            else:
-                await notify_user(user, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
-            await user.ban(reason=reason)
-        else:
-            # hackban for user not currently in guild
-            await ctx.guild.ban(discord.Object(id=user.id))
+            dm_text = f"You have been banned from {ctx.guild.name}"
+            if cfg.ban_appeal_url is not None:
+                dm_text += f"\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>"
+        log = await execute_ban(self.bot, ctx.guild, user, ctx.author, reason,
+                                dm_text=dm_text, anonymous=True)
 
         await ctx.interaction.message.delete()
         await ctx.respond_or_edit(embed=log, delete_after=10)

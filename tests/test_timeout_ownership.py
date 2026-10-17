@@ -8,7 +8,7 @@ from tests.support import load_module
 
 class TimeoutOwnershipTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        helpers = SimpleNamespace(add_ban_case=AsyncMock(), notify_user=AsyncMock(),
+        helpers = SimpleNamespace(execute_ban=AsyncMock(), notify_user=AsyncMock(),
                                   notify_user_warn=AsyncMock(), response_log=AsyncMock(),
                                   submit_public_log=AsyncMock())
         self.services = SimpleNamespace(guild_service=Mock(), user_service=Mock())

@@ -12,7 +12,7 @@ from utils import cfg, fetchers, logger
 from utils.worker import BlockingIOPool
 from utils.antiraid import download_image, image_fingerprint, is_image, match_fingerprint
 from utils.framework import MessageTextBucket, gatekeeper, find_triggered_raid_phrases
-from utils.mod import mute, prepare_ban_log
+from utils.mod import mute, prepare_ban_log, execute_ban
 from utils.views import report_raid, report_raid_phrase, report_spam
 from utils.views.menus.antiraid import report_antiraid
 
@@ -480,35 +480,10 @@ class AntiRaidMonitor(commands.Cog):
             # if self.ban_user_mapping.get(user.id) is not None:
             if self.bot.ban_cache.is_banned(user.id):
                 return
-            else:
-                self.bot.ban_cache.ban(user.id)
-
-            db_guild = guild_service.get_guild()
-
-            case = Case(
-                _id=guild_service.allocate_case_id(),
-                _type="BAN",
-                date=datetime.now(),
-                mod_id=self.bot.user.id,
-                mod_tag=str(self.bot.user),
-                punishment="PERMANENT",
-                reason=reason
-            )
-
-            user_service.add_case(user.id, case)
-
-            log = prepare_ban_log(self.bot.user, user, case)
-
+            dm_text = None
             if dm_user:
-                try:
-                    await user.send(f"You were banned from {user.guild.name}.\n\nThis action was performed automatically. If you think this was a mistake, please send a message here: https://www.reddit.com/message/compose?to=%2Fr%2FJailbreak", embed=log)
-                except Exception:
-                    pass
-
-            if user.guild.get_member(user.id) is not None:
-                await user.ban(reason="Raid")
-            else:
-                await user.guild.ban(discord.Object(id=user.id), reason="Raid")
+                dm_text = f"You were banned from {user.guild.name}.\n\nThis action was performed automatically. If you think this was a mistake, please send a message here: https://www.reddit.com/message/compose?to=%2Fr%2FJailbreak"
+            log = await execute_ban(self.bot, user.guild, user, self.bot.user, reason, dm_text=dm_text)
 
             public_logs = user.guild.get_channel(cfg.channels.public_logs)
             if public_logs:
