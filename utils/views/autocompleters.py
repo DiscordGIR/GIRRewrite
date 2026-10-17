@@ -252,6 +252,16 @@ async def filterwords_autocomplete(interaction: discord.Interaction, current: st
     return [app_commands.Choice(name=word, value=word) for word in words if str(word).startswith(str(current))][:25]
 
 
+async def raidphrases_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    if not gatekeeper.has(interaction.guild, interaction.user, 5):
+        return []
+
+    phrases = sorted(await guild_service.get_raid_phrases(), key=lambda phrase: phrase.word.lower())
+    return [app_commands.Choice(name=phrase.word, value=phrase.word)
+            for phrase in phrases if phrase.word.lower().startswith(current.lower())
+            and len(phrase.word) <= 100][:25]
+
+
 async def warn_autocomplete(interaction: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
     if not gatekeeper.has(interaction.guild, interaction.user, 5):
         return []
