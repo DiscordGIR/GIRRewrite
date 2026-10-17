@@ -1,10 +1,13 @@
+import asyncio
 import json
 import urllib
+from contextlib import asynccontextmanager
 
 import aiohttp
 from aiocache import cached
 
 client_session = None
+_last_ios_cfw = None
 
 
 @cached(ttl=3600)
@@ -17,11 +20,19 @@ async def get_ios_cfw():
         "ios, jailbreaks, devices"
     """
 
-    async with client_session.get("https://api.appledb.dev/main.json") as resp:
-        if resp.status == 200:
+    global _last_ios_cfw
+    try:
+        async with client_session.get("https://api.appledb.dev/main.json") as resp:
+            resp.raise_for_status()
             data = await resp.json()
-
-    return data
+            if not isinstance(data, dict) or not all(key in data for key in ("ios", "group", "device")):
+                raise ValueError("AppleDB returned an invalid catalog")
+            _last_ios_cfw = data
+            return data
+    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+        if _last_ios_cfw is not None:
+            return _last_ios_cfw
+        raise
 
 
 @cached(ttl=3600)
@@ -119,11 +130,35 @@ async def canister_fetch_repos():
 @cached(ttl=3600)
 async def fetch_scam_urls():
     async with client_session.get("https://raw.githubusercontent.com/SlimShadyIAm/Anti-Scam-Json-List/main/antiscam.json") as resp:
-        if resp.status == 200:
-            obj = json.loads(await resp.text())
-            return obj
+        resp.raise_for_status()
+        obj = json.loads(await resp.text())
+        if not isinstance(obj, dict):
+            raise ValueError("Scam feed must be an object")
+        for key in ("scamjburls", "scamideviceunlockurls"):
+            if not isinstance(obj.get(key), list) or not all(isinstance(url, str) for url in obj[key]):
+                raise ValueError(f"Scam feed has an invalid {key} list")
+        return obj
 
 
 async def init_client_session():
     global client_session
-    client_session = aiohttp.ClientSession()
+    if client_session is None or client_session.closed:
+        client_session = aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=20, connect=5),
+            connector=aiohttp.TCPConnector(limit=32, limit_per_host=8),
+        )
+
+
+@asynccontextmanager
+async def shared_session():
+    """Borrow the bot-owned pool; callers must not close it."""
+    if client_session is None or client_session.closed:
+        raise RuntimeError("HTTP client is not initialized")
+    yield client_session
+
+
+async def close_client_session():
+    global client_session
+    if client_session is not None:
+        await client_session.close()
+        client_session = None

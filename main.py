@@ -14,6 +14,7 @@ from cogs.commands.context_commands import setup_context_commands
 from typing import Union
 from deploy.healthcheck import report_health
 from data.services.user_service import user_service
+from utils.fetchers import close_client_session
 
 # Remove warning from songs cog
 import warnings
@@ -42,14 +43,14 @@ class Bot(commands.Bot):
             logger.info("Presetup phase completed! Connecting to Discord...")
 
     async def setup_hook(self):
-        bot.remove_command("help")
+        self.remove_command("help")
+        await init_client_session()
         for extension in initial_extensions:
             await self.load_extension(extension)
 
         setup_context_commands(self)
 
         self.tasks = Tasks(self)
-        await init_client_session()
         if health_path := os.environ.get("GIR_HEALTH_FILE"):
             self._deployment_health_task = asyncio.create_task(report_health(self, health_path))
 
@@ -83,7 +84,12 @@ class Bot(commands.Bot):
             self._deployment_health_task.cancel()
             with suppress(asyncio.CancelledError):
                 await self._deployment_health_task
-        await super().close()
+        try:
+            if hasattr(self, "tasks"):
+                self.tasks.close()
+            await super().close()
+        finally:
+            await close_client_session()
 
 
 class MyTree(app_commands.CommandTree):
@@ -197,11 +203,13 @@ async def on_ready():
         f'Logged in as: {bot.user.name} - {bot.user.id} ({discord.__version__})')
     logger.info(f'Successfully logged in and booted...!')
 
-    await bot.ban_cache.fetch_ban_cache()
-    await bot.issue_cache.fetch_issue_cache()
-    await bot.rule_cache.fetch_rule_cache()
-    await scam_cache.fetch_scam_cache()
     bot.tasks.resume()
+    for refresh in (bot.ban_cache.fetch_ban_cache, bot.issue_cache.fetch_issue_cache,
+                    bot.rule_cache.fetch_rule_cache, scam_cache.fetch_scam_cache):
+        try:
+            await refresh()
+        except Exception:
+            logger.exception("Cache refresh failed: %s", refresh.__qualname__)
     bot._deployment_initialized = True
     bot.deployment_ready = True
     await bot.notify_owner_of_startup()
@@ -222,4 +230,5 @@ async def main():
     async with bot:
         await bot.start(os.environ.get("GIR_TOKEN"), reconnect=True)
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
