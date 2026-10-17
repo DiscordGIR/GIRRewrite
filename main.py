@@ -36,7 +36,7 @@ class Bot(commands.Bot):
         self.issue_cache = IssueCache(self)
         self.rule_cache = RuleCache(self)
 
-        # force the config object and database connection to be loaded
+        # Validate the imported configuration and permission mapping.
         if cfg and db and gatekeeper:
             logger.info("Presetup phase completed! Connecting to Discord...")
 
@@ -80,6 +80,8 @@ class MyTree(app_commands.CommandTree):
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.bot:
             return False
+        if interaction.guild is None or not isinstance(interaction.user, discord.Member):
+            return False
 
         if gatekeeper.has(interaction.user.guild, interaction.user, 6):
             return True
@@ -97,7 +99,7 @@ class MyTree(app_commands.CommandTree):
         else:
             command_name = command.name
 
-        db_user = user_service.get_user(interaction.user.id)
+        db_user = await interaction.client.database_io.run(user_service.get_user, interaction.user.id)
 
         if db_user.command_bans.get(command_name):
             ctx = GIRContext(interaction)

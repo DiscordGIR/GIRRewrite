@@ -292,7 +292,6 @@ class AntiRaid(commands.Cog):
             return
 
         reason = f"Mass ban on {len(all_members)} users with name `{member.name}`"
-        db_guild = guild_service.get_guild()
 
         # ban all members
         for m in all_members:
