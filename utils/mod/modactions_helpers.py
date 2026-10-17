@@ -92,13 +92,9 @@ async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: 
         else:
             dmed = await notify_user(target_member, f"You were banned from {ctx.guild.name} for reaching 600 or more points.\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
 
-        log_kickban = await add_ban_case(target_member, mod, "600 or more warn points reached.", db_guild)
-        await target_member.ban(reason="600 or more warn points reached.")
-
-        if isinstance(ctx, discord.Interaction):
-            ctx.client.ban_cache.ban(target_member.id)
-        else:
-            ctx.bot.ban_cache.ban(target_member.id)
+        bot = ctx.client if isinstance(ctx, discord.Interaction) else ctx.bot
+        log_kickban = await execute_ban(bot, ctx.guild, target_member, mod,
+                                        "600 or more warn points reached.")
 
     elif cur_points >= 400 and not db_user.was_warn_kicked and isinstance(target_member, discord.Member):
         # kick user if >= 400 points and wasn't previously kicked
@@ -166,35 +162,21 @@ async def submit_public_log(ctx: GIRContext, user: Union[discord.Member, discord
             await public_chan.send(embed=log)
 
 
-async def add_ban_case(target_member: discord.Member, mod: discord.Member, reason, db_guild: Guild = None):
-    """Adds ban case to user
-
-    Parameters
-    ----------
-    ctx : GIRContext
-        "Bot context"
-    user : discord.Member
-        "Member who was banned"
-    reason : str
-        "Reason member was banned"
-    db_guild
-        "Guild DB"
-
-    """
-    # prepare the case to store in DB
+async def execute_ban(bot, guild, target_member, mod, reason, *, dm_text=None, anonymous=False):
+    """Record bans and update the cache only after Discord accepts the action."""
     case = Case(
-        _id=guild_service.allocate_case_id(),
-        _type="BAN",
-        mod_id=mod.id,
-        mod_tag=str(mod),
-        punishment="PERMANENT",
-        reason=reason,
+        _id=guild_service.allocate_case_id(), _type="BAN",
+        mod_id=mod.id, mod_tag=str(mod), punishment="PERMANENT", reason=reason,
     )
-
-    # add case to db
+    log = prepare_ban_log(mod, target_member, case)
+    if anonymous:
+        log.set_field_at(1, name="Mod", value=f"{guild.name} Staff")
+    if dm_text is not None:
+        await notify_user(target_member, dm_text, log)
+    await guild.ban(discord.Object(id=target_member.id), reason=reason)
+    bot.ban_cache.ban(target_member.id)
     user_service.add_case(target_member.id, case)
-    # prepare log embed to send to #public-mod-logs, user and context
-    return prepare_ban_log(mod, target_member, case)
+    return log
 
 async def delay_delete(ctx: discord.Interaction):
     await asyncio.sleep(10)

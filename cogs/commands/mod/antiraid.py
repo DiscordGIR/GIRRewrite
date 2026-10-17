@@ -7,7 +7,7 @@ from utils import cfg, GIRContext, transform_context
 from utils.framework import admin_and_up, mod_and_up
 from utils.framework.checks import always_whisper
 from utils.framework.transformers import ModsAndAboveMemberOrUser
-from utils.mod.modactions_helpers import add_ban_case, submit_public_log
+from utils.mod.modactions_helpers import execute_ban, submit_public_log
 from utils.views import Confirm, GenericDescriptionModal, Menu, raidphrases_autocomplete
 
 
@@ -296,12 +296,10 @@ class AntiRaid(commands.Cog):
 
         # ban all members
         for m in all_members:
-            self.bot.ban_cache.ban(m.id)
-            log = await add_ban_case(m, ctx.author, reason, db_guild)
-            await m.ban(reason=reason)
+            log = await execute_ban(self.bot, ctx.guild, m, ctx.author, reason)
             
             # send a message to the modlog channel
-            await submit_public_log(ctx, member, log)
+            await submit_public_log(ctx, m, log)
 
         await ctx.send_success(f"Banned {len(all_members)} members with name `{member.name}`!", ephemeral=False)
 
