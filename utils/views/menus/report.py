@@ -32,7 +32,7 @@ async def report(bot: discord.Client, message: discord.Message, word: str, invit
     channel = message.guild.get_channel(cfg.channels.reports)
 
     ping_string = prepare_ping_string(message)
-    view = ReportActions(target_member=message.author)
+    view = ReportActions(target_member=message.author, unmute_on_dismiss=bool(invite))
 
     if invite:
         embed = prepare_embed(message, word, title="Invite filter")
@@ -217,9 +217,10 @@ def prepare_embed(target: Union[discord.Message, discord.Member], word: str = No
 
 
 class ReportActions(ui.View):
-    def __init__(self, target_member: discord.Member):
+    def __init__(self, target_member: discord.Member, *, unmute_on_dismiss=False):
         super().__init__(timeout=None)
         self.target_member = target_member
+        self.unmute_on_dismiss = unmute_on_dismiss
 
     async def interaction_check(self, interaction: discord.Interaction):
         if not gatekeeper.has(self.target_member.guild, interaction.user, 5):
@@ -228,6 +229,13 @@ class ReportActions(ui.View):
 
     @ui.button(emoji="✅", label="Dismiss", style=discord.ButtonStyle.primary)
     async def dismiss(self, interaction: discord.Interaction, _: ui.Button):
+        await interaction.response.defer()
+        if self.unmute_on_dismiss:
+            try:
+                await unmute(interaction, self.target_member, mod=interaction.user, reason="Invite report dismissed.")
+            except Exception:
+                await interaction.followup.send("I wasn't able to unmute them. The report is still available.", ephemeral=True)
+                return
         await interaction.message.delete()
         self.stop()
 

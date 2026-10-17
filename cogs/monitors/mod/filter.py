@@ -184,17 +184,21 @@ class Filter(commands.Cog):
                 elif isinstance(invite, discord.PartialInviteGuild) or isinstance(invite, discord.PartialInviteChannel):
                     id = invite.id
 
-                if id not in whitelist:
-                    await self.delete(message)
-                    await self.ratelimit(message)
-                    await report(self.bot, message, invite, invite=invite)
-                    return True
+                if id in whitelist:
+                    continue
 
             except discord.NotFound:
-                await self.delete(message)
-                await self.ratelimit(message)
-                await report(self.bot, message, invite, invite=invite)
-                return True
+                pass
+
+            await self.delete(message)
+            try:
+                ctx = await self.bot.get_context(message)
+                await mute(ctx, message.author, mod=message.guild.me,
+                           dur_seconds=7 * 24 * 60 * 60, reason="Invite filter")
+            except Exception:
+                logger.exception("Failed to mute member for posting an invite")
+            await report(self.bot, message, invite, invite=invite)
+            return True
 
         return False
 
