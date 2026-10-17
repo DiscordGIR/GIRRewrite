@@ -23,7 +23,7 @@ These instructions *should* work on macOS, Windows and Linux.
 
 ### Antiraid content checks
 
-Antiraid detects image spam and known scam images, deleting the message and applying a seven-day timeout. Reports include image evidence and a Ban button that uses GIR's moderation system. Plain and hidden invite links use the existing invite filter, which mutes on offense and unmutes when a moderator dismisses the report. Install the updated requirements or rebuild your deployment to include the image-scanning dependencies.
+Antiraid detects image spam and known scam images, deleting the message and applying a seven-day timeout. Reports include image evidence and a Ban button that uses GIR's moderation system; Dismiss unmutes the member. Plain and hidden invite links use the existing invite filter, which mutes on offense and unmutes when a moderator dismisses the report. Install the updated requirements or rebuild your deployment to include the image-scanning dependencies.
 
 ### Setting up the `.env` file
 1. Copy the `.env.example` to a file called `.env`

@@ -6,7 +6,7 @@ import io
 import discord
 from utils import cfg, logger
 from utils.framework import check_invokee, gatekeeper
-from utils.mod import ban
+from utils.mod import ban, unmute
 
 
 class AntiRaidReportActions(discord.ui.View):
@@ -49,6 +49,12 @@ class AntiRaidReportActions(discord.ui.View):
         await interaction.response.defer()
         async with self.lock:
             if self.resolved:
+                return
+            try:
+                await unmute(interaction, self.target_member, mod=interaction.user, reason="Antiraid report dismissed.")
+            except Exception:
+                logger.exception("Failed to unmute member from antiraid report")
+                await interaction.followup.send("I wasn't able to unmute them. The report is still available.", ephemeral=True)
                 return
             await interaction.message.delete()
             self.resolved = True
