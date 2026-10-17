@@ -1,4 +1,4 @@
-"""Moderator controls for hidden-invite and image antiraid reports."""
+"""Moderator controls for image antiraid reports."""
 
 import asyncio
 import io
@@ -55,7 +55,7 @@ class AntiRaidReportActions(discord.ui.View):
             self.stop()
 
 
-async def report_antiraid(message, *, title, trigger, reason, actions, evidence=(), hidden_count=None):
+async def report_antiraid(message, *, title, trigger, reason, actions, evidence=()):
     channel = message.guild.get_channel(cfg.channels.reports)
     if channel is None:
         return False
@@ -71,8 +71,6 @@ async def report_antiraid(message, *, title, trigger, reason, actions, evidence=
         ("Channel", message.channel.mention), ("Trigger", trigger), ("Details", reason),
     ):
         embed.add_field(name=name, value=value[:1024], inline=False)
-    if hidden_count is not None:
-        embed.add_field(name="Hidden characters", value=str(hidden_count))
     embed.add_field(name="Action", value=actions, inline=False)
     embeds = [embed]
     files = []

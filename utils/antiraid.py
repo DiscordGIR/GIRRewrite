@@ -1,9 +1,8 @@
-"""Detection helpers for the antiraid attachment and hidden-invite filters."""
+"""Detection helpers for the antiraid attachment filters."""
 
 import base64
 import json
 import re
-import unicodedata
 from pathlib import Path
 
 import aiohttp
@@ -12,32 +11,10 @@ import pyvips
 
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_IMAGE_PIXELS = 25_000_000
-INVITE_PATTERNS = [
-    re.compile(pattern, re.IGNORECASE | re.ASCII) for pattern in (
-        r"discord(?:app)?\.com/invite/[a-z0-9-]{2,}",
-        r"discord(?:app)?\.gg/(?:invite/)?[a-z0-9-]{2,}",
-        r"(?:dsc|invite)\.gg/[a-z0-9-]{2,}",
-        r"discord\.(?:io|li|me|st)/[a-z0-9-]{2,}",
-    )
-]
 
 # Committed fingerprints avoid downloads and expiring reference URLs at startup.
 with (Path(__file__).resolve().parent.parent / "data/antiraid/scam_images.json").open() as file:
     KNOWN_SCAM_IMAGES = json.load(file)
-
-
-def strip_invisible(text):
-    return unicodedata.normalize("NFKC", "".join(
-        char for char in text if unicodedata.category(char) not in ("Cf", "Cc")
-    ))
-
-
-def find_invite(text):
-    for pattern in INVITE_PATTERNS:
-        match = pattern.search(text)
-        if match:
-            return match.group()
-    return None
 
 
 def is_image(attachment):

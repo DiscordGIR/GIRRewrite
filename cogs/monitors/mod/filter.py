@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 from datetime import datetime, timezone
 
 import aiohttp
@@ -158,7 +159,12 @@ class Filter(commands.Cog):
         return triggered
 
     async def do_invite_filter(self, message):
-        invites = re.findall(self.invite_filter, message.content, flags=re.S)
+        # Match obscured invites through the normal whitelist and report flow.
+        # Keep the original message content intact for moderation evidence.
+        content = unicodedata.normalize("NFKC", "".join(
+            char for char in message.content if unicodedata.category(char) not in ("Cf", "Cc")
+        ))
+        invites = re.findall(self.invite_filter, content, flags=re.S)
         if not invites:
             return
 

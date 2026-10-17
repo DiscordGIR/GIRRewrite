@@ -1,6 +1,5 @@
 import re
 import asyncio
-import unicodedata
 from asyncio import Lock
 from datetime import datetime, timedelta, timezone
 
@@ -10,7 +9,7 @@ from data.services import guild_service, user_service
 from discord.ext import commands
 from expiringdict import ExpiringDict
 from utils import cfg, fetchers, logger
-from utils.antiraid import download_image, find_invite, image_fingerprint, is_image, match_fingerprint, strip_invisible
+from utils.antiraid import download_image, image_fingerprint, is_image, match_fingerprint
 from utils.framework import MessageTextBucket, gatekeeper, find_triggered_raid_phrases
 from utils.mod import mute, prepare_ban_log
 from utils.views import report_raid, report_raid_phrase, report_spam
@@ -180,7 +179,7 @@ class AntiRaidMonitor(commands.Cog):
         if not isinstance(message.author, discord.Member):
             return
         if not message.author.guild_permissions.administrator:
-            if await self.hidden_invite(message) or await self.image_spam(message):
+            if await self.image_spam(message):
                 return
         if gatekeeper.has(message.guild, message.author, 5):
             return
@@ -226,18 +225,6 @@ class AntiRaidMonitor(commands.Cog):
         except Exception:
             self.content_report_cooldown.pop(key, None)
             logger.exception("Failed to send antiraid content report")
-
-    async def hidden_invite(self, message):
-        hidden = find_invite(strip_invisible(message.content))
-        if not hidden or find_invite(message.content):
-            return False
-        actions = await self.apply_content_moderation(message, "ads")
-        await self.send_content_report(
-            message, title="🔗 Hidden Invite Link", trigger="Invite obscured with invisible characters",
-            reason=f"Resolved to `{hidden}`", actions=actions,
-            hidden_count=sum(unicodedata.category(char) in ("Cf", "Cc") for char in message.content),
-        )
-        return True
 
     async def image_spam(self, message):
         if any(role.id == cfg.roles.member_plus for role in message.author.roles):
