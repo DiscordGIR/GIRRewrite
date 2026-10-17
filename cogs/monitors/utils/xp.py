@@ -2,9 +2,9 @@ import datetime
 import discord
 from discord.ext import commands
 
-import math
 from random import randint
 from data.services.user_service import user_service
+from data.services.xp_service import award_xp, level_for_xp
 from utils.config import cfg
 
 
@@ -41,19 +41,11 @@ class Xp(commands.Cog):
         if message.channel.id == cfg.channels.bot_commands:
             return
 
-        user = user_service.get_user(id=message.author.id)
-        if user.is_xp_frozen or user.is_clem:
-            return
-
         xp_to_add = randint(0, 11)
-        new_xp, level_before = user_service.inc_xp(
-            message.author.id, xp_to_add)
-        new_level = self.get_level(new_xp)
-
-        if new_level > level_before:
-            user_service.inc_level(message.author.id)
-
-        roles_to_add = self.assess_new_roles(new_level, message.author)
+        result = await self.bot.database_io.run(award_xp, message.author.id, xp_to_add)
+        if result is None:
+            return
+        roles_to_add = self.assess_new_roles(result.level, message.author)
         await self.add_new_roles(message, roles_to_add)
 
     def assess_new_roles(self, new_level, member: discord.Member):
@@ -87,15 +79,11 @@ class Xp(commands.Cog):
 
         roles_to_add = [member.guild.get_role(role) for role in roles_to_add if member.guild.get_role(
             role) is not None and member.guild.get_role(role) not in member.roles]
-        await member.add_roles(*roles_to_add, reason="XP roles")
+        if roles_to_add:
+            await member.add_roles(*roles_to_add, reason="XP roles")
 
     def get_level(self, current_xp):
-        level = 0
-        xp = 0
-        while xp <= current_xp:
-            xp = xp + 45 * level * (math.floor(level / 10) + 1)
-            level += 1
-        return level
+        return level_for_xp(current_xp)
 
 
 class StickyRoles(commands.Cog):

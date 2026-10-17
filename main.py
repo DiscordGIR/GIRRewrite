@@ -15,6 +15,7 @@ from typing import Union
 from deploy.healthcheck import report_health
 from data.services.user_service import user_service
 from utils.fetchers import close_client_session
+from utils.worker import BlockingIOPool
 
 # Remove warning from songs cog
 import warnings
@@ -45,6 +46,8 @@ class Bot(commands.Bot):
     async def setup_hook(self):
         self.remove_command("help")
         await init_client_session()
+        self.database_io = BlockingIOPool(workers=4, name="gir-db")
+        self.integration_io = BlockingIOPool(workers=2, name="gir-external")
         for extension in initial_extensions:
             await self.load_extension(extension)
 
@@ -89,6 +92,10 @@ class Bot(commands.Bot):
                 self.tasks.close()
             await super().close()
         finally:
+            for name in ("database_io", "integration_io"):
+                pool = getattr(self, name, None)
+                if pool is not None:
+                    await pool.close()
             await close_client_session()
 
 

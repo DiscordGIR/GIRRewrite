@@ -22,8 +22,6 @@ async def find_triggered_filters(input, member: discord.Member) -> List[FilterWo
     folded_without_spaces_and_punctuation = folded_without_spaces.translate(
         str.maketrans('', '', string.punctuation))
 
-    db_guild = guild_service.get_guild()
-
     if not input_lowercase:
         return []
     # reported = False
