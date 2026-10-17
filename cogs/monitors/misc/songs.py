@@ -1,3 +1,4 @@
+from utils.fetchers import shared_session
 import json
 import random
 import re
@@ -89,7 +90,7 @@ class Songs(commands.Cog):
             return
 
     async def generate_view(self, message: discord.Message, link: str):
-        async with aiohttp.ClientSession() as session:
+        async with shared_session() as session:
             async with session.get(f'https://api.song.link/v1-alpha.1/links?url={link}') as resp:
                 if resp.status != 200:
                     return None

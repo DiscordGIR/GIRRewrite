@@ -1,3 +1,4 @@
+from utils.fetchers import shared_session
 import aiohttp
 import discord
 from discord.ext import commands
@@ -110,7 +111,7 @@ class Logging(commands.Cog):
             "content": content
         }
 
-        async with aiohttp.ClientSession() as session:
+        async with shared_session() as session:
             the_webhook: discord.Webhook = discord.Webhook.from_url(
                 webhook, session=session)
             # send message to webhook

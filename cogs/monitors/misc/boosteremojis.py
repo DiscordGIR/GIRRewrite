@@ -1,3 +1,4 @@
+from utils.fetchers import shared_session
 import asyncio
 import re
 
@@ -153,7 +154,7 @@ class BoosterEmojis(commands.Cog):
             await msg.add_reaction('❓')
 
     async def do_content_parsing(self, url):
-        async with aiohttp.ClientSession() as session:
+        async with shared_session() as session:
             async with session.head(url) as resp:
                 if resp.status != 200:
                     return None

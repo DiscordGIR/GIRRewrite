@@ -1,3 +1,4 @@
+from utils.fetchers import shared_session
 import asyncio
 import re
 import json
@@ -77,7 +78,7 @@ class FixSocials(commands.Cog):
     @cached(ttl=3600)
     async def is_carousel_tiktok(self, link: str):
         try:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 async with session.get(link, timeout=5) as response:
                     if response.status == 200:
                         text = await response.text()
@@ -92,7 +93,7 @@ class FixSocials(commands.Cog):
             return quickvids_url
 
         else:
-            async with aiohttp.ClientSession() as session:
+            async with shared_session() as session:
                 async with session.get(link, allow_redirects=False) as response:
                     if response.status != 301:
                         return
