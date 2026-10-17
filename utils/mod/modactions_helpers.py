@@ -29,15 +29,13 @@ def add_kick_case(target_member: discord.Member, mod: discord.Member, reason: st
     """
     # prepare case for DB
     case = Case(
-        _id=db_guild.case_id,
+        _id=guild_service.allocate_case_id(),
         _type="KICK",
         mod_id=mod.id,
         mod_tag=str(mod),
         reason=reason,
     )
 
-    # increment max case ID for next case
-    guild_service.inc_caseid()
     # add new case to DB
     user_service.add_case(target_member.id, case)
 
@@ -185,7 +183,7 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
     """
     # prepare the case to store in DB
     case = Case(
-        _id=db_guild.case_id,
+        _id=guild_service.allocate_case_id(),
         _type="BAN",
         mod_id=mod.id,
         mod_tag=str(mod),
@@ -193,8 +191,6 @@ async def add_ban_case(target_member: discord.Member, mod: discord.Member, reaso
         reason=reason,
     )
 
-    # increment DB's max case ID for next case
-    guild_service.inc_caseid()
     # add case to db
     user_service.add_case(target_member.id, case)
     # prepare log embed to send to #public-mod-logs, user and context

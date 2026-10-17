@@ -200,13 +200,12 @@ async def remove_timeout(_id: int) -> None:
     db_guild = guild_service.get_guild()
 
     case = Case(
-        _id=db_guild.case_id,
+        _id=guild_service.allocate_case_id(),
         _type="UNMUTE",
         mod_id=BOT_GLOBAL.user.id,
         mod_tag=str(BOT_GLOBAL.user),
         reason="Temporary mute expired.",
     )
-    guild_service.inc_caseid()
     user_service.add_case(_id, case)
 
     guild = BOT_GLOBAL.get_guild(cfg.guild_id)
