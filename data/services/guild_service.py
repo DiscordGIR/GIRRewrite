@@ -48,12 +48,12 @@ class GuildService:
         self.edit_meme(meme)
         return meme
     
-    def inc_caseid(self) -> None:
-        """Increments Guild.case_id, which keeps track of the next available ID to
-        use for a case.
-        """
-
-        Guild.objects(_id=cfg.guild_id).update_one(inc__case_id=1)
+    def allocate_case_id(self) -> int:
+        """Reserve the next case number atomically; failed actions may leave gaps."""
+        guild = Guild.objects(_id=cfg.guild_id).modify(inc__case_id=1, new=False)
+        if guild is None:
+            raise RuntimeError("Cannot allocate a case number: guild is not configured")
+        return guild.case_id
 
     def get_giveaway(self, _id: int) -> Giveaway:
         """
