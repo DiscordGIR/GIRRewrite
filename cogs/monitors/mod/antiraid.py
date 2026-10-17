@@ -1,4 +1,6 @@
 import re
+import asyncio
+import unicodedata
 from asyncio import Lock
 from datetime import datetime, timedelta, timezone
 
@@ -7,10 +9,12 @@ from data.model import Case
 from data.services import guild_service, user_service
 from discord.ext import commands
 from expiringdict import ExpiringDict
-from utils import cfg
+from utils import cfg, fetchers, logger
+from utils.antiraid import download_image, find_invite, image_fingerprint, is_image, match_fingerprint, strip_invisible
 from utils.framework import MessageTextBucket, gatekeeper, find_triggered_raid_phrases
 from utils.mod import mute, prepare_ban_log
 from utils.views import report_raid, report_raid_phrase, report_spam
+from utils.views.menus.antiraid import report_antiraid
 
 
 class RaidType:
@@ -59,6 +63,9 @@ class AntiRaidMonitor(commands.Cog):
         # locks to prevent race conditions when banning concurrently
         self.join_overtime_lock = Lock()
         self.banning_lock = Lock()
+        self.content_report_cooldown = ExpiringDict(max_len=10000, max_age_seconds=300)
+        # Bound concurrent downloads and native image decoding during a raid.
+        self.image_scan_slots = asyncio.Semaphore(2)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -169,7 +176,12 @@ class AntiRaidMonitor(commands.Cog):
             return
         if message.guild.id != cfg.guild_id:
             return
-        message.author = message.guild.get_member(message.author.id)
+        message.author = message.guild.get_member(message.author.id) or message.author
+        if not isinstance(message.author, discord.Member):
+            return
+        if not message.author.guild_permissions.administrator:
+            if await self.hidden_invite(message) or await self.image_spam(message):
+                return
         if gatekeeper.has(message.guild, message.author, 5):
             return
 
@@ -181,6 +193,101 @@ class AntiRaidMonitor(commands.Cog):
             await self.handle_raid_detection(message, RaidType.MessageSpam)
         elif await self.detect_scam_link(message):
             await self.report_possible_raid_phrase(message)
+
+    async def apply_content_moderation(self, message, reason):
+        actions = []
+        try:
+            await message.delete()
+            actions.append("Message deleted")
+        except discord.HTTPException:
+            logger.exception("Failed to delete antiraid message")
+            actions.append("Message deletion failed")
+        member, guild = message.author, message.guild
+        if (member.id == guild.owner_id or member.guild_permissions.administrator
+                or not guild.me.guild_permissions.moderate_members or member.top_role >= guild.me.top_role):
+            actions.append("Cannot timeout this member")
+        else:
+            try:
+                await member.timeout(timedelta(days=7), reason=reason)
+                actions.append("7 day timeout")
+            except discord.HTTPException:
+                logger.exception("Failed to timeout member in antiraid filter")
+                actions.append("Timeout failed")
+        return "; ".join(actions)
+
+    async def send_content_report(self, message, **kwargs):
+        key = (message.guild.id, message.author.id)
+        if key in self.content_report_cooldown:
+            return
+        self.content_report_cooldown[key] = True
+        try:
+            if not await report_antiraid(message, **kwargs):
+                self.content_report_cooldown.pop(key, None)
+        except Exception:
+            self.content_report_cooldown.pop(key, None)
+            logger.exception("Failed to send antiraid content report")
+
+    async def hidden_invite(self, message):
+        hidden = find_invite(strip_invisible(message.content))
+        if not hidden or find_invite(message.content):
+            return False
+        actions = await self.apply_content_moderation(message, "ads")
+        await self.send_content_report(
+            message, title="🔗 Hidden Invite Link", trigger="Invite obscured with invisible characters",
+            reason=f"Resolved to `{hidden}`", actions=actions,
+            hidden_count=sum(unicodedata.category(char) in ("Cf", "Cc") for char in message.content),
+        )
+        return True
+
+    async def image_spam(self, message):
+        if any(role.id == cfg.roles.member_plus for role in message.author.roles):
+            return False
+        images = [attachment for attachment in message.attachments if is_image(attachment)]
+        if not images:
+            return False
+        named_one = [attachment for attachment in images if re.fullmatch(r"1\.[a-z0-9]+", attachment.filename.lower())]
+        legacy_trigger = len(images) >= 4 or bool(named_one)
+        downloaded = {}
+        matched = None
+        async with self.image_scan_slots:
+            if not legacy_trigger:
+                for attachment in images:
+                    try:
+                        buffer = await download_image(attachment, fetchers.client_session)
+                        downloaded[attachment.id] = buffer
+                        fingerprint = await asyncio.to_thread(image_fingerprint, buffer)
+                        matched = match_fingerprint(fingerprint)
+                        if matched:
+                            break
+                    except Exception:
+                        # Failure to download or decode is never evidence of a scam.
+                        logger.exception("Could not scan antiraid attachment %s", attachment.id)
+            if not legacy_trigger and not matched:
+                return False
+
+            attachments = images if matched or len(images) >= 4 else named_one
+            evidence = []
+            # Discord may invalidate CDN URLs after deletion. Preserve bytes first.
+            for i, attachment in enumerate(attachments[:4]):
+                try:
+                    buffer = downloaded.get(attachment.id)
+                    if buffer is None:
+                        buffer = await download_image(attachment, fetchers.client_session)
+                    ext = re.sub(r"[^a-z0-9]", "", attachment.filename.rsplit(".", 1)[-1].lower()) or "png"
+                    evidence.append((f"image{i}.{ext}", buffer))
+                except Exception:
+                    logger.exception("Failed to preserve antiraid image %s", attachment.id)
+
+        reason = (f"Known scam image: {matched}" if matched else
+                  "Image spam (possible compromise)" if len(images) >= 4 else "Suspicious image filename: 1.*")
+        actions = await self.apply_content_moderation(message, reason)
+        await self.send_content_report(
+            message, title="🚨 Known Scam Image Detected" if matched else "🚨 Image Spam Detected",
+            trigger="Visual match to a known scam image" if matched else
+                    "4+ image attachments" if len(images) >= 4 else "Image named 1.*",
+            reason=reason, actions=actions, evidence=evidence,
+        )
+        return True
 
     async def detect_scam_link(self, message: discord.Message):
         # check if message contains @everyone or @here
