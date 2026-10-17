@@ -238,6 +238,7 @@ class AntiRaidMonitor(commands.Cog):
 
     async def apply_content_moderation(self, message, reason):
         actions = []
+        timeout_until = None
         try:
             await message.delete()
             actions.append("Message deleted")
@@ -250,12 +251,14 @@ class AntiRaidMonitor(commands.Cog):
             actions.append("Cannot timeout this member")
         else:
             try:
-                await member.timeout(timedelta(days=7), reason=reason)
+                deadline = discord.utils.utcnow() + timedelta(days=7)
+                await member.timeout(deadline, reason=reason)
+                timeout_until = deadline
                 actions.append("7 day timeout")
             except discord.HTTPException:
                 logger.exception("Failed to timeout member in antiraid filter")
                 actions.append("Timeout failed")
-        return "; ".join(actions)
+        return "; ".join(actions), timeout_until
 
     async def send_content_report(self, message, **kwargs):
         key = (message.guild.id, message.author.id)
@@ -310,12 +313,12 @@ class AntiRaidMonitor(commands.Cog):
 
         reason = (f"Known scam image: {matched}" if matched else
                   "Image spam (possible compromise)" if len(images) >= 4 else "Suspicious image filename: 1.*")
-        actions = await self.apply_content_moderation(message, reason)
+        actions, timeout_until = await self.apply_content_moderation(message, reason)
         await self.send_content_report(
             message, title="🚨 Known Scam Image Detected" if matched else "🚨 Image Spam Detected",
             trigger="Visual match to a known scam image" if matched else
                     "4+ image attachments" if len(images) >= 4 else "Image named 1.*",
-            reason=reason, actions=actions, evidence=evidence,
+            reason=reason, actions=actions, evidence=evidence, timeout_until=timeout_until,
         )
         return True
 

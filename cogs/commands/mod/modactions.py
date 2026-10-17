@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 
 import discord
 import humanize
-from apscheduler.jobstores.base import ConflictingIdError
 from data.model import Case
 from data.services import guild_service, user_service
 from discord import app_commands
@@ -15,6 +14,7 @@ from utils.mod import (add_ban_case, add_kick_case, notify_user,
                        prepare_mute_log, prepare_removepoints_log,
                        prepare_unban_log, prepare_unmute_log,
                        submit_public_log, warn)
+from utils.mod.global_modactions import mute as apply_mute, unmute as apply_unmute
 from utils.views import warn_autocomplete
 from utils.views.confirm import SecondStaffConfirm
 
@@ -102,37 +102,7 @@ class ModActions(commands.Cog):
         if time > now + timedelta(days=14):
             raise commands.BadArgument("Mutes can't be longer than 14 days!")
 
-        db_guild = guild_service.get_guild()
-        case = Case(
-            _id=guild_service.allocate_case_id(),
-            _type="MUTE",
-            date=now,
-            mod_id=ctx.author.id,
-            mod_tag=str(ctx.author),
-            reason=reason,
-        )
-
-        case.until = time
-        case.punishment = humanize.naturaldelta(
-            time - now, minimum_unit="seconds")
-
-        try:
-            await member.timeout(time, reason=reason)
-            ctx.tasks.schedule_untimeout(member.id, time)
-        except ConflictingIdError:
-            raise commands.BadArgument(
-                "The database thinks this user is already muted.")
-
-        user_service.add_case(member.id, case)
-
-        log = prepare_mute_log(ctx.author, member, case)
-        await ctx.respond_or_edit(embed=log, delete_after=10)
-
-        log.remove_author()
-        log.set_thumbnail(url=member.display_avatar)
-
-        dmed = await notify_user(member, f"You have been muted in {ctx.guild.name}", log)
-        await submit_public_log(ctx, member, log, dmed)
+        await apply_mute(ctx, member, ctx.author, dur_seconds=delta, reason=reason)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -141,34 +111,10 @@ class ModActions(commands.Cog):
     @app_commands.describe(reason="Reason for unmuting")
     @transform_context
     async def unmute(self, ctx: GIRContext, member: ModsAndAboveMember, reason: str) -> None:
-        db_guild = guild_service.get_guild()
-
         if not member.is_timed_out():
             raise commands.BadArgument("This user is not muted.")
-
         await ctx.defer(ephemeral=False)
-        await member.edit(timed_out_until=None)
-
-        try:
-            ctx.tasks.cancel_unmute(member.id)
-        except Exception:
-            pass
-
-        case = Case(
-            _id=guild_service.allocate_case_id(),
-            _type="UNMUTE",
-            mod_id=ctx.author.id,
-            mod_tag=str(ctx.author),
-            reason=reason,
-        )
-        user_service.add_case(member.id, case)
-
-        log = prepare_unmute_log(ctx.author, member, case)
-
-        await ctx.respond_or_edit(embed=log, delete_after=10)
-
-        dmed = await notify_user(member, f"You have been unmuted in {ctx.guild.name}", log)
-        await submit_public_log(ctx, member, log, dmed)
+        await apply_unmute(ctx, member, ctx.author, reason=reason)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)

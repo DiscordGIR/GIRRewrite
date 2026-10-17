@@ -9,12 +9,13 @@ from discord import ui
 from utils import GIRContext, cfg
 from utils.framework import gatekeeper
 from utils.mod import ban, mute, unmute
+from utils.mod.global_modactions import dismiss_report_timeout
 from utils.views.modals.prompt import GenericDescriptionModal
 
 from .report_action import ModAction, ReportActionReason
 
 
-async def report(bot: discord.Client, message: discord.Message, word: str, invite=None):
+async def report(bot: discord.Client, message: discord.Message, word: str, invite=None, timeout_until=None):
     """Deals with a report
 
     Parameters
@@ -32,7 +33,7 @@ async def report(bot: discord.Client, message: discord.Message, word: str, invit
     channel = message.guild.get_channel(cfg.channels.reports)
 
     ping_string = prepare_ping_string(message)
-    view = ReportActions(target_member=message.author, unmute_on_dismiss=bool(invite))
+    view = ReportActions(target_member=message.author, unmute_on_dismiss=bool(invite), timeout_until=timeout_until)
 
     if invite:
         embed = prepare_embed(message, word, title="Invite filter")
@@ -217,10 +218,12 @@ def prepare_embed(target: Union[discord.Message, discord.Member], word: str = No
 
 
 class ReportActions(ui.View):
-    def __init__(self, target_member: discord.Member, *, unmute_on_dismiss=False):
+    def __init__(self, target_member: discord.Member, *, unmute_on_dismiss=False, timeout_until=None):
         super().__init__(timeout=None)
         self.target_member = target_member
         self.unmute_on_dismiss = unmute_on_dismiss
+        self.timeout_until = timeout_until
+        self.dismiss_lock = asyncio.Lock()
 
     async def interaction_check(self, interaction: discord.Interaction):
         if not gatekeeper.has(self.target_member.guild, interaction.user, 5):
@@ -230,9 +233,19 @@ class ReportActions(ui.View):
     @ui.button(emoji="✅", label="Dismiss", style=discord.ButtonStyle.primary)
     async def dismiss(self, interaction: discord.Interaction, _: ui.Button):
         await interaction.response.defer()
+        async with self.dismiss_lock:
+            if self.is_finished():
+                return
+            await self.dismiss_report(interaction)
+
+    async def dismiss_report(self, interaction):
         if self.unmute_on_dismiss:
             try:
-                await unmute(interaction, self.target_member, mod=interaction.user, reason="Invite report dismissed.")
+                await dismiss_report_timeout(interaction, self.target_member.id, self.timeout_until,
+                                             reason="Invite report dismissed.")
+            except ValueError as error:
+                await interaction.followup.send(str(error), ephemeral=True)
+                return
             except Exception:
                 await interaction.followup.send("I wasn't able to unmute them. The report is still available.", ephemeral=True)
                 return
