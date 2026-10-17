@@ -440,7 +440,7 @@ class AntiRaidMonitor(commands.Cog):
             db_guild = guild_service.get_guild()
 
             case = Case(
-                _id=db_guild.case_id,
+                _id=guild_service.allocate_case_id(),
                 _type="BAN",
                 date=datetime.now(),
                 mod_id=self.bot.user.id,
@@ -449,7 +449,6 @@ class AntiRaidMonitor(commands.Cog):
                 reason=reason
             )
 
-            guild_service.inc_caseid()
             user_service.add_case(user.id, case)
 
             log = prepare_ban_log(self.bot.user, user, case)

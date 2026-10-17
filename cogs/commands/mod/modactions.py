@@ -104,7 +104,7 @@ class ModActions(commands.Cog):
 
         db_guild = guild_service.get_guild()
         case = Case(
-            _id=db_guild.case_id,
+            _id=guild_service.allocate_case_id(),
             _type="MUTE",
             date=now,
             mod_id=ctx.author.id,
@@ -123,7 +123,6 @@ class ModActions(commands.Cog):
             raise commands.BadArgument(
                 "The database thinks this user is already muted.")
 
-        guild_service.inc_caseid()
         user_service.add_case(member.id, case)
 
         log = prepare_mute_log(ctx.author, member, case)
@@ -156,13 +155,12 @@ class ModActions(commands.Cog):
             pass
 
         case = Case(
-            _id=db_guild.case_id,
+            _id=guild_service.allocate_case_id(),
             _type="UNMUTE",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
             reason=reason,
         )
-        guild_service.inc_caseid()
         user_service.add_case(member.id, case)
 
         log = prepare_unmute_log(ctx.author, member, case)
@@ -281,13 +279,12 @@ class ModActions(commands.Cog):
 
         db_guild = guild_service.get_guild()
         case = Case(
-            _id=db_guild.case_id,
+            _id=guild_service.allocate_case_id(),
             _type="UNBAN",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
             reason=reason,
         )
-        guild_service.inc_caseid()
         user_service.add_case(user.id, case)
 
         log = prepare_unban_log(ctx.author, user, case)
@@ -447,7 +444,7 @@ class ModActions(commands.Cog):
 
         db_guild = guild_service.get_guild()
         case = Case(
-            _id=db_guild.case_id,
+            _id=guild_service.allocate_case_id(),
             _type="REMOVEPOINTS",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
@@ -455,8 +452,6 @@ class ModActions(commands.Cog):
             reason=reason,
         )
 
-        # increment DB's max case ID for next case
-        guild_service.inc_caseid()
         # add case to db
         user_service.add_case(member.id, case)
 
