@@ -85,7 +85,7 @@ class AntiRaidMonitor(commands.Cog):
         while True:
             message = await self.image_queue.get()
             try:
-                await asyncio.wait_for(self.image_spam(message), timeout=30)
+                await self.image_spam(message)
             except asyncio.TimeoutError:
                 logger.warning("Image scan deadline exceeded for message %s", message.id)
             except Exception:
@@ -273,6 +273,14 @@ class AntiRaidMonitor(commands.Cog):
             logger.exception("Failed to send antiraid content report")
 
     async def image_spam(self, message):
+        finding = await asyncio.wait_for(self.inspect_images(message), timeout=30)
+        if not finding:
+            return False
+        actions, timeout_until = await self.apply_content_moderation(message, finding["reason"])
+        await self.send_content_report(message, **finding, actions=actions, timeout_until=timeout_until)
+        return True
+
+    async def inspect_images(self, message):
         if any(role.id == cfg.roles.member_plus for role in message.author.roles):
             return False
         images = [attachment for attachment in message.attachments if is_image(attachment)]
@@ -313,14 +321,12 @@ class AntiRaidMonitor(commands.Cog):
 
         reason = (f"Known scam image: {matched}" if matched else
                   "Image spam (possible compromise)" if len(images) >= 4 else "Suspicious image filename: 1.*")
-        actions, timeout_until = await self.apply_content_moderation(message, reason)
-        await self.send_content_report(
-            message, title="🚨 Known Scam Image Detected" if matched else "🚨 Image Spam Detected",
+        return dict(
+            title="🚨 Known Scam Image Detected" if matched else "🚨 Image Spam Detected",
             trigger="Visual match to a known scam image" if matched else
                     "4+ image attachments" if len(images) >= 4 else "Image named 1.*",
-            reason=reason, actions=actions, evidence=evidence, timeout_until=timeout_until,
+            reason=reason, evidence=evidence,
         )
-        return True
 
     async def detect_scam_link(self, message: discord.Message):
         # check if message contains @everyone or @here
