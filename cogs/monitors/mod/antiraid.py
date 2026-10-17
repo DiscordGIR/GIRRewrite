@@ -9,6 +9,7 @@ from data.services import guild_service, user_service
 from discord.ext import commands
 from expiringdict import ExpiringDict
 from utils import cfg, fetchers, logger
+from utils.worker import BlockingIOPool
 from utils.antiraid import download_image, image_fingerprint, is_image, match_fingerprint
 from utils.framework import MessageTextBucket, gatekeeper, find_triggered_raid_phrases
 from utils.mod import mute, prepare_ban_log
@@ -65,6 +66,48 @@ class AntiRaidMonitor(commands.Cog):
         self.content_report_cooldown = ExpiringDict(max_len=10000, max_age_seconds=300)
         # Bound concurrent downloads and native image decoding during a raid.
         self.image_scan_slots = asyncio.Semaphore(2)
+        self.image_queue = asyncio.Queue(maxsize=32)
+        self.image_workers = []
+        self.image_io = BlockingIOPool(workers=2, name="gir-images")
+        self.image_scans_dropped = 0
+
+    async def cog_load(self):
+        self.image_workers = [asyncio.create_task(self.scan_images(), name=f"image-scan-{i}")
+                              for i in range(2)]
+
+    async def cog_unload(self):
+        for worker in self.image_workers:
+            worker.cancel()
+        await asyncio.gather(*self.image_workers, return_exceptions=True)
+        await self.image_io.close()
+
+    async def scan_images(self):
+        while True:
+            message = await self.image_queue.get()
+            try:
+                await asyncio.wait_for(self.image_spam(message), timeout=30)
+            except asyncio.TimeoutError:
+                logger.warning("Image scan deadline exceeded for message %s", message.id)
+            except Exception:
+                logger.exception("Image scan failed for message %s", message.id)
+            finally:
+                self.image_queue.task_done()
+
+    def enqueue_images(self, message):
+        if message.author.guild_permissions.administrator:
+            return
+        if any(role.id == cfg.roles.member_plus for role in message.author.roles):
+            return
+        if not any(is_image(attachment) for attachment in message.attachments):
+            return
+        try:
+            self.image_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            self.image_scans_dropped += 1
+            # Saturation is not evidence against the author. Log periodically
+            # rather than producing another report storm during an attack.
+            if self.image_scans_dropped % 100 == 1:
+                logger.warning("Image queue full; %s scans skipped", self.image_scans_dropped)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -178,20 +221,20 @@ class AntiRaidMonitor(commands.Cog):
         message.author = message.guild.get_member(message.author.id) or message.author
         if not isinstance(message.author, discord.Member):
             return
-        if not message.author.guild_permissions.administrator:
-            if await self.image_spam(message):
+        if not gatekeeper.has(message.guild, message.author, 5):
+            if await self.ping_spam(message):
+                await self.handle_raid_detection(message, RaidType.PingSpam)
                 return
-        if gatekeeper.has(message.guild, message.author, 5):
-            return
-
-        if await self.ping_spam(message):
-            await self.handle_raid_detection(message, RaidType.PingSpam)
-        elif await self.raid_phrase_detected(message):
-            await self.handle_raid_detection(message, RaidType.RaidPhrase)
-        elif await self.message_spam(message):
-            await self.handle_raid_detection(message, RaidType.MessageSpam)
-        elif await self.detect_scam_link(message):
-            await self.report_possible_raid_phrase(message)
+            if await self.raid_phrase_detected(message):
+                await self.handle_raid_detection(message, RaidType.RaidPhrase)
+                return
+            if await self.message_spam(message):
+                await self.handle_raid_detection(message, RaidType.MessageSpam)
+                return
+            if await self.detect_scam_link(message):
+                await self.report_possible_raid_phrase(message)
+                return
+        self.enqueue_images(message)
 
     async def apply_content_moderation(self, message, reason):
         actions = []
@@ -242,7 +285,7 @@ class AntiRaidMonitor(commands.Cog):
                     try:
                         buffer = await download_image(attachment, fetchers.client_session)
                         downloaded[attachment.id] = buffer
-                        fingerprint = await asyncio.to_thread(image_fingerprint, buffer)
+                        fingerprint = await self.image_io.run(image_fingerprint, buffer)
                         matched = match_fingerprint(fingerprint)
                         if matched:
                             break
