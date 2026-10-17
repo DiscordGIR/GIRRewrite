@@ -20,9 +20,9 @@ class UserService:
         user = User.objects(_id=id).first()
         # first we ensure this user has a User document in the database before continuing
         if not user:
-            user = User()
-            user._id = id
-            user.save()
+            User._get_collection().update_one(
+                {"_id": id}, {"$setOnInsert": dict(User(_id=id).to_mongo())}, upsert=True)
+            user = User.objects(_id=id).get()
         return user
     
     def leaderboard(self) -> list:
@@ -84,9 +84,9 @@ class UserService:
         cases = Cases.objects(_id=id).first()
         # first we ensure this user has a Cases document in the database before continuing
         if cases is None:
-            cases = Cases()
-            cases._id = id
-            cases.save()
+            Cases._get_collection().update_one(
+                {"_id": id}, {"$setOnInsert": {"cases": []}}, upsert=True)
+            cases = Cases.objects(_id=id).get()
         return cases
     
     def add_case(self, _id: int, case: Case) -> None:
@@ -141,9 +141,9 @@ class UserService:
         cases = Cases.objects(_id=id).first()
         # first we ensure this user has a Cases document in the database before continuing
         if cases is None:
-            cases = Cases()
-            cases._id = id
-            cases.save()
+            Cases._get_collection().update_one(
+                {"_id": id}, {"$setOnInsert": {"cases": []}}, upsert=True)
+            cases = Cases.objects(_id=id).get()
             return []
 
         cases = cases.cases
