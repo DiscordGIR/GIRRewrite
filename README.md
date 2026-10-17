@@ -59,6 +59,10 @@ If everything is successful, the bot should be online in a few seconds. Otherwis
 
 The bot can be updated in the future by running: `git pull && docker-compose up -d --build --force-recreate`
 
+Compose injects `.env` at runtime; credentials and local Spotify token caches are
+excluded from the image. When running the image without Compose, pass
+`--env-file .env` to `docker run`. Rebuild existing images to apply these exclusions.
+
 ---
 
 ### Development setup: with Docker (recommended!)
