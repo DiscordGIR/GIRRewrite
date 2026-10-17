@@ -18,6 +18,7 @@ from data.services.user_service import user_service
 from utils.fetchers import close_client_session
 from utils.worker import BlockingIOPool
 from utils.health import monitor_runtime
+from utils.logging import start_webhook_logging, stop_webhook_logging
 
 # Remove warning from songs cog
 import warnings
@@ -48,6 +49,7 @@ class Bot(commands.Bot):
     async def setup_hook(self):
         self.remove_command("help")
         await init_client_session()
+        start_webhook_logging()
         self.database_io = BlockingIOPool(workers=4, name="gir-db")
         self.integration_io = BlockingIOPool(workers=2, name="gir-external")
         await self.database_io.run(db.connect)
@@ -100,6 +102,7 @@ class Bot(commands.Bot):
                 self.tasks.close()
             await super().close()
         finally:
+            await stop_webhook_logging()
             for name in ("database_io", "integration_io"):
                 pool = getattr(self, name, None)
                 if pool is not None:
