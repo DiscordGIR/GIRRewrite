@@ -1,5 +1,6 @@
 import json
 import re
+import unicodedata
 from datetime import datetime, timezone
 
 import aiohttp
@@ -158,7 +159,12 @@ class Filter(commands.Cog):
         return triggered
 
     async def do_invite_filter(self, message):
-        invites = re.findall(self.invite_filter, message.content, flags=re.S)
+        # Match obscured invites through the normal whitelist and report flow.
+        # Keep the original message content intact for moderation evidence.
+        content = unicodedata.normalize("NFKC", "".join(
+            char for char in message.content if unicodedata.category(char) not in ("Cf", "Cc")
+        ))
+        invites = re.findall(self.invite_filter, content, flags=re.S)
         if not invites:
             return
 
@@ -178,17 +184,21 @@ class Filter(commands.Cog):
                 elif isinstance(invite, discord.PartialInviteGuild) or isinstance(invite, discord.PartialInviteChannel):
                     id = invite.id
 
-                if id not in whitelist:
-                    await self.delete(message)
-                    await self.ratelimit(message)
-                    await report(self.bot, message, invite, invite=invite)
-                    return True
+                if id in whitelist:
+                    continue
 
             except discord.NotFound:
-                await self.delete(message)
-                await self.ratelimit(message)
-                await report(self.bot, message, invite, invite=invite)
-                return True
+                pass
+
+            await self.delete(message)
+            try:
+                ctx = await self.bot.get_context(message)
+                await mute(ctx, message.author, mod=message.guild.me,
+                           dur_seconds=7 * 24 * 60 * 60, reason="Invite filter")
+            except Exception:
+                logger.exception("Failed to mute member for posting an invite")
+            await report(self.bot, message, invite, invite=invite)
+            return True
 
         return False
 

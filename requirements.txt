@@ -17,6 +17,8 @@ idna==3.6
 mongoengine==0.27.0
 multidict==6.0.5
 pillow==10.2.0
+pyvips[binary]==3.0.0
+pyvips-binary==8.15.3
 psutil==5.9.8
 pymongo==4.6.1
 python-dotenv==1.0.1
