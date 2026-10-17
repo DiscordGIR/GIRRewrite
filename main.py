@@ -201,6 +201,7 @@ async def on_ready():
     await bot.issue_cache.fetch_issue_cache()
     await bot.rule_cache.fetch_rule_cache()
     await scam_cache.fetch_scam_cache()
+    bot.tasks.resume()
     bot._deployment_initialized = True
     bot.deployment_ready = True
     await bot.notify_owner_of_startup()
@@ -214,6 +215,7 @@ async def on_disconnect():
 @bot.event
 async def on_resumed():
     bot.deployment_ready = bot._deployment_initialized
+
 
 
 async def main():
