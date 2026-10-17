@@ -7,12 +7,14 @@ import discord
 from utils import cfg, logger
 from utils.framework import check_invokee, gatekeeper
 from utils.mod import ban, unmute
+from utils.mod.global_modactions import dismiss_report_timeout
 
 
 class AntiRaidReportActions(discord.ui.View):
-    def __init__(self, target_member):
+    def __init__(self, target_member, timeout_until=None):
         super().__init__(timeout=None)
         self.target_member = target_member
+        self.timeout_until = timeout_until
         self.lock = asyncio.Lock()
         self.resolved = False
 
@@ -51,7 +53,11 @@ class AntiRaidReportActions(discord.ui.View):
             if self.resolved:
                 return
             try:
-                await unmute(interaction, self.target_member, mod=interaction.user, reason="Antiraid report dismissed.")
+                await dismiss_report_timeout(interaction, self.target_member.id, self.timeout_until,
+                                             reason="Antiraid report dismissed.")
+            except ValueError as error:
+                await interaction.followup.send(str(error), ephemeral=True)
+                return
             except Exception:
                 logger.exception("Failed to unmute member from antiraid report")
                 await interaction.followup.send("I wasn't able to unmute them. The report is still available.", ephemeral=True)
@@ -61,7 +67,7 @@ class AntiRaidReportActions(discord.ui.View):
             self.stop()
 
 
-async def report_antiraid(message, *, title, trigger, reason, actions, evidence=()):
+async def report_antiraid(message, *, title, trigger, reason, actions, evidence=(), timeout_until=None):
     channel = message.guild.get_channel(cfg.channels.reports)
     if channel is None:
         return False
@@ -88,7 +94,7 @@ async def report_antiraid(message, *, title, trigger, reason, actions, evidence=
             embeds[i].url = "https://discord.com"
         embeds[i].set_image(url=f"attachment://{filename}")
     await channel.send(
-        ping, embeds=embeds, files=files, view=AntiRaidReportActions(message.author),
+        ping, embeds=embeds, files=files, view=AntiRaidReportActions(message.author, timeout_until),
         allowed_mentions=discord.AllowedMentions(
             everyone=False, users=online, roles=[discord.Object(cfg.roles.moderator)], replied_user=False
         ),
