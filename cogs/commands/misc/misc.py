@@ -54,7 +54,7 @@ class Misc(commands.Cog):
         reminder = discord.utils.escape_markdown(reminder)
 
         try:
-            ctx.tasks.schedule_reminder(ctx.author.id, reminder, time)
+            await ctx.tasks.schedule_reminder(ctx.author.id, reminder, time)
         except:
             raise commands.BadArgument("Could not schedule reminder, you probably have too many reminders already!")
 

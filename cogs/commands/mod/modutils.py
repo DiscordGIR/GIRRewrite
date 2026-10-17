@@ -153,7 +153,7 @@ class ModUtils(commands.Cog):
         await run_database(lambda: results.save())
 
         try:
-            ctx.tasks.cancel_unbirthday(member.id)
+            await ctx.tasks.cancel_unbirthday(member.id)
         except Exception:
             pass
 
@@ -214,7 +214,7 @@ class ModUtils(commands.Cog):
 
             try:
                 time = now + datetime.timedelta(days=1-h-m)
-                ctx.tasks.schedule_remove_bday(member.id, time)
+                await ctx.tasks.schedule_remove_bday(member.id, time)
             except Exception:
                 return
 
