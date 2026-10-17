@@ -27,6 +27,7 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(guild.case_id, 500)
         self.assertEqual(guild.filter_excluded_guilds, [999])
 
+    @unittest.skipUnless(os.environ.get("GIR_TEST_MONGO_URI"), "Concurrency requires real MongoDB")
     def test_concurrent_profile_and_case_creation_is_safe(self):
         service = load_module("data/services/user_service.py").UserService()
         with ThreadPoolExecutor(max_workers=8) as pool:
