@@ -9,7 +9,7 @@ from discord.utils import escape_markdown
 from utils import cfg, logger
 
 from .mod_logs import prepare_mute_log, prepare_unmute_log, prepare_warn_log
-from .modactions_helpers import (add_ban_case, notify_user, notify_user_warn, response_log,
+from .modactions_helpers import (execute_ban, notify_user, notify_user_warn, response_log,
                                  submit_public_log)
 
 
@@ -133,26 +133,13 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
 
 
 async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: discord.Member, reason="No reason."):
-    db_guild = guild_service.get_guild()
-
-    member_is_external = isinstance(target_member, discord.User)
-    log = await add_ban_case(target_member, mod, reason, db_guild)
-
-    if not member_is_external:
-        if cfg.ban_appeal_url is None:
-            await notify_user(target_member, f"You have been banned from {ctx.guild.name}", log)
-        else:
-            await notify_user(target_member, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
-
-        await target_member.ban(reason=reason)
-    else:
-        # hackban for user not currently in guild
-        await ctx.guild.ban(discord.Object(id=target_member.id))
-
-    if isinstance(ctx, discord.Interaction):
-        ctx.client.ban_cache.ban(target_member.id)
-    else:
-        ctx.bot.ban_cache.ban(target_member.id)
+    bot = ctx.client if isinstance(ctx, discord.Interaction) else ctx.bot
+    dm_text = None
+    if not isinstance(target_member, discord.User):
+        dm_text = f"You have been banned from {ctx.guild.name}"
+        if cfg.ban_appeal_url is not None:
+            dm_text += f"\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>"
+    log = await execute_ban(bot, ctx.guild, target_member, mod, reason, dm_text=dm_text)
     await response_log(ctx, log)
     await submit_public_log(ctx, target_member, log)
 
