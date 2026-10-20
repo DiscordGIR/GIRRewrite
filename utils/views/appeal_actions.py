@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 import discord
 
@@ -15,25 +16,35 @@ def count_votes(moderators, upvotes, downvotes, abstentions, approve):
     return len(supporters), len(eligible) // 2 + 1
 
 
-class AppealActions(discord.ui.View):
-    """Stateless persistent buttons; the vote embed stores the applicant ID."""
+class AppealActions:
+    """Route applicant-specific button IDs, including after bot restarts."""
 
     def __init__(self, bot):
-        super().__init__(timeout=None)
         self.bot = bot
         self.locks = {}
 
-    @discord.ui.button(label="Unban", style=discord.ButtonStyle.success,
-                       custom_id="unban_appeal:approve")
-    async def approve(self, interaction, button):
-        await self.resolve(interaction, approve=True)
+    @staticmethod
+    def create_view(user_id, *, disabled=False):
+        view = discord.ui.View(timeout=None)
+        for action, label, style in (
+            ("approve", "Unban", discord.ButtonStyle.success),
+            ("deny", "Deny appeal", discord.ButtonStyle.danger),
+        ):
+            view.add_item(discord.ui.Button(
+                label=label, style=style, disabled=disabled,
+                custom_id=f"unban_appeal:{action}:{user_id}"))
+        return view
 
-    @discord.ui.button(label="Deny appeal", style=discord.ButtonStyle.danger,
-                       custom_id="unban_appeal:deny")
-    async def deny(self, interaction, button):
-        await self.resolve(interaction, approve=False)
+    async def handle_interaction(self, interaction):
+        if interaction.type != discord.InteractionType.component:
+            return
+        custom_id = (interaction.data or {}).get("custom_id", "")
+        match = re.fullmatch(r"unban_appeal:(approve|deny):([1-9][0-9]{0,19})", custom_id)
+        if match is None:
+            return
+        await self.resolve(interaction, int(match[2]), approve=match[1] == "approve")
 
-    async def resolve(self, interaction, approve):
+    async def resolve(self, interaction, user_id, approve):
         guild = interaction.guild
         if guild is None or guild.id != cfg.ban_appeal_guild_id:
             await interaction.response.send_message("This is not an appeal vote.", ephemeral=True)
@@ -41,14 +52,14 @@ class AppealActions(discord.ui.View):
         await interaction.response.defer(ephemeral=True, thinking=True)
         async with self.locks.setdefault(interaction.message.id, asyncio.Lock()):
             try:
-                await self._resolve(interaction, approve)
+                await self._resolve(interaction, user_id, approve)
             except Exception:
                 logger.exception("Failed to resolve appeal vote %s", interaction.message.id)
                 await interaction.followup.send(
                     "The appeal action failed. Check the vote message and bot logs before retrying.",
                     ephemeral=True)
 
-    async def _resolve(self, interaction, approve):
+    async def _resolve(self, interaction, user_id, approve):
         guild = interaction.guild
         # Fetch members so permission checks and the denominator reflect current roles.
         members = [member async for member in guild.fetch_members(limit=None)]
@@ -62,8 +73,11 @@ class AppealActions(discord.ui.View):
             await interaction.followup.send("This is not an appeal vote.", ephemeral=True)
             return
         embed = message.embeds[0].copy()
-        marker = embed.footer.text or ""
-        if not marker.startswith("Appeal applicant: "):
+        custom_id = f"unban_appeal:{'approve' if approve else 'deny'}:{user_id}"
+        if not any(
+            getattr(component, "custom_id", None) == custom_id
+            for row in message.components for component in row.children
+        ):
             await interaction.followup.send("This is not an appeal vote.", ephemeral=True)
             return
         if embed.title:
@@ -71,7 +85,6 @@ class AppealActions(discord.ui.View):
                 "This appeal has already been resolved or is being processed. Check the recorded outcome.",
                 ephemeral=True)
             return
-        user_id = int(marker.removeprefix("Appeal applicant: "))
         votes = {emoji: set() for emoji in ("🔺", "🔻", "❌")}
         for reaction in message.reactions:
             if str(reaction.emoji) in votes:
@@ -89,9 +102,7 @@ class AppealActions(discord.ui.View):
             await interaction.followup.send("The main server is unavailable. Please try again later.", ephemeral=True)
             return
         # Persist the claim before side effects. Even a restart must not repeat an action.
-        disabled = AppealActions(self.bot)
-        for child in disabled.children:
-            child.disabled = True
+        disabled = self.create_view(user_id, disabled=True)
         embed.title = "Appeal processing"
         embed.description = f"{'Unban' if approve else 'Denial'} requested by {interaction.user.mention}."
         await message.edit(embed=embed, view=disabled)
@@ -105,7 +116,7 @@ class AppealActions(discord.ui.View):
             except discord.HTTPException:
                 embed.title = None
                 embed.description = "Unban failed. Resolve the bot's permissions or Discord error, then retry."
-                await message.edit(embed=embed, view=self)
+                await message.edit(embed=embed, view=self.create_view(user_id))
                 raise
             else:
                 self.bot.ban_cache.unban(user_id)
