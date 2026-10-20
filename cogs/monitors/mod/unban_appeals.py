@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord.utils import format_dt
 from utils import cfg
 from utils.framework import gatekeeper
+from utils.views.appeal_actions import AppealActions
 
 
 def chunks(lst, n):
@@ -16,6 +17,13 @@ def chunks(lst, n):
 class UnbanAppeals(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.appeal_actions = AppealActions(bot)
+
+    async def cog_load(self):
+        self.bot.add_view(self.appeal_actions)
+
+    async def cog_unload(self):
+        self.appeal_actions.stop()
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -46,13 +54,20 @@ class UnbanAppeals(commands.Cog):
             return
 
         embed = message.embeds[0]
+        if len(embed.fields) < 2:
+            return
         unban_username = embed.fields[0].value
         unban_id = embed.fields[1].value
 
         try:
             unban_id_parsed = int(unban_id)
+        except ValueError:
+            return
+        if message.guild.get_role(cfg.ban_appeal_mod_role) is None:
+            return
+        try:
             appealer = await self.bot.fetch_user(unban_id_parsed)
-        except:
+        except discord.HTTPException:
             appealer = None
 
         thread = await message.create_thread(name=f"{unban_username} ({unban_id})")
@@ -86,13 +101,21 @@ class UnbanAppeals(commands.Cog):
         else:
             await thread.send(embed=discord.Embed(description=f"Hmm, I couldn't find {unban_username} ({unban_id}) from Discord's API. Maybe this is not a valid user!", color=discord.Color.red()))
 
-        m = await thread.send(mods_to_ping, embed=discord.Embed(description=f"Please vote with whether or not you want to unban this user!", color=discord.Color.orange()), allowed_mentions=discord.AllowedMentions(roles=True))
+        vote_embed = discord.Embed(
+            description="Vote 🔺 to unban, 🔻 to deny, or ❌ to abstain. "
+                        "Abstentions are excluded from the majority threshold. "
+                        "Voting both ways supports neither outcome. "
+                        "A majority of eligible moderators is required; Aaron can override.",
+            color=discord.Color.orange())
+        vote_embed.set_footer(text=f"Appeal applicant: {unban_id_parsed}")
+        m = await thread.send(mods_to_ping, embed=vote_embed, view=self.appeal_actions,
+                              allowed_mentions=discord.AllowedMentions(users=True, roles=False))
         await m.add_reaction("🔺")
         await m.add_reaction("🔻")
         await m.add_reaction("❌")
         await m.pin()
 
-        await thread.send(appealer.id)
+        await thread.send(str(unban_id_parsed))
 
     async def generate_userinfo(self, appealer: discord.User):
         results = user_service.get_user(appealer.id)
