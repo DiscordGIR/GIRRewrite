@@ -19,11 +19,9 @@ class UnbanAppeals(commands.Cog):
         self.bot = bot
         self.appeal_actions = AppealActions(bot)
 
-    async def cog_load(self):
-        self.bot.add_view(self.appeal_actions)
-
-    async def cog_unload(self):
-        self.appeal_actions.stop()
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        await self.appeal_actions.handle_interaction(interaction)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -107,8 +105,7 @@ class UnbanAppeals(commands.Cog):
                         "Voting both ways supports neither outcome. "
                         "A majority of eligible moderators is required; Aaron can override.",
             color=discord.Color.orange())
-        vote_embed.set_footer(text=f"Appeal applicant: {unban_id_parsed}")
-        m = await thread.send(mods_to_ping, embed=vote_embed, view=self.appeal_actions,
+        m = await thread.send(mods_to_ping, embed=vote_embed, view=self.appeal_actions.create_view(unban_id_parsed),
                               allowed_mentions=discord.AllowedMentions(users=True, roles=False))
         await m.add_reaction("🔺")
         await m.add_reaction("🔻")
