@@ -147,8 +147,9 @@ class AppealActions:
         except discord.HTTPException:
             await interaction.channel.send(
                 f"Could not DM <@{user_id}>; their DMs may be closed. They have been left in the appeal server. "
-                "Please manually send the following message, then remove them after delivery:\n\n" + dm,
+                "Please manually send the following message, then remove them after delivery:",
                 allowed_mentions=discord.AllowedMentions.none())
+            await interaction.channel.send(dm, allowed_mentions=discord.AllowedMentions.none())
         else:
             try:
                 await guild.kick(discord.Object(id=user_id), reason=f"Ban appeal {outcome}; DM delivered")
