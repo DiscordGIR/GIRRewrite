@@ -1,5 +1,6 @@
 import asyncio
 import re
+from types import SimpleNamespace
 
 import discord
 
@@ -7,6 +8,7 @@ from data.model import Case
 from data.services import guild_service, user_service
 from utils import cfg, logger
 from utils.mod.mod_logs import prepare_unban_log
+from utils.mod.modactions_helpers import submit_public_log
 
 
 def count_votes(moderators, upvotes, downvotes, abstentions, approve):
@@ -104,9 +106,9 @@ class AppealActions:
         # Persist the claim before side effects. Even a restart must not repeat an action.
         disabled = self.create_view(user_id, disabled=True)
         embed.title = "Appeal processing"
-        embed.description = f"{'Unban' if approve else 'Denial'} requested by {interaction.user.mention}."
+        embed.description = "Processing appeal approval." if approve else "Processing appeal denial."
         await message.edit(embed=embed, view=disabled)
-        reason = f"Ban appeal approved by {interaction.user} ({interaction.user.id})"
+        reason = "Ban appeal approved by staff"
         if approve:
             try:
                 await main_guild.unban(discord.Object(id=user_id), reason=reason)
@@ -126,7 +128,14 @@ class AppealActions:
                                 mod_tag=str(interaction.user), reason=reason)
                     guild_service.inc_caseid()
                     user_service.add_case(user_id, case)
-                    await interaction.channel.send(embed=prepare_unban_log(interaction.user, user, case))
+                    log = prepare_unban_log(interaction.user, user, case)
+                    # Match /staffban: retain internal attribution, anonymize displayed logs.
+                    log.set_field_at(1, name="Mod", value=f"{main_guild.name} Staff")
+                    await interaction.channel.send(embed=log)
+                    if main_guild.get_channel(cfg.channels.public_logs) is None:
+                        raise RuntimeError("The main server public moderation log channel is unavailable")
+                    # The appeal interaction belongs to another guild; route to the main server.
+                    await submit_public_log(SimpleNamespace(guild=main_guild), user, log)
                 except Exception:
                     logger.exception("Appeal unban succeeded but case/log failed for %s", user_id)
                     await interaction.followup.send(
@@ -135,13 +144,14 @@ class AppealActions:
                         ephemeral=True)
         outcome = "approved" if approve else "denied"
         embed.title = f"Appeal {outcome}"
-        embed.description = (f"{interaction.user.mention} {outcome} this appeal. "
+        embed.description = (f"This appeal was {outcome} by staff. "
                              f"Votes: {support}/{required} required."
-                             + (" Aaron used the owner override." if override and support < required else ""))
+                             + (" Owner override used." if override and support < required else ""))
         await message.edit(embed=embed, view=disabled)
         dm = ("Your ban appeal has been approved and you have been unbanned. "
               "You can rejoin the server: https://discord.gg/jb" if approve else
               "Your ban appeal has been denied. Your ban remains in place.")
+        dm_delivered = False
         try:
             await user.send(dm)
         except discord.HTTPException:
@@ -151,6 +161,7 @@ class AppealActions:
                 allowed_mentions=discord.AllowedMentions.none())
             await interaction.channel.send(dm, allowed_mentions=discord.AllowedMentions.none())
         else:
+            dm_delivered = True
             try:
                 await guild.kick(discord.Object(id=user_id), reason=f"Ban appeal {outcome}; DM delivered")
             except discord.NotFound:
@@ -159,4 +170,18 @@ class AppealActions:
                 await interaction.channel.send(
                     f"The outcome DM was delivered to <@{user_id}>, but removal failed. Please remove them manually.",
                     allowed_mentions=discord.AllowedMentions.none())
-        await interaction.followup.send(f"Appeal {outcome}. See the thread for delivery details.", ephemeral=True)
+        if approve:
+            await interaction.followup.send("Appeal approved. See the thread for delivery details.", ephemeral=True)
+        else:
+            await interaction.channel.send(
+                f"Appeal denied for {user.mention}. See above for delivery details.",
+                allowed_mentions=discord.AllowedMentions.none())
+            await interaction.delete_original_response()
+
+        if dm_delivered:
+            try:
+                await interaction.channel.edit(archived=True, locked=True)
+            except discord.HTTPException:
+                await interaction.followup.send(
+                    "The outcome DM was delivered, but closing the appeal thread failed. "
+                    "Please close it manually.", ephemeral=True)
