@@ -1,1 +1,11 @@
 mongo_data/
+.git/
+.env
+.env.*
+!.env.example
+.cache*
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.log

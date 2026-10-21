@@ -1,6 +1,7 @@
 import asyncio
 import os
 import traceback
+from uuid import uuid4
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -12,6 +13,11 @@ from cogs.commands.context_commands import setup_context_commands
 
 from typing import Union
 from data.services.user_service import user_service
+from utils.fetchers import close_client_session
+from utils.worker import BlockingIOPool
+from data.database import configure_database_pool
+from utils.health import monitor_runtime
+from utils.logging import start_webhook_logging, stop_webhook_logging
 
 # Remove warning from songs cog
 import warnings
@@ -31,19 +37,43 @@ class Bot(commands.Bot):
         self.issue_cache = IssueCache(self)
         self.rule_cache = RuleCache(self)
 
-        # force the config object and database connection to be loaded
+        # Validate the imported configuration and permission mapping.
         if cfg and db and gatekeeper:
             logger.info("Presetup phase completed! Connecting to Discord...")
 
     async def setup_hook(self):
-        bot.remove_command("help")
+        self.remove_command("help")
+        await init_client_session()
+        start_webhook_logging()
+        self.database_io = BlockingIOPool(workers=4, name="gir-db")
+        self.integration_io = BlockingIOPool(workers=2, name="gir-external")
+        configure_database_pool(self.database_io)
+        await self.database_io.run(db.connect)
         for extension in initial_extensions:
             await self.load_extension(extension)
 
         setup_context_commands(self)
 
         self.tasks = Tasks(self)
-        await init_client_session()
+        await self.tasks.start()
+        self.health_task = asyncio.create_task(monitor_runtime(self, logger), name="runtime-health")
+
+    async def close(self):
+        try:
+            health_task = getattr(self, "health_task", None)
+            if health_task is not None:
+                health_task.cancel()
+                await asyncio.gather(health_task, return_exceptions=True)
+            if hasattr(self, "tasks"):
+                await self.tasks.close()
+            await super().close()
+        finally:
+            await stop_webhook_logging()
+            for name in ("database_io", "integration_io"):
+                pool = getattr(self, name, None)
+                if pool is not None:
+                    await pool.close()
+            await close_client_session()
 
 
 class MyTree(app_commands.CommandTree):
@@ -52,6 +82,8 @@ class MyTree(app_commands.CommandTree):
 
     async def interaction_check(self, interaction: discord.Interaction):
         if interaction.user.bot:
+            return False
+        if interaction.guild is None or not isinstance(interaction.user, discord.Member):
             return False
 
         if gatekeeper.has(interaction.user.guild, interaction.user, 6):
@@ -70,7 +102,7 @@ class MyTree(app_commands.CommandTree):
         else:
             command_name = command.name
 
-        db_user = user_service.get_user(interaction.user.id)
+        db_user = await user_service.get_user(interaction.user.id)
 
         if db_user.command_bans.get(command_name):
             ctx = GIRContext(interaction)
@@ -127,16 +159,9 @@ async def app_command_error(interaction: discord.Interaction, error: AppCommandE
         try:
             raise error
         except:
-            tb = traceback.format_exc()
-            logger.error(tb)
-            if len(tb.split('\n')) > 8:
-                tb = '\n'.join(tb.split('\n')[-8:])
-
-            tb_formatted = tb
-            if len(tb_formatted) > 1000:
-                tb_formatted = "...\n" + tb_formatted[-1000:]
-
-            await ctx.send_error(description=f"`{error}`\n```{tb_formatted}```", followup=True, whisper=True, delete_after=5)
+            error_id = uuid4().hex[:12]
+            logger.error("Command failed error_id=%s\n%s", error_id, traceback.format_exc())
+            await ctx.send_error(description=f"Something went wrong. Please give a moderator this reference: `{error_id}`.", followup=True, whisper=True, delete_after=15)
 
 
 @bot.event
@@ -156,14 +181,18 @@ async def on_ready():
         f'Logged in as: {bot.user.name} - {bot.user.id} ({discord.__version__})')
     logger.info(f'Successfully logged in and booted...!')
 
-    await bot.ban_cache.fetch_ban_cache()
-    await bot.issue_cache.fetch_issue_cache()
-    await bot.rule_cache.fetch_rule_cache()
-    await scam_cache.fetch_scam_cache()
+    await bot.tasks.resume()
+    for refresh in (bot.ban_cache.fetch_ban_cache, bot.issue_cache.fetch_issue_cache,
+                    bot.rule_cache.fetch_rule_cache, scam_cache.fetch_scam_cache):
+        try:
+            await refresh()
+        except Exception:
+            logger.exception("Cache refresh failed: %s", refresh.__qualname__)
 
 
 async def main():
     async with bot:
         await bot.start(os.environ.get("GIR_TOKEN"), reconnect=True)
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

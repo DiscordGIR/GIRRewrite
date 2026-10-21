@@ -14,8 +14,8 @@ RUN apt install -y git gcc python3-dev
 
 # python dependencies
 COPY ./requirements.txt .
-COPY . .
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install -r requirements.txt
+COPY . .
 # RUN python3 -u sync_commands.py
 CMD ["python", "-u", "main.py"]

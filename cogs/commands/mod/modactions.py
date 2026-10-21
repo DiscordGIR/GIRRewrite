@@ -1,8 +1,8 @@
+from data.database import run_database
 from datetime import datetime, timedelta, timezone
 
 import discord
 import humanize
-from apscheduler.jobstores.base import ConflictingIdError
 from data.model import Case
 from data.services import guild_service, user_service
 from discord import app_commands
@@ -10,11 +10,12 @@ from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
 from utils import GIRContext, cfg, transform_context
 from utils.framework import mod_and_up, ModsAndAboveMemberOrUser, Duration, ModsAndAboveMember, UserOnly
-from utils.mod import (add_ban_case, add_kick_case, notify_user,
+from utils.mod import (execute_ban, execute_kick, notify_user,
                        prepare_editreason_log, prepare_liftwarn_log,
                        prepare_mute_log, prepare_removepoints_log,
                        prepare_unban_log, prepare_unmute_log,
                        submit_public_log, warn)
+from utils.mod.global_modactions import mute as apply_mute, unmute as apply_unmute
 from utils.views import warn_autocomplete
 from utils.views.confirm import SecondStaffConfirm
 
@@ -47,13 +48,10 @@ class ModActions(commands.Cog):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
 
-        db_guild = guild_service.get_guild()
-
-        log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
-        await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
 
         await ctx.defer(ephemeral=False)
-        await member.kick(reason=reason)
+        log = await execute_kick(member, ctx.author, reason,
+                                 dm_text=f"You were kicked from {ctx.guild.name}")
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, member, log)
@@ -66,13 +64,10 @@ class ModActions(commands.Cog):
     async def roblox(self, ctx: GIRContext, member: ModsAndAboveMember) -> None:
         reason = "This Discord server is for iOS jailbreaking, not Roblox. Please join https://discord.gg/jailbreak instead, thank you!"
 
-        db_guild = guild_service.get_guild()
-
-        log = add_kick_case(target_member=member, mod=ctx.author, reason=reason, db_guild=db_guild)
-        await notify_user(member, f"You were kicked from {ctx.guild.name}", log)
 
         await ctx.defer(ephemeral=False)
-        await member.kick(reason=reason)
+        log = await execute_kick(member, ctx.author, reason,
+                                 dm_text=f"You were kicked from {ctx.guild.name}")
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, member, log)
@@ -102,38 +97,7 @@ class ModActions(commands.Cog):
         if time > now + timedelta(days=14):
             raise commands.BadArgument("Mutes can't be longer than 14 days!")
 
-        db_guild = guild_service.get_guild()
-        case = Case(
-            _id=db_guild.case_id,
-            _type="MUTE",
-            date=now,
-            mod_id=ctx.author.id,
-            mod_tag=str(ctx.author),
-            reason=reason,
-        )
-
-        case.until = time
-        case.punishment = humanize.naturaldelta(
-            time - now, minimum_unit="seconds")
-
-        try:
-            await member.timeout(time, reason=reason)
-            ctx.tasks.schedule_untimeout(member.id, time)
-        except ConflictingIdError:
-            raise commands.BadArgument(
-                "The database thinks this user is already muted.")
-
-        guild_service.inc_caseid()
-        user_service.add_case(member.id, case)
-
-        log = prepare_mute_log(ctx.author, member, case)
-        await ctx.respond_or_edit(embed=log, delete_after=10)
-
-        log.remove_author()
-        log.set_thumbnail(url=member.display_avatar)
-
-        dmed = await notify_user(member, f"You have been muted in {ctx.guild.name}", log)
-        await submit_public_log(ctx, member, log, dmed)
+        await apply_mute(ctx, member, ctx.author, dur_seconds=delta, reason=reason)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -142,35 +106,10 @@ class ModActions(commands.Cog):
     @app_commands.describe(reason="Reason for unmuting")
     @transform_context
     async def unmute(self, ctx: GIRContext, member: ModsAndAboveMember, reason: str) -> None:
-        db_guild = guild_service.get_guild()
-
         if not member.is_timed_out():
             raise commands.BadArgument("This user is not muted.")
-
         await ctx.defer(ephemeral=False)
-        await member.edit(timed_out_until=None)
-
-        try:
-            ctx.tasks.cancel_unmute(member.id)
-        except Exception:
-            pass
-
-        case = Case(
-            _id=db_guild.case_id,
-            _type="UNMUTE",
-            mod_id=ctx.author.id,
-            mod_tag=str(ctx.author),
-            reason=reason,
-        )
-        guild_service.inc_caseid()
-        user_service.add_case(member.id, case)
-
-        log = prepare_unmute_log(ctx.author, member, case)
-
-        await ctx.respond_or_edit(embed=log, delete_after=10)
-
-        dmed = await notify_user(member, f"You have been unmuted in {ctx.guild.name}", log)
-        await submit_public_log(ctx, member, log, dmed)
+        await apply_unmute(ctx, member, ctx.author, reason=reason)
 
     @mod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -181,7 +120,6 @@ class ModActions(commands.Cog):
     async def ban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
-        db_guild = guild_service.get_guild()
 
         member_is_external = isinstance(user, discord.User)
 
@@ -191,19 +129,13 @@ class ModActions(commands.Cog):
                 raise commands.BadArgument("That user is already banned!")
 
         await ctx.defer(ephemeral=False)
-        self.bot.ban_cache.ban(user.id)
-        log = await add_ban_case(user, ctx.author, reason, db_guild)
-
+        dm_text = None
         if not member_is_external:
-            if cfg.ban_appeal_url is None:
-                await notify_user(user, f"You have been banned from {ctx.guild.name}", log)
-            else:
-                await notify_user(user, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
-
-            await user.ban(reason=reason)
-        else:
-            # hackban for user not currently in guild
-            await ctx.guild.ban(discord.Object(id=user.id))
+            dm_text = f"You have been banned from {ctx.guild.name}"
+            if cfg.ban_appeal_url is not None:
+                dm_text += f"\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>"
+        log = await execute_ban(self.bot, ctx.guild, user, ctx.author, reason,
+                                dm_text=dm_text, anonymous=False)
 
         await ctx.respond_or_edit(embed=log, delete_after=10)
         await submit_public_log(ctx, user, log)
@@ -217,7 +149,6 @@ class ModActions(commands.Cog):
     async def staffban(self, ctx: GIRContext, user: ModsAndAboveMemberOrUser, reason: str):
         reason = escape_markdown(reason)
         reason = escape_mentions(reason)
-        db_guild = guild_service.get_guild()
 
         member_is_external = isinstance(user, discord.User)
 
@@ -235,20 +166,13 @@ class ModActions(commands.Cog):
             await ctx.send_warning(f"Cancelled staff banning {user.mention}.")
             return
 
-        self.bot.ban_cache.ban(user.id)
-        log = await add_ban_case(user, ctx.author, reason, db_guild)
-
-        log.set_field_at(1, name="Mod", value=f"{ctx.guild.name} Staff")
-
+        dm_text = None
         if not member_is_external:
-            if cfg.ban_appeal_url is None:
-                await notify_user(user, f"You have been banned from {ctx.guild.name}", log)
-            else:
-                await notify_user(user, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
-            await user.ban(reason=reason)
-        else:
-            # hackban for user not currently in guild
-            await ctx.guild.ban(discord.Object(id=user.id))
+            dm_text = f"You have been banned from {ctx.guild.name}"
+            if cfg.ban_appeal_url is not None:
+                dm_text += f"\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>"
+        log = await execute_ban(self.bot, ctx.guild, user, ctx.author, reason,
+                                dm_text=dm_text, anonymous=True)
 
         await ctx.interaction.message.delete()
         await ctx.respond_or_edit(embed=log, delete_after=10)
@@ -279,16 +203,14 @@ class ModActions(commands.Cog):
 
         self.bot.ban_cache.unban(user.id)
 
-        db_guild = guild_service.get_guild()
         case = Case(
-            _id=db_guild.case_id,
+            _id=await guild_service.allocate_case_id(),
             _type="UNBAN",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
             reason=reason,
         )
-        guild_service.inc_caseid()
-        user_service.add_case(user.id, case)
+        await user_service.add_case(user.id, case)
 
         log = prepare_unban_log(ctx.author, user, case)
         await ctx.respond_or_edit(embed=log, delete_after=10)
@@ -321,7 +243,7 @@ class ModActions(commands.Cog):
     @app_commands.describe(reason="Reason for lifting the warn")
     @transform_context
     async def liftwarn(self, ctx: GIRContext, member: ModsAndAboveMember, case_id: str, reason: str) -> None:
-        cases = user_service.get_cases(member.id)
+        cases = await user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
 
         reason = escape_markdown(reason)
@@ -338,7 +260,7 @@ class ModActions(commands.Cog):
             raise commands.BadArgument(
                 message=f"Case with ID {case_id} already lifted.")
 
-        u = user_service.get_user(id=member.id)
+        u = await user_service.get_user(id=member.id)
         if u.warn_points - int(case.punishment) < 0:
             raise commands.BadArgument(
                 message=f"Can't lift Case #{case_id} because it would make {member.mention}'s points negative.")
@@ -349,10 +271,10 @@ class ModActions(commands.Cog):
         case.lifted_by_tag = str(ctx.author)
         case.lifted_by_id = ctx.author.id
         case.lifted_date = datetime.now()
-        cases.save()
+        await run_database(lambda: cases.save())
 
         # remove the warn points from the user in DB
-        user_service.inc_points(member.id, -1 * int(case.punishment))
+        await user_service.inc_points(member.id, -1 * int(case.punishment))
         dmed = True
         # prepare log embed, send to #public-mod-logs, user, channel where invoked
         log = prepare_liftwarn_log(ctx.author, member, case)
@@ -371,7 +293,7 @@ class ModActions(commands.Cog):
     @transform_context
     async def editreason(self, ctx: GIRContext, member: ModsAndAboveMemberOrUser, case_id: str, new_reason: str) -> None:
         # retrieve user's case with given ID
-        cases = user_service.get_cases(member.id)
+        cases = await user_service.get_cases(member.id)
         case = cases.cases.filter(_id=case_id).first()
 
         new_reason = escape_markdown(new_reason)
@@ -384,8 +306,7 @@ class ModActions(commands.Cog):
 
         old_reason = case.reason
         case.reason = new_reason
-        case.date = datetime.now()
-        cases.save()
+        await run_database(lambda: cases.save())
 
         dmed = True
         log = prepare_editreason_log(ctx.author, member, case, old_reason)
@@ -436,18 +357,17 @@ class ModActions(commands.Cog):
         if points < 1:
             raise commands.BadArgument("Points can't be lower than 1.")
 
-        u = user_service.get_user(id=member.id)
+        u = await user_service.get_user(id=member.id)
         if u.warn_points - points < 0:
             raise commands.BadArgument(
                 message=f"Can't remove {points} points because it would make {member.mention}'s points negative.")
 
         # passed sanity checks, so update the case in DB
         # remove the warn points from the user in DB
-        user_service.inc_points(member.id, -1 * points)
+        await user_service.inc_points(member.id, -1 * points)
 
-        db_guild = guild_service.get_guild()
         case = Case(
-            _id=db_guild.case_id,
+            _id=await guild_service.allocate_case_id(),
             _type="REMOVEPOINTS",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
@@ -455,10 +375,8 @@ class ModActions(commands.Cog):
             reason=reason,
         )
 
-        # increment DB's max case ID for next case
-        guild_service.inc_caseid()
         # add case to db
-        user_service.add_case(member.id, case)
+        await user_service.add_case(member.id, case)
 
         # prepare log embed, send to #public-mod-logs, user, channel where invoked
         log = prepare_removepoints_log(ctx.author, member, case)

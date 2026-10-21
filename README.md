@@ -14,6 +14,9 @@ GIR is a sophisticated moderation and miscellaneous utilities Discord bot create
 
 GIR is custom made for the r/Jailbreak server and therefore there is no publicly running bot you can invite to your own server. However, you can self-host it as is or fork the code and modify it to your own requirements!
 
+The current modernization work, test commands, rollout checks, and remaining
+architecture changes are tracked in [the modernization plan](docs/modernization.md).
+
 > See also: [Bloo](https://github.com/DiscordGIR/Bloo) and [GIR](https://github.com/DiscordGIR/GIR)
 
 ---
@@ -58,6 +61,10 @@ If everything is successful, the bot should be online in a few seconds. Otherwis
 > **IMPORTANT**: slash commands are not synced automatically. Instead, the bot owner can DM the bot `!sync` to sync slash commands with Discord. This only needs to be done once when the bot is set up, or when you change any of the command data (such adding a new command, changing a command's name or description, etc.) 
 
 The bot can be updated in the future by running: `git pull && docker-compose up -d --build --force-recreate`
+
+Compose injects `.env` at runtime; credentials and local Spotify token caches are
+excluded from the image. When running the image without Compose, pass
+`--env-file .env` to `docker run`. Rebuild existing images to apply these exclusions.
 
 ---
 

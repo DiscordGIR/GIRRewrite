@@ -74,7 +74,7 @@ async def give_user_birthday_role(bot, user, guild):
     # schedule a task to remove birthday role (tomorrow) 12AM
     try:
         time = now + timedelta(days=1-h-m)
-        bot.tasks.schedule_remove_bday(user.id, time)
+        await bot.tasks.schedule_remove_bday(user.id, time)
     except Exception:
         return
 
