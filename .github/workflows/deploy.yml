@@ -44,7 +44,8 @@ jobs:
         run: |
           docker build --file Dockerfile.production --tag gir:check \
             --label "org.opencontainers.image.source=https://github.com/$REPOSITORY" \
-            --label "org.opencontainers.image.revision=$COMMIT" .
+            --label "org.opencontainers.image.revision=$COMMIT" \
+            --build-arg "GIR_REVISION=$COMMIT" .
           docker run --rm --entrypoint python gir:check -c \
             'import discord, mongoengine, pyvips; import pathlib; assert not pathlib.Path(".env").exists(); assert not pathlib.Path("config.json").exists()'
           docker run --rm -e PYTHONPYCACHEPREFIX=/tmp/pycache --entrypoint python gir:check -m compileall -q /usr/src/app

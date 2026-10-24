@@ -31,6 +31,7 @@ class Bot(commands.Bot):
         self.deployment_ready = False
         self._deployment_initialized = False
         self._deployment_health_task = None
+        self._startup_notified = False
 
         self.ban_cache = BanCache(self)
         self.issue_cache = IssueCache(self)
@@ -51,6 +52,31 @@ class Bot(commands.Bot):
         await init_client_session()
         if health_path := os.environ.get("GIR_HEALTH_FILE"):
             self._deployment_health_task = asyncio.create_task(report_health(self, health_path))
+
+    async def notify_owner_of_startup(self):
+        # on_ready can run again after a reconnect; notify only once per process.
+        if self._startup_notified:
+            return
+        self._startup_notified = True
+        revision = os.environ.get("GIR_REVISION", "")
+        embed = discord.Embed(
+            title="Bot started successfully",
+            description=f"{self.user} is connected and startup caches have loaded.",
+            color=discord.Color.green(),
+            timestamp=discord.utils.utcnow())
+        if len(revision) == 40 and all(char in "0123456789abcdef" for char in revision):
+            embed.add_field(
+                name="Deployed commit",
+                value=f"[{revision[:12]}](https://github.com/DiscordGIR/GIRRewrite/commit/{revision})",
+                inline=False)
+        else:
+            embed.add_field(name="Deployed commit",
+                            value="Unknown (not built by the deployment workflow).", inline=False)
+        try:
+            owner = await self.fetch_user(cfg.owner_id)
+            await owner.send(embed=embed)
+        except discord.HTTPException:
+            logger.warning("Could not send the startup DM to the bot owner.", exc_info=True)
 
     async def close(self):
         if self._deployment_health_task is not None:
@@ -177,6 +203,7 @@ async def on_ready():
     await scam_cache.fetch_scam_cache()
     bot._deployment_initialized = True
     bot.deployment_ready = True
+    await bot.notify_owner_of_startup()
 
 
 @bot.event

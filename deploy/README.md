@@ -151,7 +151,7 @@ manual deployments. There is brief downtime during replacement; this is not a
 zero-downtime deployment.
 
 Readiness requires the Discord connection plus completed startup cache loading;
-the bot refreshes a heartbeat every five seconds. Docker rejects stale heartbeats.
+the bot refreshes a heartbeat every five seconds. After its first successful\nstartup in each process, it also DMs the configured `OWNER_ID` with a startup\ntimestamp and a link to the exact commit built into the image. Reconnects do not\nsend duplicate notifications. A closed owner DM is logged and does not fail\nstartup. Local builds without `GIR_REVISION` report the commit as unknown. Docker rejects stale heartbeats.
 A failed candidate gets up to 240 seconds, then the saved release gets the same
 readiness check. A failed rollback leaves the workflow red and requires an admin.
 The heartbeat is not a full functional test of every command or external service.
