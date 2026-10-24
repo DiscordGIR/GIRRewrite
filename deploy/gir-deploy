@@ -1,0 +1,61 @@
+#!/bin/bash
+# Install root-owned at /usr/local/sbin/gir-deploy; do not run from a checkout.
+set -euo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
+
+if [[ "$EUID" -ne 0 || "$#" -ne 1 || ! "$1" =~ ^deploy\ (sha256:[a-f0-9]{64})$ ]]; then
+    echo 'Expected: deploy sha256:<64 lowercase hex characters>' >&2
+    exit 2
+fi
+digest=${BASH_REMATCH[1]}
+repository=ghcr.io/discordgir/girrewrite
+image="$repository@$digest"
+state=/var/lib/gir-deploy
+install -d -m 700 "$state"
+exec 9>"$state/lock"
+flock -n 9 || { echo 'Another deployment is running' >&2; exit 1; }
+
+# The deploy user cannot change this compose file, configuration, or registry auth.
+compose() {
+    local selected_image=$1
+    shift
+    env -i PATH="$PATH" HOME=/root GIR_IMAGE="$selected_image" \
+        docker --config /etc/gir/docker compose \
+        --project-directory /etc/gir --env-file /dev/null \
+        --project-name gir-production --file /etc/gir/compose.yml "$@"
+}
+
+previous=
+if [[ -f "$state/current" ]]; then
+    previous=$(cat "$state/current")
+    [[ "$previous" =~ ^ghcr\.io/discordgir/girrewrite@sha256:[a-f0-9]{64}$ ]] || {
+        echo 'Invalid saved image; refusing deployment' >&2
+        exit 1
+    }
+fi
+
+compose "$image" config --quiet
+# Pull before replacing the running bot. A failed pull leaves it untouched.
+compose "$image" pull gir
+if compose "$image" up --detach --no-build --pull never --wait --wait-timeout 240 gir; then
+    if [[ -n "$previous" && "$previous" != "$image" ]]; then
+        printf '%s\n' "$previous" > "$state/previous.tmp"
+        mv "$state/previous.tmp" "$state/previous"
+    fi
+    printf '%s\n' "$image" > "$state/current.tmp"
+    mv "$state/current.tmp" "$state/current"
+    printf 'Healthy deployment: %s\n' "$image"
+else
+    echo 'New release failed its Discord readiness check.' >&2
+    if [[ -n "$previous" ]]; then
+        echo 'Restoring the previous image.' >&2
+        if ! compose "$previous" up --detach --no-build --pull never --wait --wait-timeout 240 gir; then
+            echo 'ROLLBACK FAILED: administrator intervention required.' >&2
+        fi
+    else
+        echo 'No previous release exists; stopping the failed first deployment.' >&2
+        compose "$image" stop gir || true
+    fi
+    exit 1
+fi

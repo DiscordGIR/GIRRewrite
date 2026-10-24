@@ -1,0 +1,37 @@
+services:
+  gir:
+    image: ${GIR_IMAGE:?Use the deployment script to select an image digest}
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    # Retain the existing setup's localhost access to MongoDB on this Linux VPS.
+    network_mode: host
+    env_file: /etc/gir/bot.env
+    environment:
+      GIR_HEALTH_FILE: /tmp/gir-ready
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - type: bind
+        source: /etc/gir/config.json
+        target: /usr/src/app/config.json
+        read_only: true
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m,mode=1777
+    healthcheck:
+      test: [CMD, python, /usr/src/app/deploy/healthcheck.py]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 3
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

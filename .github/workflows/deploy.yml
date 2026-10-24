@@ -1,0 +1,107 @@
+name: Build and deploy bot
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bot-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  image:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.publish.outputs.digest }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Validate deployment scripts
+        run: |
+          bash -n deploy/gir-deploy deploy/gir-deploy-ssh
+          shellcheck deploy/gir-deploy deploy/gir-deploy-ssh
+          python3 -m compileall -q main.py deploy/healthcheck.py
+          GIR_IMAGE=ghcr.io/discordgir/girrewrite:check \
+            docker compose --env-file /dev/null -f deploy/compose.yml config --services > /dev/null
+
+      - name: Build and check image
+        env:
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          docker build --file Dockerfile.production --tag gir:check \
+            --label "org.opencontainers.image.source=https://github.com/$REPOSITORY" \
+            --label "org.opencontainers.image.revision=$COMMIT" .
+          docker run --rm --entrypoint python gir:check -c \
+            'import discord, mongoengine, pyvips; import pathlib; assert not pathlib.Path(".env").exists(); assert not pathlib.Path("config.json").exists()'
+          docker run --rm -e PYTHONPYCACHEPREFIX=/tmp/pycache --entrypoint python gir:check -m compileall -q /usr/src/app
+
+      - name: Publish immutable release
+        if: github.event_name != 'pull_request'
+        id: publish
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${REPOSITORY,,}"
+          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
+          trap 'docker logout ghcr.io >/dev/null 2>&1' EXIT
+          docker tag gir:check "$image:$COMMIT"
+          docker push "$image:$COMMIT"
+          # The digest, rather than the mutable tag, is passed to the VPS.
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image:$COMMIT")
+          digest=${digest##*@}
+          [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+          printf 'Published %s@%s\n' "$image" "$digest" >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    needs: image
+    if: github.ref == 'refs/heads/main' && needs.image.outputs.digest != '' && vars.VPS_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions: {}
+    steps:
+      - name: Deploy the published digest
+        env:
+          DEPLOY_DIGEST: ${{ needs.image.outputs.digest }}
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USER }}
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          SSH_PORT: ${{ vars.VPS_SSH_PORT || '22' }}
+        run: |
+          set -euo pipefail
+          [[ "$DEPLOY_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+          port="${SSH_PORT:-22}"
+          [[ "$port" =~ ^[0-9]+$ ]]
+          [[ -n "$SSH_HOST" && "$SSH_HOST" != -* ]]
+          [[ -n "$SSH_USER" && -n "$SSH_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
+          ssh_dir=$(mktemp -d "$RUNNER_TEMP/gir-ssh.XXXXXX")
+          trap 'rm -rf -- "$ssh_dir"' EXIT
+          chmod 700 "$ssh_dir"
+          printf '%s\n' "$SSH_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          chmod 600 "$ssh_dir/key" "$ssh_dir/known_hosts"
+          ssh -F /dev/null -i "$ssh_dir/key" -l "$SSH_USER" -p "$port" \
+            -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$ssh_dir/known_hosts" -o ConnectTimeout=20 \
+            -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+            -o ClearAllForwardings=yes -T "$SSH_HOST" "deploy $DEPLOY_DIGEST"
