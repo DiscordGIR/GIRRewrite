@@ -3,6 +3,9 @@ version: '3.4'
 services:
   gir:
     container_name: gir
+    env_file: .env
+    volumes:
+      - ./config.json:/usr/src/app/config.json:ro
     build:
       context: .
       dockerfile: Dockerfile.production
