@@ -150,7 +150,7 @@ class AppealActions:
         await message.edit(embed=embed, view=disabled)
         dm = ("Your ban appeal has been approved and you have been unbanned. "
               "You can rejoin the server: https://discord.gg/jb" if approve else
-              "Your ban appeal has been denied. Your ban remains in place.")
+              "Your r/jailbreak unban appeal has been denied at this time")
         dm_delivered = False
         try:
             await user.send(dm)
