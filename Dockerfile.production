@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.10.2-slim-bullseye 
+FROM python:3.12-slim-bookworm
 WORKDIR /usr/src/app
 
 ENV VIRTUAL_ENV=/opt/venv
@@ -8,9 +8,10 @@ RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 # system dependencies
-RUN apt-get update
-RUN apt-get upgrade -y
-RUN apt install -y git gcc python3-dev
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       git gcc python3-dev libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
 # python dependencies
 COPY ./requirements.txt .
