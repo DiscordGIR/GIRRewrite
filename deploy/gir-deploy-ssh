@@ -1,0 +1,4 @@
+#!/bin/bash
+# Root-owned forced command for an unprivileged SSH account. Never eval input.
+set -euo pipefail
+exec /usr/bin/sudo -n /usr/local/sbin/gir-deploy "${SSH_ORIGINAL_COMMAND:-}"

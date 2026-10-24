@@ -1,22 +1,19 @@
 # syntax=docker/dockerfile:1
-
 FROM python:3.12-slim-bookworm
+
 WORKDIR /usr/src/app
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-# system dependencies
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       git gcc python3-dev libglib2.0-0 \
+    && apt-get install -y --no-install-recommends libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# python dependencies
-COPY ./requirements.txt .
-COPY . .
-RUN pip install --upgrade pip setuptools wheel
-RUN pip install -r requirements.txt
-# RUN python3 -u sync_commands.py
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+ARG GIR_REVISION=unknown
+ENV GIR_REVISION=${GIR_REVISION}
+
+COPY --chown=10001:10001 . .
+USER 10001:10001
 CMD ["python", "-u", "main.py"]

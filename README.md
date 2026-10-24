@@ -138,3 +138,6 @@ Special thanks to the following people for ideas, testing, or help:
 - Cameren from r/jb, who has given a lot of ideas and helped with testing on many occasions
 - [Lillie](https://github.com/LillieWeeb001/) --- creator of the [fake jailbreak and iCloud bypass list](https://github.com/LillieWeeb001/Anti-Scam-Json-List) used by GIR's filter
 - [Emma](https://github.com/emiyl) and the https://ios.cfw.guide team --- their API is used for miscellaneous commands such as `/canijailbreak`, `/deviceinfo`, `/devices add`, `/bypass` and more.
+
+
+For automated VPS deployment using GHCR and a restricted SSH key, see [deploy/README.md](deploy/README.md).
