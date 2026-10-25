@@ -1,3 +1,4 @@
+from utils.fetchers import shared_session
 import json
 import random
 import re
@@ -31,7 +32,7 @@ platforms = {
 
 
 class Songs(commands.Cog):
-    sp: spotipy.Spotify
+    sp: spotipy.Spotify = None
     
     def __init__(self, bot):
         self.bot = bot
@@ -54,7 +55,7 @@ class Songs(commands.Cog):
         try:
             sp_oauth = SpotifyOAuth(client_id=cfg.spotify_id, client_secret=cfg.spotify_secret,
                                     redirect_uri="http://localhost:8081", scope='playlist-modify-public', open_browser=False)
-            token_info = sp_oauth.get_cached_token()
+            token_info = await self.bot.integration_io.run(sp_oauth.get_cached_token)
 
             if not token_info and cfg.spotify_auth_code is None:
                 auth_url = sp_oauth.get_authorize_url()
@@ -62,7 +63,7 @@ class Songs(commands.Cog):
                 self.sp = None
                 return
 
-            token_info = sp_oauth.get_access_token(cfg.spotify_auth_code)
+            token_info = await self.bot.integration_io.run(sp_oauth.get_access_token, cfg.spotify_auth_code)
             self.sp = spotipy.Spotify(auth_manager=sp_oauth)
             logger.info("Authenticated with Spotify!")
         except Exception as e:
@@ -89,7 +90,7 @@ class Songs(commands.Cog):
             return
 
     async def generate_view(self, message: discord.Message, link: str):
-        async with aiohttp.ClientSession() as session:
+        async with shared_session() as session:
             async with session.get(f'https://api.song.link/v1-alpha.1/links?url={link}') as resp:
                 if resp.status != 200:
                     return None
@@ -98,7 +99,7 @@ class Songs(commands.Cog):
                 res = json.loads(res)
 
         spotify_data = res.get('linksByPlatform').get('spotify')
-        spotify_uri = spotify_data.get('nativeAppUriDesktop')
+        spotify_uri = spotify_data.get('nativeAppUriDesktop') if spotify_data else None
         unique_id = spotify_data.get(
             'entityUniqueId') if spotify_data is not None else res.get('entityUniqueId')
         title = res.get('entitiesByUniqueId').get(unique_id)
@@ -135,8 +136,8 @@ class Songs(commands.Cog):
         if self.sp is None:
             return
 
-        playlist = self.sp.playlist_tracks(cfg.spotify_playlist_url)
-        track_ids = [track['track']['id'] for track in playlist['items']]
+        playlist = await self.bot.integration_io.run(self.sp.playlist_tracks, cfg.spotify_playlist_url)
+        track_ids = [track['track']['id'] for track in playlist['items'] if track.get('track')]
 
         if track_id.split(":")[-1] in track_ids:
             return
@@ -148,7 +149,7 @@ class Songs(commands.Cog):
             return
 
         try:
-            self.sp.playlist_add_items(cfg.spotify_playlist_url, [track_id])
+            await self.bot.integration_io.run(self.sp.playlist_add_items, cfg.spotify_playlist_url, [track_id])
             await message.edit(embed=discord.Embed(description=f"Added to the [r/Jailbreak Spotify playlist](https://open.spotify.com/playlist/{cfg.spotify_playlist_url})!"))
         except Exception as e:
             print(e)

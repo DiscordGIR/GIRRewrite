@@ -1,3 +1,4 @@
+from data.database import run_database
 import base64
 import datetime
 import io
@@ -53,7 +54,7 @@ class Misc(commands.Cog):
         reminder = discord.utils.escape_markdown(reminder)
 
         try:
-            ctx.tasks.schedule_reminder(ctx.author.id, reminder, time)
+            await ctx.tasks.schedule_reminder(ctx.author.id, reminder, time)
         except:
             raise commands.BadArgument("Could not schedule reminder, you probably have too many reminders already!")
 
@@ -119,7 +120,7 @@ class Misc(commands.Cog):
             raise commands.BadArgument("You gave an invalid date.")
 
         # fetch user profile from DB
-        db_user = user_service.get_user(user.id)
+        db_user = await user_service.get_user(user.id)
 
         # mods are able to ban users from using birthdays, let's handle that
         if db_user.birthday_excluded:
@@ -132,7 +133,7 @@ class Misc(commands.Cog):
 
         # passed all the sanity checks, let's save the birthday
         db_user.birthday = [month, date]
-        db_user.save()
+        await run_database(lambda: db_user.save())
 
         await ctx.send_success(f"Your birthday was set.")
         # if it's the user's birthday today let's assign the role right now!

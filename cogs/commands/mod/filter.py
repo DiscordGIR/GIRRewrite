@@ -1,3 +1,4 @@
+from data.database import run_database
 from typing import List
 import discord
 from discord import app_commands
@@ -63,13 +64,13 @@ class Filters(commands.Cog):
     @transform_context
     @always_whisper
     async def offlineping(self, ctx: GIRContext, val: bool = None):
-        cur = user_service.get_user(ctx.author.id)
+        cur = await user_service.get_user(ctx.author.id)
 
         if val is None:
             val = not cur.offline_report_ping
 
         cur.offline_report_ping = val
-        cur.save()
+        await run_database(lambda: cur.save())
 
         if val:
             await ctx.send_success("You will now be pinged for reports when offline")
@@ -162,7 +163,7 @@ class Filters(commands.Cog):
     async def remove(self, ctx: GIRContext, word: str):
         word = word.lower()
 
-        words = guild_service.get_guild().filter_words
+        words = (await guild_service.get_guild()).filter_words
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
@@ -182,7 +183,7 @@ class Filters(commands.Cog):
         except ValueError:
             raise commands.BadArgument("Invalid ID!")
 
-        if guild_service.add_whitelisted_guild(guild_id):
+        if await guild_service.add_whitelisted_guild(guild_id):
             await ctx.send_success("Whitelisted.")
         else:
             await ctx.send_warning("That server is already whitelisted.", delete_after=5)
@@ -198,7 +199,7 @@ class Filters(commands.Cog):
         except ValueError:
             raise commands.BadArgument("Invalid ID!")
 
-        if guild_service.remove_whitelisted_guild(guild_id):
+        if await guild_service.remove_whitelisted_guild(guild_id):
             await ctx.send_success("Blacklisted.")
         else:
             await ctx.send_warning("That server is already blacklisted.", delete_after=5)
@@ -209,7 +210,7 @@ class Filters(commands.Cog):
     @app_commands.describe(channel="Channel to ignore")
     @transform_context
     async def ignorechannel(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
-        if guild_service.add_ignored_channel(channel.id):
+        if await guild_service.add_ignored_channel(channel.id):
             await ctx.send_success(f"The filter will no longer run in {channel.mention}.")
         else:
             await ctx.send_warning("That channel is already ignored.", delete_after=5)
@@ -220,7 +221,7 @@ class Filters(commands.Cog):
     @app_commands.describe(channel="Channel to unignore")
     @transform_context
     async def unignorechannel(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
-        if guild_service.remove_ignored_channel(channel.id):
+        if await guild_service.remove_ignored_channel(channel.id):
             await ctx.send_success(f"Resumed filtering in {channel.mention}.")
         else:
             await ctx.send_warning("That channel is not already ignored.", delete_after=5)
@@ -231,7 +232,7 @@ class Filters(commands.Cog):
     @app_commands.describe(channel="Channel to ignore")
     @transform_context
     async def ignorechannellogs(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
-        if guild_service.add_ignored_channel_logging(channel.id):
+        if await guild_service.add_ignored_channel_logging(channel.id):
             await ctx.send_success(f"{channel.mention} will no longer be logged.")
         else:
             await ctx.send_warning("That channel is already ignored.", delete_after=5)
@@ -242,7 +243,7 @@ class Filters(commands.Cog):
     @app_commands.describe(channel="Channel to unignore")
     @transform_context
     async def unignorechannellogs(self, ctx: GIRContext, channel: discord.TextChannel) -> None:
-        if guild_service.remove_ignored_channel_logging(channel.id):
+        if await guild_service.remove_ignored_channel_logging(channel.id):
             await ctx.send_success(f"Resumed logging in {channel.mention}.")
         else:
             await ctx.send_warning("That channel is not already ignored.", delete_after=5)
