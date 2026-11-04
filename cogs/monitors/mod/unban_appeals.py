@@ -24,6 +24,14 @@ class UnbanAppeals(commands.Cog):
         await self.appeal_actions.handle_interaction(interaction)
 
     @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        await self.appeal_actions.handle_reaction(payload)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        await self.appeal_actions.handle_reaction(payload)
+
+    @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         if member.guild.id != cfg.ban_appeal_guild_id:
             return
@@ -103,7 +111,8 @@ class UnbanAppeals(commands.Cog):
             description="Vote 🔺 to unban, 🔻 to deny, or ❌ to abstain. "
                         "Abstentions are excluded from the majority threshold. "
                         "Voting both ways supports neither outcome. "
-                        "A majority of eligible moderators is required; Aaron can override.",
+                        "A majority of eligible moderators automatically resolves the appeal. "
+                        "The server owner (Aaron) or bot owner can use the override buttons.",
             color=discord.Color.orange())
         m = await thread.send(mods_to_ping, embed=vote_embed, view=self.appeal_actions.create_view(unban_id_parsed),
                               allowed_mentions=discord.AllowedMentions(users=True, roles=False))
