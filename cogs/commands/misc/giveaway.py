@@ -16,6 +16,16 @@ from utils.framework.transformers import Duration
 from utils.views import time_suggestions
 
 
+def parse_giveaway_id(value):
+    try:
+        message_id = int(value)
+    except (TypeError, ValueError):
+        raise commands.BadArgument("Invalid giveaway message ID!")
+    if message_id <= 0:
+        raise commands.BadArgument("Invalid giveaway message ID!")
+    return message_id
+
+
 class Giveaway(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -76,7 +86,8 @@ class Giveaway(commands.Cog):
     @app_commands.describe(message_id="The ID of the giveaway message.")
     @transform_context
     async def reroll(self, ctx: GIRContext, message_id: str):
-        g = await guild_service.get_giveaway(_id=int(message_id))
+        message_id = parse_giveaway_id(message_id)
+        g = await guild_service.get_giveaway(_id=message_id)
 
         if g is None:
             raise commands.BadArgument(
@@ -110,8 +121,9 @@ class Giveaway(commands.Cog):
     @app_commands.describe(message_id="The ID of the giveaway message.")
     @transform_context
     async def end(self, ctx: GIRContext, message_id: str):
+        message_id = parse_giveaway_id(message_id)
         await ctx.defer()
-        giveaway = await guild_service.get_giveaway(_id=int(message_id))
+        giveaway = await guild_service.get_giveaway(_id=message_id)
         if giveaway is None:
             raise commands.BadArgument(
                 "A giveaway with that ID was not found.")

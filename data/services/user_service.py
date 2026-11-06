@@ -209,14 +209,14 @@ class UserService:
 
     def fetch_cases_by_keyword(self, keyword):
         values = {}
-        cases = Cases.objects(cases__reason__contains=keyword)
+        cases = Cases.objects(cases__reason__icontains=keyword)
         cases = list(cases.all())
         values["total"] = 0
         final_cases = []
 
         for target in cases:
             for case in target.cases:
-                if keyword.lower() in case.reason:
+                if keyword.lower() in case.reason.lower():
                     values["total"] += 1
                     final_cases.append(case)
 

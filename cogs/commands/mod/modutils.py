@@ -79,7 +79,6 @@ class ModUtils(commands.Cog):
             await ctx.send_error("You can't call that on yourself.")
             raise commands.BadArgument("You can't call that on yourself.")
         if member.id == self.bot.user.id:
-            await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
         results = await user_service.get_user(member.id)
@@ -121,7 +120,6 @@ class ModUtils(commands.Cog):
     @transform_context
     async def birthdayexclude(self, ctx: GIRContext, member: discord.Member):
         if member.id == self.bot.user.id:
-            await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
         results = await user_service.get_user(member.id)
@@ -145,7 +143,6 @@ class ModUtils(commands.Cog):
     @transform_context
     async def removebirthday(self, ctx: GIRContext, member: discord.Member):
         if member.id == self.bot.user.id:
-            await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
         results = await user_service.get_user(member.id)
@@ -183,7 +180,6 @@ class ModUtils(commands.Cog):
         month = month["value"]
 
         if member.id == self.bot.user.id:
-            await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
         try:

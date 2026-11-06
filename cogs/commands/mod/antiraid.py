@@ -58,7 +58,7 @@ class AntiRaid(commands.Cog):
     @app_commands.command(description="Add a list of (newline-separated) phrases to the raid filter.")
     @transform_context
     async def batchraid(self, ctx: GIRContext) -> None:
-        modal = GenericDescriptionModal(ctx, author=ctx.author, title=f"New sub news post")
+        modal = GenericDescriptionModal(ctx, author=ctx.author, title="Add raid phrases")
         await ctx.interaction.response.send_modal(modal)
         await modal.wait()
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from math import floor
 from typing import Union
 
@@ -34,14 +34,10 @@ def format_xptop_page(ctx, entries, current_page, all_pages):
     for i, user in entries:
         member = ctx.guild.get_member(user._id)
         trophy = ''
-        if current_page == 1:
-            if i == entries[0][0]:
-                trophy = ':first_place:'
-                embed.set_thumbnail(url=member.avatar)
-            if i == entries[1][0]:
-                trophy = ':second_place:'
-            if i == entries[2][0]:
-                trophy = ':third_place:'
+        if current_page == 1 and i < 3:
+            trophy = (':first_place:', ':second_place:', ':third_place:')[i]
+            if i == 0:
+                embed.set_thumbnail(url=member.display_avatar)
 
         embed.add_field(name=f"#{i+1} - Level {user.level}",
                         value=f"{trophy} {member.mention}", inline=False)
@@ -81,6 +77,9 @@ def format_cases_page(ctx, entries, current_page, all_pages):
     embed.set_author(name=user, icon_url=user.display_avatar)
     for case in entries:
         timestamp = case.date
+        # MongoDB returns naive UTC dates for native timeout cases.
+        if case._type == "MUTE" and timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=timezone.utc)
         formatted = f"{format_dt(timestamp, style='F')} ({format_dt(timestamp, style='R')})"
         if case._type == "WARN" or case._type == "LIFTWARN":
             if case.lifted:
@@ -201,9 +200,12 @@ class UserInfo(commands.Cog):
     @transform_context
     @whisper
     async def xptop(self, ctx: GIRContext):
-        results = enumerate(await user_service.leaderboard())
-        results = [(i, m) for (i, m) in results if ctx.guild.get_member(
-            m._id) is not None][0:100]
+        members = [user for user in await user_service.leaderboard()
+                   if ctx.guild.get_member(user._id) is not None][:100]
+        if not members:
+            return await ctx.send_warning("No members are on the XP leaderboard yet.",
+                                          ephemeral=ctx.whisper)
+        results = list(enumerate(members))
 
         menu = Menu(ctx, results, per_page=10,
                     page_formatter=format_xptop_page, whisper=ctx.whisper)

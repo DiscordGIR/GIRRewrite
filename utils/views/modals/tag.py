@@ -84,11 +84,8 @@ class TagModal(discord.ui.Modal):
         tag.button_links = buttons
 
         self.tag = tag
+        await interaction.response.defer()
         self.stop()
-        try:
-            await interaction.response.send_message()
-        except:
-            pass
         
     async def send_error(self, interaction: discord.Interaction, error: str):
         embed = discord.Embed(title=":(\nYour command ran into a problem", description=error, color=discord.Color.red())
@@ -171,12 +168,8 @@ class EditTagModal(discord.ui.Modal):
         self.tag.content = description
         self.tag.button_links = buttons
         self.edited = True
+        await interaction.response.defer()
         self.stop()
-
-        try:
-            await interaction.response.send_message()
-        except:
-            pass
 
     async def send_error(self, interaction: discord.Interaction, error: str):
         embed = discord.Embed(title=":(\nYour command ran into a problem", description=error, color=discord.Color.red())

@@ -230,8 +230,9 @@ class ModActions(commands.Cog):
             amount = 100
 
         await ctx.defer()
-        msgs = [message async for message in ctx.channel.history(limit=amount)]
-        await ctx.channel.purge(limit=amount)
+        # Exclude the deferred interaction response from the requested count.
+        response = await ctx.interaction.original_response()
+        msgs = await ctx.channel.purge(limit=amount, before=response)
         await ctx.send_success(f'Purged {len(msgs)} messages.', delete_after=10)
 
     @mod_and_up()
