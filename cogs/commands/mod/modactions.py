@@ -244,38 +244,12 @@ class ModActions(commands.Cog):
     @app_commands.describe(reason="Reason for lifting the warn")
     @transform_context
     async def liftwarn(self, ctx: GIRContext, member: ModsAndAboveMember, case_id: str, reason: str) -> None:
-        cases = await user_service.get_cases(member.id)
-        case = cases.cases.filter(_id=case_id).first()
-
-        reason = escape_markdown(reason)
-        reason = escape_mentions(reason)
-
-        # sanity checks
-        if case is None:
-            raise commands.BadArgument(
-                message=f"{member} has no case with ID {case_id}")
-        elif case._type != "WARN":
-            raise commands.BadArgument(
-                message=f"{member}'s case with ID {case_id} is not a warn case.")
-        elif case.lifted:
-            raise commands.BadArgument(
-                message=f"Case with ID {case_id} already lifted.")
-
-        u = await user_service.get_user(id=member.id)
-        if u.warn_points - int(case.punishment) < 0:
-            raise commands.BadArgument(
-                message=f"Can't lift Case #{case_id} because it would make {member.mention}'s points negative.")
-
-        # passed sanity checks, so update the case in DB
-        case.lifted = True
-        case.lifted_reason = reason
-        case.lifted_by_tag = str(ctx.author)
-        case.lifted_by_id = ctx.author.id
-        case.lifted_date = datetime.now()
-        await run_database(lambda: cases.save())
-
-        # remove the warn points from the user in DB
-        await user_service.inc_points(member.id, -1 * int(case.punishment))
+        reason = escape_mentions(escape_markdown(reason))
+        try:
+            case = await user_service.lift_warn(
+                member.id, case_id, reason, ctx.author.id, str(ctx.author))
+        except ValueError as error:
+            raise commands.BadArgument(str(error)) from error
         dmed = True
         # prepare log embed, send to #public-mod-logs, user, channel where invoked
         log = prepare_liftwarn_log(ctx.author, member, case)

@@ -1,6 +1,12 @@
 from data.database import database_method
 from typing import Counter
+from datetime import datetime
+from threading import Lock
 from data.model import Case, Cases, User
+
+# Bounded locks shared by repository instances. Hold them inside the worker so
+# cancellation of an awaiting command cannot release an unfinished operation.
+_warning_locks = tuple(Lock() for _ in range(64))
 
 class UserService:
     def get_user(self, id: int) -> User:
@@ -107,6 +113,30 @@ class UserService:
         # ensure this user has a cases document before we try to append the new case
         self.get_cases(_id)
         Cases.objects(_id=_id).update_one(push__cases=case)
+
+    def lift_warn(self, member_id, case_id, reason, mod_id, mod_tag):
+        """Serialize warning lifts for a member within this bot process."""
+        with _warning_locks[member_id % len(_warning_locks)]:
+            cases = self.get_cases(member_id)
+            case = cases.cases.filter(_id=case_id).first()
+            if case is None:
+                raise ValueError(f"No case with ID {case_id} for <@{member_id}>.")
+            if case._type != "WARN":
+                raise ValueError(f"Case with ID {case_id} is not a warn case.")
+            if case.lifted:
+                raise ValueError(f"Case with ID {case_id} already lifted.")
+            points = int(case.punishment)
+            if self.get_user(member_id).warn_points < points:
+                raise ValueError(f"Can't lift Case #{case_id} because it would make <@{member_id}>'s points negative.")
+
+            case.lifted = True
+            case.lifted_reason = reason
+            case.lifted_by_tag = mod_tag
+            case.lifted_by_id = mod_id
+            case.lifted_date = datetime.now()
+            cases.save()
+            self.inc_points(member_id, -points)
+            return case
 
     def set_warn_kicked(self, _id: int) -> None:
         """Set the `was_warn_kicked` field in the User object of the user, whose ID is given by `_id`,
@@ -243,6 +273,7 @@ class AsyncUserService:
     inc_level = database_method(_repository.inc_level)
     get_cases = database_method(_repository.get_cases)
     add_case = database_method(_repository.add_case)
+    lift_warn = database_method(_repository.lift_warn)
     set_warn_kicked = database_method(_repository.set_warn_kicked)
     rundown = database_method(_repository.rundown)
     retrieve_birthdays = database_method(_repository.retrieve_birthdays)

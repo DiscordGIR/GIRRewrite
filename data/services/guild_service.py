@@ -22,15 +22,16 @@ class GuildService:
         return Guild.objects(_id=cfg.guild_id).update_one(pull__tags__name=Tag(name=tag).name)
 
     def edit_tag(self, tag):
-        return Guild.objects(_id=cfg.guild_id, tags__name=tag.name).update_one(set__tags__S=tag)
+        return Guild.objects(_id=cfg.guild_id, tags__name=tag.name).update_one(
+            set__tags__S__content=tag.content, set__tags__S__image=tag.image.grid_id,
+            set__tags__S__button_links=tag.button_links)
 
     def get_tag(self, name: str):
-        tag = Guild.objects.get(_id=cfg.guild_id).tags.filter(name=name).first()
-        if tag is None:
+        guild = Guild.objects(_id=cfg.guild_id, tags__name=name).modify(
+            inc__tags__S__use_count=1, new=True)
+        if guild is None:
             return
-        tag.use_count += 1
-        self.edit_tag(tag)
-        return tag
+        return guild.tags.filter(name=name).first()
 
     def add_meme(self, meme: Tag) -> None:
         Guild.objects(_id=cfg.guild_id).update_one(push__memes=meme)
@@ -39,15 +40,16 @@ class GuildService:
         return Guild.objects(_id=cfg.guild_id).update_one(pull__memes__name=Tag(name=meme).name)
 
     def edit_meme(self, meme):
-        return Guild.objects(_id=cfg.guild_id, memes__name=meme.name).update_one(set__memes__S=meme)
+        return Guild.objects(_id=cfg.guild_id, memes__name=meme.name).update_one(
+            set__memes__S__content=meme.content, set__memes__S__image=meme.image.grid_id,
+            set__memes__S__button_links=meme.button_links)
 
     def get_meme(self, name: str):
-        meme = Guild.objects.get(_id=cfg.guild_id).memes.filter(name=name).first()
-        if meme is None:
+        guild = Guild.objects(_id=cfg.guild_id, memes__name=name).modify(
+            inc__memes__S__use_count=1, new=True)
+        if guild is None:
             return
-        meme.use_count += 1
-        self.edit_meme(meme)
-        return meme
+        return guild.memes.filter(name=name).first()
     
     def allocate_case_id(self) -> int:
         """Reserve the next case number atomically; failed actions may leave gaps."""
