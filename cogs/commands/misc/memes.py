@@ -20,6 +20,12 @@ from utils.framework.filter import has_only_silent_filtered_words
 from utils.views import GenericDescriptionModal, Menu, memes_autocomplete
 
 
+def meme_service_error(status):
+    if status in (401, 403):
+        return "The image service rejected its configured token. Please ask the bot maintainer to update RESNEXT_TOKEN."
+    return f"The image service could not generate that meme (HTTP {status}). Please try again later."
+
+
 def format_meme_page(_, entries, current_page, all_pages):
     embed = discord.Embed(
         title=f'All memes', color=discord.Color.blurple())
@@ -364,7 +370,7 @@ class Memes(commands.Cog):
             form = aiohttp.FormData()
             form.add_field(
                 "file", contents, content_type=image.content_type)
-            async with client.post(f'https://resnext.slim.rocks/meme?top_text={top_text}&bottom_text={bottom_text}', data=form) as resp:
+            async with client.post('https://resnext.slim.rocks/meme', params={'top_text': top_text, 'bottom_text': bottom_text}, data=form) as resp:
                 if resp.status == 200:
                     resp = await resp.read()
                     embed = discord.Embed()
@@ -375,8 +381,7 @@ class Memes(commands.Cog):
 
                     await ctx.respond(embed=embed, file=discord.File(BytesIO(resp), filename="image.png"))
                 else:
-                    raise commands.BadArgument(
-                        "An error occurred generating that meme.")
+                    raise commands.BadArgument(meme_service_error(resp.status))
 
     @memed_and_up()
     @memegen.command(description="Motivational poster)")
@@ -417,7 +422,7 @@ class Memes(commands.Cog):
             form = aiohttp.FormData()
             form.add_field(
                 "file", contents, content_type=image.content_type)
-            async with client.post(f'https://resnext.slim.rocks/demotivational-meme?top_text={top_text}&bottom_text={bottom_text}', data=form) as resp:
+            async with client.post('https://resnext.slim.rocks/demotivational-meme', params={'top_text': top_text, 'bottom_text': bottom_text}, data=form) as resp:
                 if resp.status == 200:
                     resp = await resp.read()
                     embed = discord.Embed()
@@ -428,8 +433,7 @@ class Memes(commands.Cog):
 
                     await ctx.respond(embed=embed, file=discord.File(BytesIO(resp), filename="image.png"))
                 else:
-                    raise commands.BadArgument(
-                        "An error occurred generating that meme.")
+                    raise commands.BadArgument(meme_service_error(resp.status))
 
     @mod_and_up()
     @memegen.command(description="AI generated text based on a prompt")
