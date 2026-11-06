@@ -1,3 +1,4 @@
+from data.database import run_database
 import datetime
 import typing
 
@@ -49,7 +50,7 @@ class ModUtils(commands.Cog):
                 raise commands.BadArgument(
                     f"Couldn't find user with ID {new_member}")
 
-        u, case_count = user_service.transfer_profile(
+        u, case_count = await user_service.transfer_profile(
             old_member.id, new_member.id)
 
         embed = discord.Embed(title="Transferred profile")
@@ -78,17 +79,16 @@ class ModUtils(commands.Cog):
             await ctx.send_error("You can't call that on yourself.")
             raise commands.BadArgument("You can't call that on yourself.")
         if member.id == self.bot.user.id:
-            await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.is_clem = True
         results.is_xp_frozen = True
         results.warn_points = 599
-        results.save()
+        await run_database(lambda: results.save())
 
         case = Case(
-            _id=guild_service.get_guild().case_id,
+            _id=await guild_service.allocate_case_id(),
             _type="CLEM",
             mod_id=ctx.author.id,
             mod_tag=str(ctx.author),
@@ -96,10 +96,8 @@ class ModUtils(commands.Cog):
             reason="No reason."
         )
 
-        # incrememnt DB's max case ID for next case
-        guild_service.inc_caseid()
         # add case to db
-        user_service.add_case(member.id, case)
+        await user_service.add_case(member.id, case)
 
         await ctx.send_success(f"{member.mention} was put on clem.")
 
@@ -109,9 +107,9 @@ class ModUtils(commands.Cog):
     @app_commands.describe(member="The user to freeze")
     @transform_context
     async def freezexp(self, ctx: GIRContext, member: discord.Member):
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.is_xp_frozen = not results.is_xp_frozen
-        results.save()
+        await run_database(lambda: results.save())
 
         await ctx.send_success(f"{member.mention}'s xp was {'frozen' if results.is_xp_frozen else 'unfrozen'}.")
 
@@ -122,13 +120,12 @@ class ModUtils(commands.Cog):
     @transform_context
     async def birthdayexclude(self, ctx: GIRContext, member: discord.Member):
         if member.id == self.bot.user.id:
-            await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.birthday_excluded = True
         results.birthday = None
-        results.save()
+        await run_database(lambda: results.save())
 
         birthday_role = ctx.guild.get_role(cfg.roles.birthday)
         if birthday_role is None:
@@ -146,15 +143,14 @@ class ModUtils(commands.Cog):
     @transform_context
     async def removebirthday(self, ctx: GIRContext, member: discord.Member):
         if member.id == self.bot.user.id:
-            await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.birthday = None
-        results.save()
+        await run_database(lambda: results.save())
 
         try:
-            ctx.tasks.cancel_unbirthday(member.id)
+            await ctx.tasks.cancel_unbirthday(member.id)
         except Exception:
             pass
 
@@ -184,7 +180,6 @@ class ModUtils(commands.Cog):
         month = month["value"]
 
         if member.id == self.bot.user.id:
-            await ctx.send_error("You can't call that on me :(")
             raise commands.BadArgument("You can't call that on me :(")
 
         try:
@@ -192,9 +187,9 @@ class ModUtils(commands.Cog):
         except ValueError:
             raise commands.BadArgument("You gave an invalid date.")
 
-        results = user_service.get_user(member.id)
+        results = await user_service.get_user(member.id)
         results.birthday = [month, date]
-        results.save()
+        await run_database(lambda: results.save())
 
         await ctx.send_success(f"{member.mention}'s birthday was set.")
 
@@ -215,7 +210,7 @@ class ModUtils(commands.Cog):
 
             try:
                 time = now + datetime.timedelta(days=1-h-m)
-                ctx.tasks.schedule_remove_bday(member.id, time)
+                await ctx.tasks.schedule_remove_bday(member.id, time)
             except Exception:
                 return
 
@@ -245,13 +240,13 @@ class ModUtils(commands.Cog):
 
             final_command += f" {sub_command.name}"
         print(final_command)
-        db_user = user_service.get_user(member.id)
+        db_user = await user_service.get_user(member.id)
         if final_command in db_user.command_bans:
             db_user.command_bans[final_command] = not db_user.command_bans[final_command]
         else:
             db_user.command_bans[final_command] = True
 
-        db_user.save()
+        await run_database(lambda: db_user.save())
 
         await ctx.send_success(f"{member.mention} was {'banned' if db_user.command_bans[final_command] else 'unbanned'} from using `/{final_command}`.")
 
@@ -283,8 +278,8 @@ class ModUtils(commands.Cog):
         await logging_channel.send(embed=embed)
 
     async def prepare_rundown_embed(self, ctx: GIRContext, user):
-        user_info = user_service.get_user(user.id)
-        rd = user_service.rundown(user.id)
+        user_info = await user_service.get_user(user.id)
+        rd = await user_service.rundown(user.id)
         rd_text = ""
         for r in rd:
             if r._type == "WARN":

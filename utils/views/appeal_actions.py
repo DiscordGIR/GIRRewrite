@@ -123,11 +123,9 @@ class AppealActions:
             else:
                 self.bot.ban_cache.unban(user_id)
                 try:
-                    db_guild = guild_service.get_guild()
-                    case = Case(_id=db_guild.case_id, _type="UNBAN", mod_id=interaction.user.id,
+                    case = Case(_id=await guild_service.allocate_case_id(), _type="UNBAN", mod_id=interaction.user.id,
                                 mod_tag=str(interaction.user), reason=reason)
-                    guild_service.inc_caseid()
-                    user_service.add_case(user_id, case)
+                    await user_service.add_case(user_id, case)
                     log = prepare_unban_log(interaction.user, user, case)
                     # Match /staffban: retain internal attribution, anonymize displayed logs.
                     log.set_field_at(1, name="Mod", value=f"{main_guild.name} Staff")

@@ -1,3 +1,4 @@
+from utils.fetchers import shared_session
 import json
 import re
 import unicodedata
@@ -168,7 +169,7 @@ class Filter(commands.Cog):
         if not invites:
             return
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         whitelist = db_guild.filter_excluded_guilds
         for invite in invites:
@@ -191,13 +192,14 @@ class Filter(commands.Cog):
                 pass
 
             await self.delete(message)
+            timeout_until = None
             try:
                 ctx = await self.bot.get_context(message)
-                await mute(ctx, message.author, mod=message.guild.me,
+                timeout_until = await mute(ctx, message.author, mod=message.guild.me,
                            dur_seconds=7 * 24 * 60 * 60, reason="Invite filter")
             except Exception:
                 logger.exception("Failed to mute member for posting an invite")
-            await report(self.bot, message, invite, invite=invite)
+            await report(self.bot, message, invite, invite=invite, timeout_until=timeout_until)
             return True
 
         return False
@@ -305,7 +307,7 @@ class Filter(commands.Cog):
 
     @cached(ttl=3600)
     async def fetch_cij_or_news_database(self):
-        async with aiohttp.ClientSession() as session:
+        async with shared_session() as session:
             async with session.get("https://raw.githubusercontent.com/DiscordGIR/CIJOrNewsFilter/main/database.json") as resp:
                 if resp.status == 200:
                     data = await resp.text()

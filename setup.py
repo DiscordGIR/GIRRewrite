@@ -15,8 +15,8 @@ async def setup():
     # you should have this setup in the .env file beforehand
     guild._id          = int(os.environ.get("MAIN_GUILD_ID"))
 
-    # If you're re-running this script to update a value, set case_id
-    # to the last unused case ID or else it will start over from 1!
+    # Defaults apply only when creating a guild. Re-running setup preserves
+    # existing configuration and the next available case number.
     guild.case_id      = 1
 
     # you can fill these in if you want with IDs, or you ca use commands later
@@ -26,7 +26,10 @@ async def setup():
 
     guild.nsa_guild_id = 123 # you can leave this as is if you don't want Blootooth (message mirroring system)
 
-    guild.save()
+    result = Guild._get_collection().update_one(
+        {"_id": guild._id}, {"$setOnInsert": dict(guild.to_mongo())}, upsert=True)
+    if result.upserted_id is None:
+        print("Guild already exists; existing configuration was preserved.")
     print("DONE")
 
 if __name__ == "__main__":

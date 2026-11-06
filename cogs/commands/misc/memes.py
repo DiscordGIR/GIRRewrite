@@ -1,3 +1,4 @@
+from data.database import run_database
 import random
 import re
 from datetime import datetime
@@ -19,12 +20,18 @@ from utils.framework.filter import has_only_silent_filtered_words
 from utils.views import GenericDescriptionModal, Menu, memes_autocomplete
 
 
+def meme_service_error(status):
+    if status in (401, 403):
+        return "The image service rejected its configured token. Please ask the bot maintainer to update RESNEXT_TOKEN."
+    return f"The image service could not generate that meme (HTTP {status}). Please try again later."
+
+
 def format_meme_page(_, entries, current_page, all_pages):
     embed = discord.Embed(
         title=f'All memes', color=discord.Color.blurple())
     for meme in entries:
         desc = f"Added by: {meme.added_by_tag}\nUsed {format_number(meme.use_count)} {'time' if meme.use_count == 1 else 'times'}"
-        if meme.image.read() is not None:
+        if meme.image.grid_id is not None:
             desc += "\nHas image attachment"
         embed.add_field(name=meme.name, value=desc)
     embed.set_footer(
@@ -52,7 +59,7 @@ class Memes(commands.Cog):
     @transform_context
     async def meme(self, ctx: GIRContext, name: str, user_to_mention: discord.Member = None):
         name = name.lower()
-        meme = guild_service.get_meme(name)
+        meme = await guild_service.get_meme(name)
 
         if meme is None:
             raise commands.BadArgument("That meme does not exist.")
@@ -65,10 +72,10 @@ class Memes(commands.Cog):
             raise commands.BadArgument("That meme is on cooldown.")
 
         # if the Meme has an image, add it to the embed
-        file = meme.image.read()
+        file = await run_database(lambda: meme.image.read())
         if file is not None:
             file = discord.File(BytesIO(
-                file), filename="image.gif" if meme.image.content_type == "image/gif" else "image.png")
+                file), filename="image.gif" if await run_database(lambda: meme.image.content_type) == "image/gif" else "image.png")
 
         if user_to_mention is not None:
             title = random.choice(self.meme_phrases).format(
@@ -83,7 +90,7 @@ class Memes(commands.Cog):
     @transform_context
     @whisper
     async def memelist(self, ctx: GIRContext):
-        memes = sorted(guild_service.get_guild().memes,
+        memes = sorted((await guild_service.get_guild()).memes,
                        key=lambda meme: meme.name)
 
         if len(memes) == 0:
@@ -109,7 +116,7 @@ class Memes(commands.Cog):
             raise commands.BadArgument(
                 "Meme names can't be longer than 1 word.")
 
-        if (guild_service.get_meme(name.lower())) is not None:
+        if (await guild_service.get_meme(name.lower())) is not None:
             raise commands.BadArgument("Meme with that name already exists.")
 
         # prompt the user for common issue body
@@ -137,15 +144,15 @@ class Memes(commands.Cog):
                 raise commands.BadArgument("That image is too big!")
             image = await image.read()
             # save image bytes
-            meme.image.put(image, content_type=_type)
+            await run_database(lambda: meme.image.put(image, content_type=_type))
 
         # store meme in database
-        guild_service.add_meme(meme)
+        await guild_service.add_meme(meme)
 
-        _file = meme.image.read()
+        _file = await run_database(lambda: meme.image.read())
         if _file is not None:
             _file = discord.File(BytesIO(
-                _file), filename="image.gif" if meme.image.content_type == "image/gif" else "image.png")
+                _file), filename="image.gif" if await run_database(lambda: meme.image.content_type) == "image/gif" else "image.png")
 
         await ctx.respond(f"Added new meme!", file=_file or discord.utils.MISSING, embed=await self.prepare_meme_embed(meme))
 
@@ -161,7 +168,7 @@ class Memes(commands.Cog):
                 "Meme names can't be longer than 1 word.")
 
         name = name.lower()
-        meme = guild_service.get_meme(name)
+        meme = await guild_service.get_meme(name)
 
         if meme is None:
             raise commands.BadArgument("That meme does not exist.")
@@ -187,19 +194,19 @@ class Memes(commands.Cog):
 
             # save image bytes
             if meme.image is not None:
-                meme.image.replace(image, content_type=_type)
+                await run_database(lambda: meme.image.replace(image, content_type=_type))
             else:
-                meme.image.put(image, content_type=_type)
+                await run_database(lambda: meme.image.put(image, content_type=_type))
         else:
-            meme.image.delete()
+            await run_database(lambda: meme.image.delete())
 
-        if not guild_service.edit_meme(meme):
+        if not await guild_service.edit_meme(meme):
             raise commands.BadArgument("An error occurred editing that meme.")
 
-        _file = meme.image.read()
+        _file = await run_database(lambda: meme.image.read())
         if _file is not None:
             _file = discord.File(BytesIO(
-                _file), filename="image.gif" if meme.image.content_type == "image/gif" else "image.png")
+                _file), filename="image.gif" if await run_database(lambda: meme.image.content_type) == "image/gif" else "image.png")
 
         await ctx.respond(f"Meme edited!", file=_file or discord.utils.MISSING, embed=await self.prepare_meme_embed(meme))
 
@@ -211,14 +218,14 @@ class Memes(commands.Cog):
     async def delete(self, ctx: GIRContext, name: str):
         name = name.lower()
 
-        meme = guild_service.get_meme(name)
+        meme = await guild_service.get_meme(name)
         if meme is None:
             raise commands.BadArgument("That meme does not exist.")
 
         if meme.image is not None:
-            meme.image.delete()
+            await run_database(lambda: meme.image.delete())
 
-        guild_service.remove_meme(name)
+        await guild_service.remove_meme(name)
         await ctx.send_warning(f"Deleted meme `{meme.name}`.", delete_after=5)
 
     async def prepare_meme_embed(self, meme):
@@ -239,8 +246,8 @@ class Memes(commands.Cog):
         embed.timestamp = meme.added_date
         embed.color = discord.Color.blue()
 
-        if meme.image.read() is not None:
-            embed.set_image(url="attachment://image.gif" if meme.image.content_type ==
+        if meme.image.grid_id is not None:
+            embed.set_image(url="attachment://image.gif" if await run_database(lambda: meme.image.content_type) ==
                             "image/gif" else "attachment://image.png")
         embed.set_footer(
             text=f"Added by {meme.added_by_tag} | Used {meme.use_count} {'time' if meme.use_count == 1 else 'times'}")
@@ -363,7 +370,7 @@ class Memes(commands.Cog):
             form = aiohttp.FormData()
             form.add_field(
                 "file", contents, content_type=image.content_type)
-            async with client.post(f'https://resnext.slim.rocks/meme?top_text={top_text}&bottom_text={bottom_text}', data=form) as resp:
+            async with client.post('https://resnext.slim.rocks/meme', params={'top_text': top_text, 'bottom_text': bottom_text}, data=form) as resp:
                 if resp.status == 200:
                     resp = await resp.read()
                     embed = discord.Embed()
@@ -374,8 +381,7 @@ class Memes(commands.Cog):
 
                     await ctx.respond(embed=embed, file=discord.File(BytesIO(resp), filename="image.png"))
                 else:
-                    raise commands.BadArgument(
-                        "An error occurred generating that meme.")
+                    raise commands.BadArgument(meme_service_error(resp.status))
 
     @memed_and_up()
     @memegen.command(description="Motivational poster)")
@@ -416,7 +422,7 @@ class Memes(commands.Cog):
             form = aiohttp.FormData()
             form.add_field(
                 "file", contents, content_type=image.content_type)
-            async with client.post(f'https://resnext.slim.rocks/demotivational-meme?top_text={top_text}&bottom_text={bottom_text}', data=form) as resp:
+            async with client.post('https://resnext.slim.rocks/demotivational-meme', params={'top_text': top_text, 'bottom_text': bottom_text}, data=form) as resp:
                 if resp.status == 200:
                     resp = await resp.read()
                     embed = discord.Embed()
@@ -427,8 +433,7 @@ class Memes(commands.Cog):
 
                     await ctx.respond(embed=embed, file=discord.File(BytesIO(resp), filename="image.png"))
                 else:
-                    raise commands.BadArgument(
-                        "An error occurred generating that meme.")
+                    raise commands.BadArgument(meme_service_error(resp.status))
 
     @mod_and_up()
     @memegen.command(description="AI generated text based on a prompt")

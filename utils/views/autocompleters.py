@@ -34,13 +34,13 @@ async def command_list_autocomplete(interaction: discord.Interaction, current: s
 
 
 async def tags_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-    tags = [tag.name.lower() for tag in guild_service.get_guild().tags]
+    tags = [tag.name.lower() for tag in (await guild_service.get_guild()).tags]
     tags.sort()
     return [app_commands.Choice(name=tag, value=tag) for tag in tags if current.lower() in tag.lower()][:25]
 
 
 async def memes_autocomplete(_: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-    meme = [meme.name.lower() for meme in guild_service.get_guild().memes]
+    meme = [meme.name.lower() for meme in (await guild_service.get_guild()).memes]
     meme.sort()
     return [app_commands.Choice(name=meme, value=meme) for meme in meme if current.lower() in meme.lower()][:25]
 
@@ -266,8 +266,8 @@ async def warn_autocomplete(interaction: discord.Interaction, current: str) -> L
     if not gatekeeper.has(interaction.guild, interaction.user, 5):
         return []
 
-    cases: List[Case] = [case for case in user_service.get_cases(
-        int(interaction.namespace["member"].id)).cases if case._type == "WARN" and not case.lifted]
+    cases: List[Case] = [case for case in (await user_service.get_cases(
+        int(interaction.namespace["member"].id))).cases if case._type == "WARN" and not case.lifted]
     cases.sort(key=lambda x: x._id, reverse=True)
 
     return [app_commands.Choice(name=f"{case._id} - {case.punishment} points - {case.reason}", value=str(case._id)) for case in cases if (not current or str(case._id).startswith(str(current)))][:25]

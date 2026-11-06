@@ -4,7 +4,7 @@ from utils import GIRContext
 
 
 class PFPView(discord.ui.View):
-    def __init__(self, ctx: GIRContext, embed=discord.Embed):
+    def __init__(self, ctx: GIRContext, embed=None):
         super().__init__(timeout=30)
         self.embed = embed
         self.ctx = ctx
@@ -12,7 +12,10 @@ class PFPView(discord.ui.View):
     async def on_timeout(self):
         for child in self.children:
             child.disabled = True
-        await self.ctx.respond_or_edit(embed=self.embed, view=self)
+        kwargs = {"view": self}
+        if self.embed is not None:
+            kwargs["embed"] = self.embed
+        await self.ctx.respond_or_edit(**kwargs)
 
 
 class PFPButton(discord.ui.Button):

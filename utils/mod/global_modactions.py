@@ -6,10 +6,10 @@ import humanize
 from data.model import Case
 from data.services import guild_service, user_service
 from discord.utils import escape_markdown
-from utils import cfg
+from utils import cfg, logger
 
 from .mod_logs import prepare_mute_log, prepare_unmute_log, prepare_warn_log
-from .modactions_helpers import (add_ban_case, notify_user, notify_user_warn, response_log,
+from .modactions_helpers import (execute_ban, notify_user, notify_user_warn, response_log,
                                  submit_public_log)
 
 
@@ -38,9 +38,8 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     else:
         time = now + timedelta(days=14)
 
-    db_guild = guild_service.get_guild()
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.allocate_case_id(),
         _type="MUTE",
         date=now,
         mod_id=mod.id,
@@ -51,17 +50,15 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     case.until = time
     case.punishment = humanize.naturaldelta(
         time - now, minimum_unit="seconds")
+    await target_member.timeout(time, reason=reason)
+    await user_service.add_case(target_member.id, case)
     try:
-        await target_member.timeout(time, reason=reason)
-        if isinstance(ctx, discord.Interaction):
-            ctx.client.tasks.schedule_untimeout(target_member.id, time)
-        else:
-            ctx.bot.tasks.schedule_untimeout(target_member.id, time)
+        bot = ctx.client if isinstance(ctx, discord.Interaction) else ctx.bot
+        await bot.tasks.schedule_untimeout(target_member.id, time)
     except Exception:
-        return
-
-    guild_service.inc_caseid()
-    user_service.add_case(target_member.id, case)
+        # Discord expires the timeout itself; losing the optional expiry log
+        # must not erase the successful punishment's audit record.
+        logger.exception("Could not schedule timeout expiry for %s", target_member.id)
 
     log = prepare_mute_log(mod, target_member, case)
     await response_log(ctx, log)
@@ -70,6 +67,24 @@ async def mute(ctx, target_member: discord.Member, mod: discord.Member, dur_seco
     log.set_thumbnail(url=target_member.display_avatar)
     dmed = await notify_user(target_member, f"You have been muted in {ctx.guild.name}", log)
     await submit_public_log(ctx, target_member, log, dmed)
+    return time
+
+
+async def dismiss_report_timeout(ctx, member_id, expected_until, reason):
+    """Only remove the specific timeout that this report successfully applied."""
+    if expected_until is None:
+        return
+    try:
+        member = await ctx.guild.fetch_member(member_id)
+    except discord.NotFound:
+        return
+    current = member.timed_out_until
+    if current is None or current <= discord.utils.utcnow():
+        return
+    # Discord serializes timestamps to milliseconds.
+    if abs((current - expected_until).total_seconds()) > 0.001:
+        raise ValueError("This member has a different timeout; review it before dismissing.")
+    await unmute(ctx, member, mod=ctx.user, reason=reason)
 
 
 async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason: str = "No reason.") -> None:
@@ -89,26 +104,24 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
     """
 
     await target_member.edit(timed_out_until=None)
-    db_guild = guild_service.get_guild()
 
     try:
         if isinstance(ctx, discord.Interaction):
-            ctx.client.tasks.cancel_unmute(target_member.id)
+            await ctx.client.tasks.cancel_unmute(target_member.id)
         else:
-            ctx.tasks.cancel_unmute(target_member.id)
+            await ctx.tasks.cancel_unmute(target_member.id)
     except Exception as e:
         pass
 
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.allocate_case_id(),
         _type="UNMUTE",
         mod_id=mod.id,
         mod_tag=str(mod),
         reason=reason,
     )
 
-    guild_service.inc_caseid()
-    user_service.add_case(target_member.id, case)
+    await user_service.add_case(target_member.id, case)
 
     log = prepare_unmute_log(mod, target_member, case)
     await response_log(ctx, log)
@@ -118,38 +131,24 @@ async def unmute(ctx, target_member: discord.Member, mod: discord.Member, reason
 
 
 async def ban(ctx, target_member: Union[discord.Member, discord.User], mod: discord.Member, reason="No reason."):
-    db_guild = guild_service.get_guild()
-
-    member_is_external = isinstance(target_member, discord.User)
-    log = await add_ban_case(target_member, mod, reason, db_guild)
-
-    if not member_is_external:
-        if cfg.ban_appeal_url is None:
-            await notify_user(target_member, f"You have been banned from {ctx.guild.name}", log)
-        else:
-            await notify_user(target_member, f"You have been banned from {ctx.guild.name}\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
-
-        await target_member.ban(reason=reason)
-    else:
-        # hackban for user not currently in guild
-        await ctx.guild.ban(discord.Object(id=target_member.id))
-
-    if isinstance(ctx, discord.Interaction):
-        ctx.client.ban_cache.ban(target_member.id)
-    else:
-        ctx.bot.ban_cache.ban(target_member.id)
+    bot = ctx.client if isinstance(ctx, discord.Interaction) else ctx.bot
+    dm_text = None
+    if not isinstance(target_member, discord.User):
+        dm_text = f"You have been banned from {ctx.guild.name}"
+        if cfg.ban_appeal_url is not None:
+            dm_text += f"\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>"
+    log = await execute_ban(bot, ctx.guild, target_member, mod, reason, dm_text=dm_text)
     await response_log(ctx, log)
     await submit_public_log(ctx, target_member, log)
 
 
 async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, reason):
-    db_guild = guild_service.get_guild()
 
     reason = escape_markdown(reason)
 
     # prepare the case object for database
     case = Case(
-        _id=db_guild.case_id,
+        _id=await guild_service.allocate_case_id(),
         _type="WARN",
         mod_id=mod.id,
         mod_tag=str(mod),
@@ -157,15 +156,13 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
         punishment=str(points)
     )
 
-    # increment case ID in database for next available case ID
-    guild_service.inc_caseid()
     # add new case to DB
-    user_service.add_case(target_member.id, case)
+    await user_service.add_case(target_member.id, case)
     # add warnpoints to the user in DB
-    user_service.inc_points(target_member.id, points)
+    await user_service.inc_points(target_member.id, points)
 
     # fetch latest document about user from DB
-    db_user = user_service.get_user(target_member.id)
+    db_user = await user_service.get_user(target_member.id)
     cur_points = db_user.warn_points
 
     # prepare log embed, send to #public-mod-logs, user, channel where invoked
@@ -173,7 +170,7 @@ async def warn(ctx, target_member: discord.Member, mod: discord.Member, points, 
     log.add_field(name="Current points", value=cur_points, inline=True)
 
     # also send response in channel where command was called
-    dmed = await notify_user_warn(ctx, target_member, mod, db_user, db_guild, cur_points, log)
+    dmed = await notify_user_warn(ctx, target_member, mod, db_user, cur_points, log)
     await response_log(ctx, log)
     await submit_public_log(ctx, target_member, log, dmed)
 

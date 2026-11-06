@@ -1,4 +1,5 @@
-from aiocache import cached, caches
+from data.database import database_method, run_database
+from aiocache import cached
 from data.model import FilterWord, Guild, Tag, Giveaway
 from utils import cfg
 
@@ -21,15 +22,16 @@ class GuildService:
         return Guild.objects(_id=cfg.guild_id).update_one(pull__tags__name=Tag(name=tag).name)
 
     def edit_tag(self, tag):
-        return Guild.objects(_id=cfg.guild_id, tags__name=tag.name).update_one(set__tags__S=tag)
+        return Guild.objects(_id=cfg.guild_id, tags__name=tag.name).update_one(
+            set__tags__S__content=tag.content, set__tags__S__image=tag.image.grid_id,
+            set__tags__S__button_links=tag.button_links)
 
     def get_tag(self, name: str):
-        tag = Guild.objects.get(_id=cfg.guild_id).tags.filter(name=name).first()
-        if tag is None:
+        guild = Guild.objects(_id=cfg.guild_id, tags__name=name).modify(
+            inc__tags__S__use_count=1, new=True)
+        if guild is None:
             return
-        tag.use_count += 1
-        self.edit_tag(tag)
-        return tag
+        return guild.tags.filter(name=name).first()
 
     def add_meme(self, meme: Tag) -> None:
         Guild.objects(_id=cfg.guild_id).update_one(push__memes=meme)
@@ -38,22 +40,23 @@ class GuildService:
         return Guild.objects(_id=cfg.guild_id).update_one(pull__memes__name=Tag(name=meme).name)
 
     def edit_meme(self, meme):
-        return Guild.objects(_id=cfg.guild_id, memes__name=meme.name).update_one(set__memes__S=meme)
+        return Guild.objects(_id=cfg.guild_id, memes__name=meme.name).update_one(
+            set__memes__S__content=meme.content, set__memes__S__image=meme.image.grid_id,
+            set__memes__S__button_links=meme.button_links)
 
     def get_meme(self, name: str):
-        meme = Guild.objects.get(_id=cfg.guild_id).memes.filter(name=name).first()
-        if meme is None:
+        guild = Guild.objects(_id=cfg.guild_id, memes__name=name).modify(
+            inc__memes__S__use_count=1, new=True)
+        if guild is None:
             return
-        meme.use_count += 1
-        self.edit_meme(meme)
-        return meme
+        return guild.memes.filter(name=name).first()
     
-    def inc_caseid(self) -> None:
-        """Increments Guild.case_id, which keeps track of the next available ID to
-        use for a case.
-        """
-
-        Guild.objects(_id=cfg.guild_id).update_one(inc__case_id=1)
+    def allocate_case_id(self) -> int:
+        """Reserve the next case number atomically; failed actions may leave gaps."""
+        guild = Guild.objects(_id=cfg.guild_id).modify(inc__case_id=1, new=False)
+        if guild is None:
+            raise RuntimeError("Cannot allocate a case number: guild is not configured")
+        return guild.case_id
 
     def get_giveaway(self, _id: int) -> Giveaway:
         """
@@ -97,44 +100,37 @@ class GuildService:
         giveaway.previous_winners = prev_winners
         giveaway.save()
         
-    async def add_raid_phrase(self, phrase: str) -> bool:
+    def add_raid_phrase(self, phrase: str) -> bool:
         existing = self.get_guild().raid_phrases.filter(word=phrase)
         if(len(existing) > 0):
             return False
         Guild.objects(_id=cfg.guild_id).update_one(push__raid_phrases=FilterWord(word=phrase, bypass=5, notify=True))
-        await self.get_raid_phrases.cache.clear()
         return True
     
-    @cached(ttl=3600, key="guild_raid_phrases")
-    async def get_raid_phrases(self):
+    def get_raid_phrases(self):
         return self.get_guild().raid_phrases
 
-    async def remove_raid_phrase(self, phrase: str):
-        await self.get_raid_phrases.cache.clear()
+    def remove_raid_phrase(self, phrase: str):
         Guild.objects(_id=cfg.guild_id).update_one(pull__raid_phrases__word=FilterWord(word=phrase).word)
 
     def set_spam_mode(self, mode) -> None:
         Guild.objects(_id=cfg.guild_id).update_one(set__ban_today_spam_accounts=mode)
 
-    async def add_filtered_word(self, fw: FilterWord) -> None:
+    def add_filtered_word(self, fw: FilterWord) -> None:
         existing = self.get_guild().filter_words.filter(word=fw.word)
         if(len(existing) > 0):
             return False
 
         Guild.objects(_id=cfg.guild_id).update_one(push__filter_words=fw)
-        await self.get_filtered_words.cache.clear()
         return True
 
-    @cached(ttl=3600, key="guild_filtered_words")
-    async def get_filtered_words(self) -> FilterWord:
+    def get_filtered_words(self) -> FilterWord:
         return self.get_guild().filter_words
 
-    async def remove_filtered_word(self, word: str):
-        await self.get_filtered_words.cache.clear()
+    def remove_filtered_word(self, word: str):
         return Guild.objects(_id=cfg.guild_id).update_one(pull__filter_words__word=FilterWord(word=word).word)
 
-    async def update_filtered_word(self, word: FilterWord):
-        await self.get_filtered_words.cache.clear()
+    def update_filtered_word(self, word: FilterWord):
         return Guild.objects(_id=cfg.guild_id, filter_words__word=word.word).update_one(set__filter_words__S=word)
 
     def add_whitelisted_guild(self, id: int):
@@ -199,4 +195,67 @@ class GuildService:
         guild.nsa_mapping[str(channel_id)] = webhooks
         guild.save()
 
-guild_service = GuildService()
+
+_repository = GuildService()
+
+
+class AsyncGuildService:
+    """Bot-facing API; all persistence runs in the bounded database pool."""
+    get_guild = database_method(_repository.get_guild)
+    add_tag = database_method(_repository.add_tag)
+    remove_tag = database_method(_repository.remove_tag)
+    edit_tag = database_method(_repository.edit_tag)
+    get_tag = database_method(_repository.get_tag)
+    add_meme = database_method(_repository.add_meme)
+    remove_meme = database_method(_repository.remove_meme)
+    edit_meme = database_method(_repository.edit_meme)
+    get_meme = database_method(_repository.get_meme)
+    allocate_case_id = database_method(_repository.allocate_case_id)
+    get_giveaway = database_method(_repository.get_giveaway)
+    add_giveaway = database_method(_repository.add_giveaway)
+
+    async def add_raid_phrase(self, *args, **kwargs):
+        result = await run_database(_repository.add_raid_phrase, *args, **kwargs)
+        await self.get_raid_phrases.cache.clear()
+        return result
+
+    get_raid_phrases = cached(ttl=3600)(database_method(_repository.get_raid_phrases))
+
+    async def remove_raid_phrase(self, *args, **kwargs):
+        result = await run_database(_repository.remove_raid_phrase, *args, **kwargs)
+        await self.get_raid_phrases.cache.clear()
+        return result
+
+    set_spam_mode = database_method(_repository.set_spam_mode)
+
+    async def add_filtered_word(self, *args, **kwargs):
+        result = await run_database(_repository.add_filtered_word, *args, **kwargs)
+        await self.get_filtered_words.cache.clear()
+        return result
+
+    get_filtered_words = cached(ttl=3600)(database_method(_repository.get_filtered_words))
+
+    async def remove_filtered_word(self, *args, **kwargs):
+        result = await run_database(_repository.remove_filtered_word, *args, **kwargs)
+        await self.get_filtered_words.cache.clear()
+        return result
+
+
+    async def update_filtered_word(self, *args, **kwargs):
+        result = await run_database(_repository.update_filtered_word, *args, **kwargs)
+        await self.get_filtered_words.cache.clear()
+        return result
+
+    add_whitelisted_guild = database_method(_repository.add_whitelisted_guild)
+    remove_whitelisted_guild = database_method(_repository.remove_whitelisted_guild)
+    add_ignored_channel = database_method(_repository.add_ignored_channel)
+    remove_ignored_channel = database_method(_repository.remove_ignored_channel)
+    add_ignored_channel_logging = database_method(_repository.add_ignored_channel_logging)
+    remove_ignored_channel_logging = database_method(_repository.remove_ignored_channel_logging)
+    get_locked_channels = database_method(_repository.get_locked_channels)
+    add_locked_channels = database_method(_repository.add_locked_channels)
+    remove_locked_channels = database_method(_repository.remove_locked_channels)
+    set_nsa_mapping = database_method(_repository.set_nsa_mapping)
+
+
+guild_service = AsyncGuildService()

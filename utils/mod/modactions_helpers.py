@@ -12,36 +12,18 @@ from utils.mod.mod_logs import prepare_ban_log, prepare_kick_log
 from utils.config import cfg
 
 
-def add_kick_case(target_member: discord.Member, mod: discord.Member, reason: str, db_guild):
-    """Adds kick case to user
-
-    Parameters
-    ----------
-    target_member : discord.Member
-        "Member who was kicked"
-    mod : discord.Member
-        "Member that kicked"
-    reason : str
-        "Reason member was kicked"
-    db_guild
-        "Guild DB"
-
-    """
-    # prepare case for DB
+async def execute_kick(target_member, mod, reason, *, dm_text=None):
+    """Only record successful kicks; keep notification before removal."""
     case = Case(
-        _id=db_guild.case_id,
-        _type="KICK",
-        mod_id=mod.id,
-        mod_tag=str(mod),
-        reason=reason,
+        _id=await guild_service.allocate_case_id(), _type="KICK",
+        mod_id=mod.id, mod_tag=str(mod), reason=reason,
     )
-
-    # increment max case ID for next case
-    guild_service.inc_caseid()
-    # add new case to DB
-    user_service.add_case(target_member.id, case)
-
-    return prepare_kick_log(mod, target_member, case)
+    log = prepare_kick_log(mod, target_member, case)
+    if dm_text is not None:
+        await notify_user(target_member, dm_text, log)
+    await target_member.kick(reason=reason)
+    await user_service.add_case(target_member.id, case)
+    return log
 
 
 async def notify_user(target_member, text, log):
@@ -63,7 +45,7 @@ async def notify_user(target_member, text, log):
     return True
 
 
-async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: discord.Member, db_user, db_guild, cur_points: int, log):
+async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: discord.Member, db_user, cur_points: int, log):
     """Notifies a specified user about a warn
 
     Parameters
@@ -94,21 +76,16 @@ async def notify_user_warn(ctx: GIRContext, target_member: discord.Member, mod: 
         else:
             dmed = await notify_user(target_member, f"You were banned from {ctx.guild.name} for reaching 600 or more points.\n\nIf you would like to appeal your ban, please fill out this form: <{cfg.ban_appeal_url}>", log)
 
-        log_kickban = await add_ban_case(target_member, mod, "600 or more warn points reached.", db_guild)
-        await target_member.ban(reason="600 or more warn points reached.")
-
-        if isinstance(ctx, discord.Interaction):
-            ctx.client.ban_cache.ban(target_member.id)
-        else:
-            ctx.bot.ban_cache.ban(target_member.id)
+        bot = ctx.client if isinstance(ctx, discord.Interaction) else ctx.bot
+        log_kickban = await execute_ban(bot, ctx.guild, target_member, mod,
+                                        "600 or more warn points reached.")
 
     elif cur_points >= 400 and not db_user.was_warn_kicked and isinstance(target_member, discord.Member):
         # kick user if >= 400 points and wasn't previously kicked
-        user_service.set_warn_kicked(target_member.id)
 
         dmed = await notify_user(target_member, f"You were kicked from {ctx.guild.name} for reaching 400 or more points. Please note that you will be banned at 600 points.", log)
-        log_kickban = add_kick_case(target_member, mod, "400 or more warn points reached.", db_guild)
-        await target_member.kick(reason="400 or more warn points reached.")
+        log_kickban = await execute_kick(target_member, mod, "400 or more warn points reached.")
+        await user_service.set_warn_kicked(target_member.id)
     else:
         if isinstance(target_member, discord.Member):
             dmed = await notify_user(target_member, f"You were warned in {ctx.guild.name}. Please note that you will be kicked at 400 points and banned at 600 points.", log)
@@ -168,37 +145,21 @@ async def submit_public_log(ctx: GIRContext, user: Union[discord.Member, discord
             await public_chan.send(embed=log)
 
 
-async def add_ban_case(target_member: discord.Member, mod: discord.Member, reason, db_guild: Guild = None):
-    """Adds ban case to user
-
-    Parameters
-    ----------
-    ctx : GIRContext
-        "Bot context"
-    user : discord.Member
-        "Member who was banned"
-    reason : str
-        "Reason member was banned"
-    db_guild
-        "Guild DB"
-
-    """
-    # prepare the case to store in DB
+async def execute_ban(bot, guild, target_member, mod, reason, *, dm_text=None, anonymous=False):
+    """Record bans and update the cache only after Discord accepts the action."""
     case = Case(
-        _id=db_guild.case_id,
-        _type="BAN",
-        mod_id=mod.id,
-        mod_tag=str(mod),
-        punishment="PERMANENT",
-        reason=reason,
+        _id=await guild_service.allocate_case_id(), _type="BAN",
+        mod_id=mod.id, mod_tag=str(mod), punishment="PERMANENT", reason=reason,
     )
-
-    # increment DB's max case ID for next case
-    guild_service.inc_caseid()
-    # add case to db
-    user_service.add_case(target_member.id, case)
-    # prepare log embed to send to #public-mod-logs, user and context
-    return prepare_ban_log(mod, target_member, case)
+    log = prepare_ban_log(mod, target_member, case)
+    if anonymous:
+        log.set_field_at(1, name="Mod", value=f"{guild.name} Staff")
+    if dm_text is not None:
+        await notify_user(target_member, dm_text, log)
+    await guild.ban(discord.Object(id=target_member.id), reason=reason)
+    bot.ban_cache.ban(target_member.id)
+    await user_service.add_case(target_member.id, case)
+    return log
 
 async def delay_delete(ctx: discord.Interaction):
     await asyncio.sleep(10)

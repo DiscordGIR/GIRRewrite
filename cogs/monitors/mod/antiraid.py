@@ -9,9 +9,10 @@ from data.services import guild_service, user_service
 from discord.ext import commands
 from expiringdict import ExpiringDict
 from utils import cfg, fetchers, logger
+from utils.worker import BlockingIOPool
 from utils.antiraid import download_image, image_fingerprint, is_image, match_fingerprint
 from utils.framework import MessageTextBucket, gatekeeper, find_triggered_raid_phrases
-from utils.mod import mute, prepare_ban_log
+from utils.mod import mute, prepare_ban_log, execute_ban
 from utils.views import report_raid, report_raid_phrase, report_spam
 from utils.views.menus.antiraid import report_antiraid
 
@@ -65,6 +66,48 @@ class AntiRaidMonitor(commands.Cog):
         self.content_report_cooldown = ExpiringDict(max_len=10000, max_age_seconds=300)
         # Bound concurrent downloads and native image decoding during a raid.
         self.image_scan_slots = asyncio.Semaphore(2)
+        self.image_queue = asyncio.Queue(maxsize=32)
+        self.image_workers = []
+        self.image_io = BlockingIOPool(workers=2, name="gir-images")
+        self.image_scans_dropped = 0
+
+    async def cog_load(self):
+        self.image_workers = [asyncio.create_task(self.scan_images(), name=f"image-scan-{i}")
+                              for i in range(2)]
+
+    async def cog_unload(self):
+        for worker in self.image_workers:
+            worker.cancel()
+        await asyncio.gather(*self.image_workers, return_exceptions=True)
+        await self.image_io.close()
+
+    async def scan_images(self):
+        while True:
+            message = await self.image_queue.get()
+            try:
+                await self.image_spam(message)
+            except asyncio.TimeoutError:
+                logger.warning("Image scan deadline exceeded for message %s", message.id)
+            except Exception:
+                logger.exception("Image scan failed for message %s", message.id)
+            finally:
+                self.image_queue.task_done()
+
+    def enqueue_images(self, message):
+        if message.author.guild_permissions.administrator:
+            return
+        if any(role.id == cfg.roles.member_plus for role in message.author.roles):
+            return
+        if not any(is_image(attachment) for attachment in message.attachments):
+            return
+        try:
+            self.image_queue.put_nowait(message)
+        except asyncio.QueueFull:
+            self.image_scans_dropped += 1
+            # Saturation is not evidence against the author. Log periodically
+            # rather than producing another report storm during an attack.
+            if self.image_scans_dropped % 100 == 1:
+                logger.warning("Image queue full; %s scans skipped", self.image_scans_dropped)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -118,7 +161,7 @@ class AntiRaidMonitor(commands.Cog):
 
         # skip user if we manually verified them, i.e they were approved by a moderator
         # using the !verify command when they appealed a ban.
-        if user_service.get_user(member.id).raid_verified:
+        if (await user_service.get_user(member.id)).raid_verified:
             return
 
         # skip if it's an older account (before May 1st 2021)
@@ -128,7 +171,7 @@ class AntiRaidMonitor(commands.Cog):
         # this setting disables the filter for accounts created from "Today"
         # useful when we get alot of new users, for example when a new Jailbreak is released.
         # this setting is controlled using !spammode
-        if not guild_service.get_guild().ban_today_spam_accounts:
+        if not (await guild_service.get_guild()).ban_today_spam_accounts:
             now = datetime.today()
             now = [now.year, now.month, now.day]
             member_now = [member.created_at.year,
@@ -178,23 +221,24 @@ class AntiRaidMonitor(commands.Cog):
         message.author = message.guild.get_member(message.author.id) or message.author
         if not isinstance(message.author, discord.Member):
             return
-        if not message.author.guild_permissions.administrator:
-            if await self.image_spam(message):
+        if not gatekeeper.has(message.guild, message.author, 5):
+            if await self.ping_spam(message):
+                await self.handle_raid_detection(message, RaidType.PingSpam)
                 return
-        if gatekeeper.has(message.guild, message.author, 5):
-            return
-
-        if await self.ping_spam(message):
-            await self.handle_raid_detection(message, RaidType.PingSpam)
-        elif await self.raid_phrase_detected(message):
-            await self.handle_raid_detection(message, RaidType.RaidPhrase)
-        elif await self.message_spam(message):
-            await self.handle_raid_detection(message, RaidType.MessageSpam)
-        elif await self.detect_scam_link(message):
-            await self.report_possible_raid_phrase(message)
+            if await self.raid_phrase_detected(message):
+                await self.handle_raid_detection(message, RaidType.RaidPhrase)
+                return
+            if await self.message_spam(message):
+                await self.handle_raid_detection(message, RaidType.MessageSpam)
+                return
+            if await self.detect_scam_link(message):
+                await self.report_possible_raid_phrase(message)
+                return
+        self.enqueue_images(message)
 
     async def apply_content_moderation(self, message, reason):
         actions = []
+        timeout_until = None
         try:
             await message.delete()
             actions.append("Message deleted")
@@ -207,12 +251,14 @@ class AntiRaidMonitor(commands.Cog):
             actions.append("Cannot timeout this member")
         else:
             try:
-                await member.timeout(timedelta(days=7), reason=reason)
+                deadline = discord.utils.utcnow() + timedelta(days=7)
+                await member.timeout(deadline, reason=reason)
+                timeout_until = deadline
                 actions.append("7 day timeout")
             except discord.HTTPException:
                 logger.exception("Failed to timeout member in antiraid filter")
                 actions.append("Timeout failed")
-        return "; ".join(actions)
+        return "; ".join(actions), timeout_until
 
     async def send_content_report(self, message, **kwargs):
         key = (message.guild.id, message.author.id)
@@ -227,6 +273,14 @@ class AntiRaidMonitor(commands.Cog):
             logger.exception("Failed to send antiraid content report")
 
     async def image_spam(self, message):
+        finding = await asyncio.wait_for(self.inspect_images(message), timeout=30)
+        if not finding:
+            return False
+        actions, timeout_until = await self.apply_content_moderation(message, finding["reason"])
+        await self.send_content_report(message, **finding, actions=actions, timeout_until=timeout_until)
+        return True
+
+    async def inspect_images(self, message):
         if any(role.id == cfg.roles.member_plus for role in message.author.roles):
             return False
         images = [attachment for attachment in message.attachments if is_image(attachment)]
@@ -242,7 +296,7 @@ class AntiRaidMonitor(commands.Cog):
                     try:
                         buffer = await download_image(attachment, fetchers.client_session)
                         downloaded[attachment.id] = buffer
-                        fingerprint = await asyncio.to_thread(image_fingerprint, buffer)
+                        fingerprint = await self.image_io.run(image_fingerprint, buffer)
                         matched = match_fingerprint(fingerprint)
                         if matched:
                             break
@@ -267,14 +321,12 @@ class AntiRaidMonitor(commands.Cog):
 
         reason = (f"Known scam image: {matched}" if matched else
                   "Image spam (possible compromise)" if len(images) >= 4 else "Suspicious image filename: 1.*")
-        actions = await self.apply_content_moderation(message, reason)
-        await self.send_content_report(
-            message, title="🚨 Known Scam Image Detected" if matched else "🚨 Image Spam Detected",
+        return dict(
+            title="🚨 Known Scam Image Detected" if matched else "🚨 Image Spam Detected",
             trigger="Visual match to a known scam image" if matched else
                     "4+ image attachments" if len(images) >= 4 else "Image named 1.*",
-            reason=reason, actions=actions, evidence=evidence,
+            reason=reason, evidence=evidence,
         )
-        return True
 
     async def detect_scam_link(self, message: discord.Message):
         # check if message contains @everyone or @here
@@ -434,36 +486,10 @@ class AntiRaidMonitor(commands.Cog):
             # if self.ban_user_mapping.get(user.id) is not None:
             if self.bot.ban_cache.is_banned(user.id):
                 return
-            else:
-                self.bot.ban_cache.ban(user.id)
-
-            db_guild = guild_service.get_guild()
-
-            case = Case(
-                _id=db_guild.case_id,
-                _type="BAN",
-                date=datetime.now(),
-                mod_id=self.bot.user.id,
-                mod_tag=str(self.bot.user),
-                punishment="PERMANENT",
-                reason=reason
-            )
-
-            guild_service.inc_caseid()
-            user_service.add_case(user.id, case)
-
-            log = prepare_ban_log(self.bot.user, user, case)
-
+            dm_text = None
             if dm_user:
-                try:
-                    await user.send(f"You were banned from {user.guild.name}.\n\nThis action was performed automatically. If you think this was a mistake, please send a message here: https://www.reddit.com/message/compose?to=%2Fr%2FJailbreak", embed=log)
-                except Exception:
-                    pass
-
-            if user.guild.get_member(user.id) is not None:
-                await user.ban(reason="Raid")
-            else:
-                await user.guild.ban(discord.Object(id=user.id), reason="Raid")
+                dm_text = f"You were banned from {user.guild.name}.\n\nThis action was performed automatically. If you think this was a mistake, please send a message here: https://www.reddit.com/message/compose?to=%2Fr%2FJailbreak"
+            log = await execute_ban(self.bot, user.guild, user, self.bot.user, reason, dm_text=dm_text)
 
             public_logs = user.guild.get_channel(cfg.channels.public_logs)
             if public_logs:
@@ -475,7 +501,7 @@ class AntiRaidMonitor(commands.Cog):
         """Freeze all channels marked as freezeable during a raid, meaning only people with the Member+ role and up
         can talk (temporarily lock out whitenames during a raid)"""
 
-        db_guild = guild_service.get_guild()
+        db_guild = await guild_service.get_guild()
 
         for channel in db_guild.locked_channels:
             channel = guild.get_channel(channel)

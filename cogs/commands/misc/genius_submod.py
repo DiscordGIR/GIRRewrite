@@ -205,7 +205,7 @@ class Genius(commands.Cog):
 
         self.bot.issue_cache.cache = contents
         await channel.send(embed=toc_embed)
-        return count, page
+        return len(contents), page
 
     @genius_or_submod_and_up()
     @app_commands.guilds(cfg.guild_id)
@@ -283,7 +283,7 @@ class Genius(commands.Cog):
     @app_commands.describe(image="Image to show in embed")
     @transform_context
     async def subnews(self, ctx: GIRContext, image: ImageAttachment = None):
-        channel = ctx.guild.get_channel(cfg.channels.subnews)
+        channel = ctx.guild.get_channel(cfg.channels.sub_news)
         if not channel:
             raise commands.BadArgument("A subreddit news channel was not found. Contact Slim.")
 
