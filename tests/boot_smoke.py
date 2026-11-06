@@ -13,7 +13,7 @@ from apscheduler.jobstores.memory import MemoryJobStore
 from data.model import Guild
 
 
-async def check():
+async def check(assertions=None):
     root = Path(__file__).resolve().parents[1]
     with tempfile.TemporaryDirectory() as directory:
         shutil.copy(root / "config.example.json", Path(directory) / "config.json")
@@ -35,6 +35,8 @@ async def check():
                     assert set(main.bot.extensions) == set(main.initial_extensions)
                     assert main.bot.get_cog("AntiRaidMonitor") is not None
                     assert main.bot.tasks.tasks.state == 2  # paused until Discord is ready
+                    if assertions is not None:
+                        await assertions(main.bot)
         assert main.bot.is_closed()
         mongoengine.disconnect()
 
