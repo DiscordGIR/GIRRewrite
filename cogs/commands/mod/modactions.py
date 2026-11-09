@@ -332,15 +332,6 @@ class ModActions(commands.Cog):
         if points < 1:
             raise commands.BadArgument("Points can't be lower than 1.")
 
-        u = await user_service.get_user(id=member.id)
-        if u.warn_points - points < 0:
-            raise commands.BadArgument(
-                message=f"Can't remove {points} points because it would make {member.mention}'s points negative.")
-
-        # passed sanity checks, so update the case in DB
-        # remove the warn points from the user in DB
-        await user_service.inc_points(member.id, -1 * points)
-
         case = Case(
             _id=await guild_service.allocate_case_id(),
             _type="REMOVEPOINTS",
@@ -350,8 +341,10 @@ class ModActions(commands.Cog):
             reason=reason,
         )
 
-        # add case to db
-        await user_service.add_case(member.id, case)
+        try:
+            await user_service.remove_points(member.id, points, case)
+        except ValueError as exc:
+            raise commands.BadArgument(str(exc)) from exc
 
         # prepare log embed, send to #public-mod-logs, user, channel where invoked
         log = prepare_removepoints_log(ctx.author, member, case)

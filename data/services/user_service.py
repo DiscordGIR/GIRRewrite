@@ -2,6 +2,7 @@ from data.database import database_method
 from typing import Counter
 from datetime import datetime
 from threading import Lock
+import re
 from data.model import Case, Cases, User
 
 # Bounded locks shared by repository instances. Hold them inside the worker so
@@ -55,7 +56,10 @@ class UserService:
 
         # first we ensure this user has a User document in the database before continuing
         self.get_user(_id)
-        User.objects(_id=_id).update_one(inc__warn_points=points)
+        if points < 0:
+            self._deduct_points(_id, -points)
+        else:
+            User.objects(_id=_id).update_one(inc__warn_points=points)
         
     def inc_xp(self, id, xp):
         """Increments user xp.
@@ -114,8 +118,36 @@ class UserService:
         self.get_cases(_id)
         Cases.objects(_id=_id).update_one(push__cases=case)
 
+    def _deduct_points(self, member_id, points):
+        """Atomic balance guard, including callers outside the member lock."""
+        if points <= 0:
+            raise ValueError("Points must be positive.")
+        self.get_user(member_id)
+        changed = User.objects(_id=member_id, warn_points__gte=points).update_one(
+            inc__warn_points=-points)
+        if not changed:
+            raise ValueError("Can't deduct points because the balance would be negative.")
+
+    def remove_points(self, member_id, points, case):
+        with _warning_locks[member_id % len(_warning_locks)]:
+            self._deduct_points(member_id, points)
+            try:
+                self.add_case(member_id, case)
+            except Exception:
+                # A write can succeed before the connection reports a failure.
+                # Refund only when a subsequent read confirms it did not persist.
+                if not Cases.objects(__raw__={"_id": member_id, "cases._id": case._id}).first():
+                    self.inc_points(member_id, points)
+                raise
+            return case
+
     def lift_warn(self, member_id, case_id, reason, mod_id, mod_tag):
-        """Serialize warning lifts for a member within this bot process."""
+        """Serialize deductions; compensate confirmed persistence failures.
+
+        The balance and history are separate documents: process death between
+        writes (or an unavailable confirmation read) still needs reconciliation.
+        This deliberately does not require replica-set transactions.
+        """
         with _warning_locks[member_id % len(_warning_locks)]:
             cases = self.get_cases(member_id)
             case = cases.cases.filter(_id=case_id).first()
@@ -126,16 +158,26 @@ class UserService:
             if case.lifted:
                 raise ValueError(f"Case with ID {case_id} already lifted.")
             points = int(case.punishment)
-            if self.get_user(member_id).warn_points < points:
-                raise ValueError(f"Can't lift Case #{case_id} because it would make <@{member_id}>'s points negative.")
-
+            self._deduct_points(member_id, points)
             case.lifted = True
             case.lifted_reason = reason
             case.lifted_by_tag = mod_tag
             case.lifted_by_id = mod_id
             case.lifted_date = datetime.now()
-            cases.save()
-            self.inc_points(member_id, -points)
+            try:
+                changed = Cases.objects(__raw__={"_id": member_id, "cases._id": case._id}).update_one(
+                    set__cases__S__lifted=True,
+                    set__cases__S__lifted_reason=reason,
+                    set__cases__S__lifted_by_tag=mod_tag,
+                    set__cases__S__lifted_by_id=mod_id,
+                    set__cases__S__lifted_date=case.lifted_date)
+                if not changed:
+                    raise RuntimeError("Warning disappeared during lift; retry after reviewing history.")
+            except Exception:
+                stored = self.get_cases(member_id).cases.filter(_id=case_id).first()
+                if stored is None or not stored.lifted:
+                    self.inc_points(member_id, points)
+                raise
             return case
 
     def set_warn_kicked(self, _id: int) -> None:
@@ -154,39 +196,55 @@ class UserService:
         User.objects(_id=_id).update_one(set__was_warn_kicked=True)
 
 
+    def _case_rows(self, member_id, predicate, sort, limit, offset=0):
+        pipeline = [
+            {"$match": {"_id": member_id}},
+            {"$unwind": {"path": "$cases", "includeArrayIndex": "position"}},
+            {"$match": predicate}, {"$sort": sort},
+            {"$skip": offset}, {"$limit": limit},
+            {"$project": {"_id": 0, "case": "$cases"}},
+        ]
+        return [Case._from_son(row["case"]) for row in
+                Cases._get_collection().aggregate(pipeline)]
+
     def rundown(self, id: int) -> list:
-        """Return the 3 most recent cases of a user, whose ID is given by `id`
-        If the user doesn't have a Cases document in the database, first create that.
+        return self._case_rows(id, {"cases._type": {"$ne": "UNMUTE"}},
+                               {"cases.date": -1, "position": -1}, 3)
 
-        Parameters
-        ----------
-        id : int
-            The user whose cases we want to look up.
+    def warning_choices(self, member_id, prefix=""):
+        # Case IDs are numeric; prefix filtering is explicitly string-based.
+        predicate = {"cases._type": "WARN", "cases.lifted": {"$ne": True}}
+        pipeline = [
+            {"$match": {"_id": member_id}}, {"$unwind": "$cases"},
+            {"$match": predicate},
+            {"$addFields": {"case_id_text": {"$toString": "$cases._id"}}},
+            {"$match": {"case_id_text": {"$regex": "^" + re.escape(prefix)}}},
+            {"$sort": {"cases._id": -1}}, {"$limit": 25},
+            {"$project": {"_id": 0, "case": "$cases"}},
+        ]
+        return [Case._from_son(row["case"]) for row in
+                Cases._get_collection().aggregate(pipeline)]
 
-        Returns
-        -------
-        Cases
-            [description]
-        """
+    def case_count(self, member_id):
+        rows = list(Cases._get_collection().aggregate([
+            {"$match": {"_id": member_id}}, {"$unwind": "$cases"},
+            {"$match": {"cases._type": {"$ne": "UNMUTE"}}},
+            {"$count": "total"},
+        ]))
+        return rows[0]["total"] if rows else 0
 
-        cases = Cases.objects(_id=id).first()
-        # first we ensure this user has a Cases document in the database before continuing
-        if cases is None:
-            Cases._get_collection().update_one(
-                {"_id": id}, {"$setOnInsert": {"cases": []}}, upsert=True)
-            cases = Cases.objects(_id=id).get()
-            return []
-
-        cases = cases.cases
-        cases = filter(lambda x: x._type != "UNMUTE", cases)
-        cases = sorted(cases, key=lambda i: i['date'])
-        cases.reverse()
-        return cases[0:3]
+    def case_page(self, member_id, page, per_page=10):
+        if page < 1 or not 1 <= per_page <= 100:
+            raise ValueError("Invalid case page.")
+        return self._case_rows(member_id, {"cases._type": {"$ne": "UNMUTE"}},
+                               {"position": -1}, per_page, (page - 1) * per_page)
 
     def retrieve_birthdays(self, date):
         return list(User.objects(birthday=date))
     
     def transfer_profile(self, oldmember, newmember):
+        if oldmember == newmember:
+            raise ValueError("Source and destination must be different users.")
         u = self.get_user(oldmember)
         u._id = newmember
         u.save()
@@ -217,43 +275,37 @@ class UserService:
         return values
 
     def fetch_cases_by_mod(self, _id):
-        values = {}
-        cases = Cases.objects(cases__mod_id=str(_id))
-        values["total"] = 0
-        cases = list(cases.all())
-        final_cases = []
-        for target in cases:
-            for case in target.cases:
-                if str(case.mod_id) == str(_id):
-                    final_cases.append(case)
-                    values["total"] += 1
-
-        def get_case_reason(reason):
-            string = reason.lower()
-            return ''.join(e for e in string if e.isalnum() or e == " ").strip()
-
-        case_reasons = [get_case_reason(case.reason) for case in final_cases if get_case_reason(case.reason) != "temporary mute expired"]
-        values["counts"] = sorted(Counter(case_reasons).items(), key=lambda item: item[1])
-        values["counts"].reverse()
-        return values
+        rows = Cases._get_collection().aggregate([
+            {"$match": {"cases.mod_id": int(_id)}}, {"$unwind": "$cases"},
+            {"$match": {"cases.mod_id": int(_id)}},
+            {"$group": {"_id": "$cases.reason", "count": {"$sum": 1}}},
+        ])
+        total = 0
+        counts = Counter()
+        for row in rows:
+            total += row["count"]
+            reason = ''.join(c for c in row["_id"].lower()
+                             if c.isalnum() or c == " ").strip()
+            if reason != "temporary mute expired":
+                counts[reason] += row["count"]
+        return {"total": total, "counts": sorted(counts.items(), key=lambda item: item[1], reverse=True)}
 
     def fetch_cases_by_keyword(self, keyword):
-        values = {}
-        cases = Cases.objects(cases__reason__icontains=keyword)
-        cases = list(cases.all())
-        values["total"] = 0
-        final_cases = []
-
-        for target in cases:
-            for case in target.cases:
-                if keyword.lower() in case.reason.lower():
-                    values["total"] += 1
-                    final_cases.append(case)
-
-        case_mods = [case.mod_tag for case in final_cases]
-        values["counts"] = sorted(Counter(case_mods).items(), key=lambda item: item[1])
-        values["counts"].reverse()
-        return values
+        # Keep Python's Unicode lower/substring behavior. Group projected strings
+        # in Mongo rather than constructing entire Case/User histories in Python.
+        rows = Cases._get_collection().aggregate([
+            {"$match": {"cases.reason": {"$regex": re.escape(keyword), "$options": "i"}}},
+            {"$unwind": "$cases"},
+            {"$group": {"_id": {"reason": "$cases.reason", "mod": "$cases.mod_tag"},
+                        "count": {"$sum": 1}}},
+        ])
+        total = 0
+        counts = Counter()
+        for row in rows:
+            if keyword.lower() in row["_id"]["reason"].lower():
+                total += row["count"]
+                counts[row["_id"]["mod"]] += row["count"]
+        return {"total": total, "counts": sorted(counts.items(), key=lambda item: item[1], reverse=True)}
 
     def set_sticky_roles(self, _id: int, roles) -> None:
         self.get_user(_id)
@@ -274,8 +326,12 @@ class AsyncUserService:
     get_cases = database_method(_repository.get_cases)
     add_case = database_method(_repository.add_case)
     lift_warn = database_method(_repository.lift_warn)
+    remove_points = database_method(_repository.remove_points)
     set_warn_kicked = database_method(_repository.set_warn_kicked)
     rundown = database_method(_repository.rundown)
+    warning_choices = database_method(_repository.warning_choices)
+    case_count = database_method(_repository.case_count)
+    case_page = database_method(_repository.case_page)
     retrieve_birthdays = database_method(_repository.retrieve_birthdays)
     transfer_profile = database_method(_repository.transfer_profile)
     fetch_raids = database_method(_repository.fetch_raids)
