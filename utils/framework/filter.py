@@ -8,72 +8,60 @@ from fold_to_ascii import fold
 from utils.framework import gatekeeper
 
 
+_SYMBOLS = ("абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
+            "abBrdeex3nnKnmHonpcTyoxu4wwbbbeoRABBrDEEX3NNKNMHONPCTyOXU4WWbbbEOR")
+_TRANSLATION = {ord(a): ord(b) for a, b in zip(*_SYMBOLS)}
+_PUNCTUATION = str.maketrans('', '', string.punctuation)
+
+
+def _normalized(text, strip_colons=False):
+    folded = fold(text.translate(_TRANSLATION).lower()).lower()
+    if strip_colons:
+        folded = folded.strip(':')
+    tokens = folded.split()
+    compact = ''.join(tokens)
+    return folded, compact, compact.translate(_PUNCTUATION), frozenset(tokens)
+
+
 async def find_triggered_filters(input, member: discord.Member) -> List[FilterWord]:
-    """
-    BAD WORD FILTER
-    """
-    symbols = (u"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
-               u"abBrdeex3nnKnmHonpcTyoxu4wwbbbeoRABBrDEEX3NNKNMHONPCTyOXU4WWbbbEOR")
-
-    tr = {ord(a): ord(b) for a, b in zip(*symbols)}
-
-    input_lowercase = fold(input.translate(tr).lower()).lower().strip(":")   
-    folded_without_spaces = "".join(input_lowercase.split())
-    folded_without_spaces_and_punctuation = folded_without_spaces.translate(
-        str.maketrans('', '', string.punctuation))
-
-    if not input_lowercase:
+    folded, compact, plain, tokens = _normalized(input, strip_colons=True)
+    if not folded:
         return []
-    # reported = False
-
-    words_found = []
+    found = []
+    permissions = {}
     for word in await guild_service.get_filtered_words():
-        if gatekeeper.has(member.guild, member, word.bypass):
+        if word.bypass not in permissions:
+            permissions[word.bypass] = gatekeeper.has(member.guild, member, word.bypass)
+        if permissions[word.bypass]:
             continue
-
-        filter_word_without_spaces = "".join(word.word.lower().split())
-        if (word.word.lower() in input_lowercase) or \
-            (not word.false_positive and word.word.lower() in folded_without_spaces) or \
-                (not word.false_positive and word.word.lower() in folded_without_spaces_and_punctuation or
-                    (not word.false_positive and filter_word_without_spaces in folded_without_spaces_and_punctuation)):
-
-            # remove all whitespace, punctuation in message and run filter again
-            if word.false_positive and word.word.lower() not in input_lowercase.split():
+        if (word.lower in folded or (not word.false_positive and
+                (word.lower in compact or word.lower in plain or word.compact in plain))):
+            if word.false_positive and word.lower not in tokens:
                 continue
-
             if word.notify:
                 return [word]
+            found.append(word)
+    return found
 
-            words_found.append(word)
-    return words_found
 
 def has_only_silent_filtered_words(triggered_filter_words: List[FilterWord]):
-    """
-    We don't want to trigger the filter if the words are silently filtered
-    return True if all triggered filtered words are silently filtered
-    """
-    return all(filter_word.silent_filter for filter_word in triggered_filter_words)
+    return all(word.silent_filter for word in triggered_filter_words)
 
 
 async def find_triggered_raid_phrases(input, member):
-    symbols = (u"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
-               u"abBrdeex3nnKnmHonpcTyoxu4wwbbbeoRABBrDEEX3NNKNMHONPCTyOXU4WWbbbEOR")
-
-    tr = {ord(a): ord(b) for a, b in zip(*symbols)}
-
-    folded_message = fold(input.translate(tr).lower()).lower()
-    folded_without_spaces = "".join(folded_message.split())
-    folded_without_spaces_and_punctuation = folded_without_spaces.translate(
-        str.maketrans('', '', string.punctuation))
-
-    if folded_message:
-        for word in await guild_service.get_raid_phrases():
-            if not gatekeeper.has(member.guild, member, word.bypass):
-                if (word.word.lower() in folded_message) or \
-                    (not word.false_positive and word.word.lower() in folded_without_spaces) or \
-                        (not word.false_positive and word.word.lower() in folded_without_spaces_and_punctuation):
-                    # remove all whitespace, punctuation in message and run filter again
-                    if word.false_positive and word.word.lower() not in folded_message.split():
-                        continue
-
-                    return word
+    # Raid phrases intentionally retain surrounding colons and don't use the
+    # word filter's extra compact-rule matching branch.
+    folded, compact, plain, tokens = _normalized(input)
+    if not folded:
+        return None
+    permissions = {}
+    for word in await guild_service.get_raid_phrases():
+        if word.bypass not in permissions:
+            permissions[word.bypass] = gatekeeper.has(member.guild, member, word.bypass)
+        if permissions[word.bypass]:
+            continue
+        if word.lower in folded or (not word.false_positive and
+                                   (word.lower in compact or word.lower in plain)):
+            if word.false_positive and word.lower not in tokens:
+                continue
+            return word

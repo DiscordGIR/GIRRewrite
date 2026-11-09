@@ -1,4 +1,3 @@
-from data.database import run_database
 from utils.fetchers import shared_session
 import aiohttp
 import discord
@@ -94,16 +93,14 @@ class Logging(commands.Cog):
             return
 
 
-        db_guild = await guild_service.get_guild()
-        webhook = db_guild.emoji_logging_webhook
+        webhook = await guild_service.get_config_value('emoji_logging_webhook')
         if webhook is None:
             channel = member.guild.get_channel(cfg.channels.emoji_logs)
             if channel is None:
                 return
 
             webhook = (await channel.create_webhook(name=f"Webhook {channel.name}")).url
-            db_guild.emoji_logging_webhook = webhook
-            await run_database(lambda: db_guild.save())
+            await guild_service.set_emoji_logging_webhook(webhook)
 
         content = f"{reaction.emoji}\n\n{reaction.message.channel.mention} | [Link to message]({reaction.message.jump_url}) | **{member.id}**"
         body = {
@@ -136,8 +133,8 @@ class Logging(commands.Cog):
         if not before.content or not after.content or before.content == after.content:
             return
 
-        db_guild = await guild_service.get_guild()
-        if before.channel.id in db_guild.logging_excluded_channels:
+        excluded = await guild_service.get_config_value("logging_excluded_channels")
+        if before.channel.id in excluded:
             return
 
         channel = before.guild.get_channel(cfg.channels.private_logs)
@@ -184,8 +181,8 @@ class Logging(commands.Cog):
         if message.content == "" or not message.content:
             return
 
-        db_guild = await guild_service.get_guild()
-        if message.channel.id in db_guild.logging_excluded_channels:
+        excluded = await guild_service.get_config_value("logging_excluded_channels")
+        if message.channel.id in excluded:
             return
 
         channel = message.guild.get_channel(cfg.channels.private_logs)
@@ -232,8 +229,8 @@ class Logging(commands.Cog):
             return
 
         members = set()
-        db_guild = await guild_service.get_guild()
-        if messages[0].channel.id in db_guild.logging_excluded_channels:
+        excluded = await guild_service.get_config_value("logging_excluded_channels")
+        if messages[0].channel.id in excluded:
             return
 
         channel = messages[0].guild.get_channel(cfg.channels.private_logs)
