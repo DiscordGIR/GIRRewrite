@@ -97,16 +97,17 @@ class Giveaway(commands.Cog):
         elif len(g.entries) == 0:
             raise commands.BadArgument(
                 f"There are no entries for the giveaway of **{g.name}**.")
-        elif len(g.entries) <= len(g.previous_winners):
+        previous_winners = set(g.previous_winners)
+        eligible = []
+        for member_id in dict.fromkeys(g.entries):
+            if member_id in previous_winners:
+                continue
+            member = ctx.guild.get_member(member_id)
+            if member is not None:
+                eligible.append(member)
+        if not eligible:
             raise commands.BadArgument("No more winners are possible!")
-
-        the_winner = None
-        while the_winner is None:
-            random_id = random.choice(g.entries)
-            the_winner = ctx.guild.get_member(random_id)
-            if the_winner is not None and the_winner.id not in g.previous_winners:
-                break
-            the_winner = None
+        the_winner = random.choice(eligible)
 
         g.previous_winners.append(the_winner.id)
         await run_database(lambda: g.save())

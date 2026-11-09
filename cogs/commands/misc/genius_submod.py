@@ -168,44 +168,47 @@ class Genius(commands.Cog):
 
     async def do_reindex(self, channel):
         contents = {}
+        previous_indexes = []
         async for message in channel.history(limit=None, oldest_first=True):
             if message.author.id != self.bot.user.id:
                 continue
-
             if not message.embeds:
                 continue
-
             embed = message.embeds[0]
             if not embed.footer.text:
                 continue
-
             if embed.footer.text.startswith("Submitted by"):
                 contents[f"{embed.title}"] = message
             elif embed.footer.text.startswith("Table of Contents"):
-                await message.delete()
-            else:
-                continue
+                previous_indexes.append(message)
 
-        page = 1
-        count = 1
-        toc_embed = discord.Embed(
-            title="Table of Contents", description="Click on a link to jump to the issue!\n", color=discord.Color.gold())
-        toc_embed.set_footer(text=f"Table of Contents • Page {page}")
-        for title, message in contents.items():
-            this_line = f"\n{count}. [{title}]({message.jump_url})"
-            count += 1
-            if len(toc_embed.description) + len(this_line) < 4096:
-                toc_embed.description += this_line
-            else:
-                await channel.send(embed=toc_embed)
-                page += 1
-                toc_embed.description = ""
-                toc_embed.title = ""
-                toc_embed.set_footer(text=f"Table of Contents • Page {page}")
+        # Validate and construct every page before removing any existing index.
+        descriptions = []
+        description = "Click on a link to jump to the issue!\n"
+        for count, (title, message) in enumerate(contents.items(), start=1):
+            line = f"\n{count}. [{title}]({message.jump_url})"
+            if len(line) > 4096:
+                raise commands.BadArgument(
+                    f"Issue {count}'s title/link is too long for the index. Shorten it before reindexing.")
+            if len(description) + len(line) > 4096:
+                descriptions.append(description)
+                description = ""
+            description += line
+        descriptions.append(description)
 
+        pages = []
+        for page, description in enumerate(descriptions, start=1):
+            embed = discord.Embed(title="Table of Contents" if page == 1 else "",
+                                  description=description, color=discord.Color.gold())
+            embed.set_footer(text=f"Table of Contents • Page {page}")
+            pages.append(embed)
+
+        for message in previous_indexes:
+            await message.delete()
+        for embed in pages:
+            await channel.send(embed=embed)
         self.bot.issue_cache.cache = contents
-        await channel.send(embed=toc_embed)
-        return len(contents), page
+        return len(contents), len(pages)
 
     @genius_or_submod_and_up()
     @app_commands.guilds(cfg.guild_id)
