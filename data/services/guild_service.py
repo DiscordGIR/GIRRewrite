@@ -1,7 +1,26 @@
+import asyncio
 from data.database import database_method, run_database
-from aiocache import cached
+from typing import NamedTuple
+from utils.cache_refresh import SnapshotCache
 from data.model import FilterWord, Guild, Tag, Giveaway
 from utils import cfg
+
+class FilterSnapshot(NamedTuple):
+    word: str
+    bypass: int
+    notify: bool
+    silent_filter: bool
+    false_positive: bool
+    piracy: bool
+    lower: str
+    compact: str
+
+    @classmethod
+    def from_document(cls, word):
+        lower = word.word.lower()
+        return cls(word.word, word.bypass, word.notify, word.silent_filter,
+                   word.false_positive, word.piracy, lower, "".join(lower.split()))
+
 
 class GuildService:
     def get_guild(self) -> Guild:
@@ -27,7 +46,7 @@ class GuildService:
             set__tags__S__button_links=tag.button_links)
 
     def get_tag(self, name: str):
-        guild = Guild.objects(_id=cfg.guild_id, tags__name=name).modify(
+        guild = Guild.objects(_id=cfg.guild_id, tags__name=name).fields(elemMatch__tags={'name': name}).modify(
             inc__tags__S__use_count=1, new=True)
         if guild is None:
             return
@@ -45,7 +64,7 @@ class GuildService:
             set__memes__S__button_links=meme.button_links)
 
     def get_meme(self, name: str):
-        guild = Guild.objects(_id=cfg.guild_id, memes__name=name).modify(
+        guild = Guild.objects(_id=cfg.guild_id, memes__name=name).fields(elemMatch__memes={'name': name}).modify(
             inc__memes__S__use_count=1, new=True)
         if guild is None:
             return
@@ -53,7 +72,7 @@ class GuildService:
     
     def allocate_case_id(self) -> int:
         """Reserve the next case number atomically; failed actions may leave gaps."""
-        guild = Guild.objects(_id=cfg.guild_id).modify(inc__case_id=1, new=False)
+        guild = Guild.objects(_id=cfg.guild_id).only('case_id').modify(inc__case_id=1, new=False)
         if guild is None:
             raise RuntimeError("Cannot allocate a case number: guild is not configured")
         return guild.case_id
@@ -108,7 +127,8 @@ class GuildService:
         return True
     
     def get_raid_phrases(self):
-        return self.get_guild().raid_phrases
+        return tuple(FilterSnapshot.from_document(word) for word in
+                     Guild.objects(_id=cfg.guild_id).only('raid_phrases').get().raid_phrases)
 
     def remove_raid_phrase(self, phrase: str):
         Guild.objects(_id=cfg.guild_id).update_one(pull__raid_phrases__word=FilterWord(word=phrase).word)
@@ -124,14 +144,48 @@ class GuildService:
         Guild.objects(_id=cfg.guild_id).update_one(push__filter_words=fw)
         return True
 
-    def get_filtered_words(self) -> FilterWord:
-        return self.get_guild().filter_words
+    def get_filtered_words(self):
+        return tuple(FilterSnapshot.from_document(word) for word in
+                     Guild.objects(_id=cfg.guild_id).only('filter_words').get().filter_words)
 
     def remove_filtered_word(self, word: str):
         return Guild.objects(_id=cfg.guild_id).update_one(pull__filter_words__word=FilterWord(word=word).word)
 
-    def update_filtered_word(self, word: FilterWord):
-        return Guild.objects(_id=cfg.guild_id, filter_words__word=word.word).update_one(set__filter_words__S=word)
+    def toggle_filtered_word_flag(self, name, flag):
+        if flag not in ('silent_filter', 'piracy', 'false_positive'):
+            raise ValueError("Unknown filter flag")
+        # Compare-and-set only the chosen flag; never replace another editor's
+        # flags or share a mutable document with the cache.
+        for _ in range(8):
+            words = self.get_filtered_words()
+            word = next((word for word in words if word.word == name), None)
+            if word is None:
+                raise ValueError("Filtered word no longer exists")
+            old = getattr(word, flag)
+            query = {'word': name, flag: old} if old else {
+                'word': name, '$or': [{flag: False}, {flag: {'$exists': False}}]}
+            changed = Guild.objects(_id=cfg.guild_id, __raw__={
+                'filter_words': {'$elemMatch': query}}).update_one(
+                **{'set__filter_words__S__' + flag: not old})
+            if changed:
+                return not old
+        raise RuntimeError("Filter flag changed repeatedly; please retry")
+
+    def get_config_value(self, field):
+        if field not in ('emoji_logging_webhook', 'logging_excluded_channels',
+                         'filter_excluded_guilds', 'sabbath_mode'):
+            raise ValueError("Unknown configuration field")
+        value = getattr(Guild.objects(_id=cfg.guild_id).only(field).get(), field)
+        return tuple(value) if isinstance(value, list) else value
+
+    def set_emoji_logging_webhook(self, url):
+        Guild.objects(_id=cfg.guild_id).update_one(set__emoji_logging_webhook=url)
+
+    def get_content_names(self, field):
+        if field not in ('tags', 'memes'):
+            raise ValueError("Unknown content collection")
+        guild = Guild.objects(_id=cfg.guild_id).only(field + '.name').get()
+        return tuple(item.name for item in getattr(guild, field))
 
     def add_whitelisted_guild(self, id: int):
         g = Guild.objects(_id=cfg.guild_id)
@@ -201,7 +255,13 @@ _repository = GuildService()
 
 class AsyncGuildService:
     """Bot-facing API; all persistence runs in the bounded database pool."""
+    def __init__(self):
+        self.snapshots = SnapshotCache(ttl=3600)
+
     get_guild = database_method(_repository.get_guild)
+    get_config_value = database_method(_repository.get_config_value)
+    set_emoji_logging_webhook = database_method(_repository.set_emoji_logging_webhook)
+    get_content_names = database_method(_repository.get_content_names)
     add_tag = database_method(_repository.add_tag)
     remove_tag = database_method(_repository.remove_tag)
     edit_tag = database_method(_repository.edit_tag)
@@ -214,37 +274,40 @@ class AsyncGuildService:
     get_giveaway = database_method(_repository.get_giveaway)
     add_giveaway = database_method(_repository.add_giveaway)
 
-    async def add_raid_phrase(self, *args, **kwargs):
-        result = await run_database(_repository.add_raid_phrase, *args, **kwargs)
-        await self.get_raid_phrases.cache.clear()
-        return result
+    async def _change(self, key, function, *args, **kwargs):
+        loop = asyncio.get_running_loop()
+        def write():
+            result = function(*args, **kwargs)
+            # This runs inside the managed database worker even if its caller
+            # was cancelled. Only the bot loop ever mutates the snapshot cache.
+            loop.call_soon_threadsafe(self.snapshots.invalidate, key)
+            return result
+        return await run_database(write)
 
-    get_raid_phrases = cached(ttl=3600)(database_method(_repository.get_raid_phrases))
+    async def add_raid_phrase(self, *args, **kwargs):
+        return await self._change('raid_phrases', _repository.add_raid_phrase, *args, **kwargs)
+
+    async def get_raid_phrases(self):
+        return await self.snapshots.get('raid_phrases',
+                                        lambda: run_database(_repository.get_raid_phrases))
 
     async def remove_raid_phrase(self, *args, **kwargs):
-        result = await run_database(_repository.remove_raid_phrase, *args, **kwargs)
-        await self.get_raid_phrases.cache.clear()
-        return result
+        return await self._change('raid_phrases', _repository.remove_raid_phrase, *args, **kwargs)
 
     set_spam_mode = database_method(_repository.set_spam_mode)
 
     async def add_filtered_word(self, *args, **kwargs):
-        result = await run_database(_repository.add_filtered_word, *args, **kwargs)
-        await self.get_filtered_words.cache.clear()
-        return result
+        return await self._change('filter_words', _repository.add_filtered_word, *args, **kwargs)
 
-    get_filtered_words = cached(ttl=3600)(database_method(_repository.get_filtered_words))
+    async def get_filtered_words(self):
+        return await self.snapshots.get('filter_words',
+                                        lambda: run_database(_repository.get_filtered_words))
 
     async def remove_filtered_word(self, *args, **kwargs):
-        result = await run_database(_repository.remove_filtered_word, *args, **kwargs)
-        await self.get_filtered_words.cache.clear()
-        return result
+        return await self._change('filter_words', _repository.remove_filtered_word, *args, **kwargs)
 
-
-    async def update_filtered_word(self, *args, **kwargs):
-        result = await run_database(_repository.update_filtered_word, *args, **kwargs)
-        await self.get_filtered_words.cache.clear()
-        return result
+    async def toggle_filtered_word_flag(self, *args, **kwargs):
+        return await self._change('filter_words', _repository.toggle_filtered_word_flag, *args, **kwargs)
 
     add_whitelisted_guild = database_method(_repository.add_whitelisted_guild)
     remove_whitelisted_guild = database_method(_repository.remove_whitelisted_guild)

@@ -128,10 +128,9 @@ class Filters(commands.Cog):
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
-            words[0].silent_filter = not words[0].silent_filter
-            await guild_service.update_filtered_word(words[0])
+            enabled = await guild_service.toggle_filtered_word_flag(words[0].word, "silent_filter")
 
-            await ctx.send_success("Marked as a silently filtered word!" if words[0].silent_filter else "Removed as a silently filtered word!")
+            await ctx.send_success("Marked as a silently filtered word!" if enabled else "Removed as a silently filtered word!")
         else:
             await ctx.send_warning("You must filter that word before it can be marked as silently filtered.", delete_after=5)
 
@@ -148,10 +147,9 @@ class Filters(commands.Cog):
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
-            words[0].piracy = not words[0].piracy
-            await guild_service.update_filtered_word(words[0])
+            enabled = await guild_service.toggle_filtered_word_flag(words[0].word, "piracy")
 
-            await ctx.send_success("Marked as a piracy word!" if words[0].piracy else "Removed as a piracy word!")
+            await ctx.send_success("Marked as a piracy word!" if enabled else "Removed as a piracy word!")
         else:
             await ctx.send_warning("You must filter that word before it can be marked as piracy.", delete_after=5)
 
@@ -163,7 +161,7 @@ class Filters(commands.Cog):
     async def remove(self, ctx: GIRContext, word: str):
         word = word.lower()
 
-        words = (await guild_service.get_guild()).filter_words
+        words = await guild_service.get_filtered_words()
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
@@ -261,12 +259,8 @@ class Filters(commands.Cog):
         words = list(filter(lambda w: w.word.lower() == word.lower(), words))
 
         if len(words) > 0:
-            words[0].false_positive = not words[0].false_positive
-            if await guild_service.update_filtered_word(words[0]):
-                await ctx.send_success("Marked as potential false positive, we won't perform the enhanced checks on it!" if words[0].false_positive else "Removed as potential false positive.")
-            else:
-                raise commands.BadArgument(
-                    "Unexpected error occured trying to mark as false positive!")
+            enabled = await guild_service.toggle_filtered_word_flag(words[0].word, "false_positive")
+            await ctx.send_success("Marked as potential false positive, we won't perform the enhanced checks on it!" if enabled else "Removed as potential false positive.")
         else:
             await ctx.send_warning("That word is not filtered.", delete_after=5)
 

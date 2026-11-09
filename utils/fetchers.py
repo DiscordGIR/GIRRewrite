@@ -5,9 +5,12 @@ from contextlib import asynccontextmanager
 
 import aiohttp
 from aiocache import cached
+from types import MappingProxyType
+from utils.cache_refresh import SnapshotCache
 
 client_session = None
 _last_ios_cfw = None
+_cij_cache = SnapshotCache(ttl=3600, stale_on_error=True)
 
 
 @cached(ttl=3600)
@@ -141,7 +144,9 @@ async def fetch_scam_urls():
 
 
 async def init_client_session():
-    global client_session
+    global client_session, _cij_cache
+    if _cij_cache.closed:
+        _cij_cache = SnapshotCache(ttl=3600, stale_on_error=True)
     if client_session is None or client_session.closed:
         client_session = aiohttp.ClientSession(
             timeout=aiohttp.ClientTimeout(total=20, connect=5),
@@ -159,6 +164,28 @@ async def shared_session():
 
 async def close_client_session():
     global client_session
+    await _cij_cache.close()
     if client_session is not None:
         await client_session.close()
         client_session = None
+
+
+async def _load_cij_or_news():
+    async with shared_session() as session:
+        async with session.get("https://raw.githubusercontent.com/DiscordGIR/CIJOrNewsFilter/main/database.json") as resp:
+            resp.raise_for_status()
+            data = json.loads(await resp.text())
+    fields = ('intent_cij', 'intent_news', 'verb', 'subject')
+    if not isinstance(data, dict) or any(
+            not isinstance(data.get(key), list) or
+            not all(isinstance(value, str) for value in data[key]) for key in fields):
+        raise ValueError("CIJ feed must contain lists of strings for all detector fields")
+    return MappingProxyType({key: tuple(data[key]) for key in fields})
+
+
+async def get_cij_or_news():
+    """Optional feed: share refreshes and retain only validated snapshots."""
+    try:
+        return await _cij_cache.get('catalog', _load_cij_or_news)
+    except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
+        return None

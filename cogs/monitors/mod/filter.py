@@ -1,12 +1,9 @@
-from utils.fetchers import shared_session
-import json
+from utils.fetchers import get_cij_or_news
 import re
 import unicodedata
 from datetime import datetime, timezone
 
-import aiohttp
 import discord
-from aiocache.decorators import cached
 from data.model import FilterWord
 from data.services import guild_service
 from discord.ext import commands
@@ -169,9 +166,7 @@ class Filter(commands.Cog):
         if not invites:
             return
 
-        db_guild = await guild_service.get_guild()
-
-        whitelist = db_guild.filter_excluded_guilds
+        whitelist = await guild_service.get_config_value('filter_excluded_guilds')
         for invite in invites:
             try:
                 invite = await self.bot.fetch_invite(invite)
@@ -235,8 +230,9 @@ class Filter(commands.Cog):
         return False
 
     async def scam_filter(self, message: discord.Message):
+        text = message.content.lower()
         for url in scam_cache.scam_jb_urls:
-            if url in message.content.lower():
+            if url in text:
                 embed = discord.Embed(
                     title="Fake or scam jailbreak", color=discord.Color.red())
                 embed.description = f"Your message contained the link to a **fake jailbreak** ({url}).\n\nIf you installed this jailbreak, remove it from your device immediately and try to get a refund if you paid for it. Jailbreaks *never* cost money and will not ask for any form of payment or survey to install them."
@@ -246,7 +242,7 @@ class Filter(commands.Cog):
                 return True
 
         for url in scam_cache.scam_unlock_urls:
-            if url in message.content.lower():
+            if url in text:
                 embed = discord.Embed(
                     title="Fake or scam unlock", color=discord.Color.red())
                 embed.description = f"Your message contained the link to a **fake unlock** ({url}).\n\nIf you bought a phone second-hand and it arrived iCloud locked, contact the seller to remove it [using these instructions](https://support.apple.com/en-us/HT201351), or get a refund.\n\nIf you or a relative are the original owner of the device and you can provide the original proof of purchase, Apple Support can remove the lock.\nPlease refer to these articles: [How to remove Activation Lock](https://support.apple.com/HT201441) or [If you forgot your iPhone passcode](https://support.apple.com/HT204306)."
@@ -305,15 +301,8 @@ class Filter(commands.Cog):
         except Exception:
             pass
 
-    @cached(ttl=3600)
     async def fetch_cij_or_news_database(self):
-        async with shared_session() as session:
-            async with session.get("https://raw.githubusercontent.com/DiscordGIR/CIJOrNewsFilter/main/database.json") as resp:
-                if resp.status == 200:
-                    data = await resp.text()
-                    return json.loads(data)
-
-                return {}
+        return await get_cij_or_news()
 
     async def detect_cij_or_eta(self, message: discord.Message):
         if message.edited_at is not None:
@@ -322,6 +311,8 @@ class Filter(commands.Cog):
             return
 
         cij_filter_response = await self.fetch_cij_or_news_database()
+        if cij_filter_response is None:
+            return
         intent_cij = cij_filter_response.get("intent_cij")
         intent_news = cij_filter_response.get("intent_news")
 
