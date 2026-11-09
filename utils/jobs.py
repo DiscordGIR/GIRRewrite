@@ -491,6 +491,8 @@ async def end_giveaway(channel_id: int, message_id: int, winners: int) -> None:
     """
 
     guild = BOT_GLOBAL.get_guild(cfg.guild_id)
+    if guild is None:
+        return
     channel = guild.get_channel(channel_id)
 
     if channel is None:
@@ -500,6 +502,8 @@ async def end_giveaway(channel_id: int, message_id: int, winners: int) -> None:
     except Exception:
         return
 
+    if not message.embeds:
+        return
     embed = message.embeds[0]
     embed.set_footer(text="Ended")
     embed.set_field_at(0, name="Time remaining",
@@ -507,32 +511,26 @@ async def end_giveaway(channel_id: int, message_id: int, winners: int) -> None:
     embed.timestamp = datetime.now()
     embed.color = discord.Color.default()
 
-    reaction = message.reactions[0]
-    reacted_ids = [user.id async for user in reaction.users()]
-    reacted_ids.remove(BOT_GLOBAL.user.id)
+    reaction = next((reaction for reaction in message.reactions
+                     if str(reaction.emoji) == '🎉'), None)
+    reacted_ids = []
+    if reaction is not None:
+        reacted_ids = list(dict.fromkeys(
+            [user.id async for user in reaction.users() if user.id != BOT_GLOBAL.user.id]))
 
-    if len(reacted_ids) < winners:
-        winners = len(reacted_ids)
-
-    rand_ids = random.sample(reacted_ids, winners)
-    winner_ids = []
-    mentions = []
-    tries = 0
-    for user_id in rand_ids:
-        tries += 1
-        member = guild.get_member(user_id)
-        # ensure that member hasn't left the server while simultaneously ensuring that we don't add duplicate members if we select a new random one
-        while member is None or member.mention in mentions:
-            tries += 1
-            if tries > winners + 20:
-                member = None
-                break
-            member = guild.get_member(random.choice(reacted_ids))
+    eligible = []
+    for member_id in reacted_ids:
+        member = guild.get_member(member_id)
         if member is not None:
-            mentions.append(member.mention)
-            winner_ids.append(member.id)
+            eligible.append(member)
+    winners = min(winners, len(eligible))
+    selected = random.sample(eligible, winners)
+    winner_ids = [member.id for member in selected]
+    mentions = [member.mention for member in selected]
 
     g = await guild_service.get_giveaway(_id=message.id)
+    if g is None:
+        return
     g.entries = reacted_ids
     g.is_ended = True
     g.previous_winners = winner_ids
@@ -542,7 +540,7 @@ async def end_giveaway(channel_id: int, message_id: int, winners: int) -> None:
     await message.clear_reactions()
 
     if not mentions:
-        await channel.send(f"No winner was selected for the giveaway of **{g.name}** because nobody entered.")
+        await channel.send(f"No winner was selected for the giveaway of **{g.name}** because no eligible entrants remain.")
         return
 
     if winners == 1:
