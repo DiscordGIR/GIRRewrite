@@ -50,8 +50,11 @@ class ModUtils(commands.Cog):
                 raise commands.BadArgument(
                     f"Couldn't find user with ID {new_member}")
 
-        u, case_count = await user_service.transfer_profile(
-            old_member.id, new_member.id)
+        try:
+            u, case_count = await user_service.transfer_profile(
+                old_member.id, new_member.id)
+        except ValueError as exc:
+            raise commands.BadArgument(str(exc)) from exc
 
         embed = discord.Embed(title="Transferred profile")
         embed.description = f"We transferred {old_member.mention}'s profile to {new_member.mention}"

@@ -7,7 +7,7 @@ from utils import GIRContext
 
 
 class Menu(ui.View):
-    def __init__(self, ctx: GIRContext, entries: list, per_page: int, page_formatter: Callable[[GIRContext, list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, timeout_function=None):
+    def __init__(self, ctx: GIRContext, entries: list, per_page: int, page_formatter: Callable[[GIRContext, list, int, list], None], whisper: bool, show_skip_buttons: bool = True, start_page=1, timeout_function=None, page_loader=None, total_entries=None):
         super().__init__(timeout=60)
 
         self.ctx = ctx
@@ -19,7 +19,9 @@ class Menu(ui.View):
             for i in range(0, len(lst), n):
                 yield lst[i:i + n]
 
-        self.pages = list(chunks(entries, per_page))
+        self.page_loader = page_loader
+        self.pages = (range((total_entries + per_page - 1) // per_page)
+                      if page_loader is not None else list(chunks(entries, per_page)))
         self.per_page = per_page
         self.page_formatter = page_formatter
         self.whisper = whisper
@@ -41,11 +43,13 @@ class Menu(ui.View):
         if self.current_page in self.page_cache:
             return self.page_cache.get(self.current_page)
 
+        entries = (await self.page_loader(self.current_page, self.per_page)
+                   if self.page_loader is not None else self.pages[self.current_page - 1])
         if inspect.iscoroutinefunction(self.page_formatter):
-            embed = await self.page_formatter(self.ctx, self.pages[self.current_page - 1], self.current_page, self.pages)
+            embed = await self.page_formatter(self.ctx, entries, self.current_page, self.pages)
         else:
             embed = self.page_formatter(
-                self.ctx, self.pages[self.current_page - 1], self.current_page, self.pages)
+                self.ctx, entries, self.current_page, self.pages)
 
         self.page_cache[self.current_page] = embed
         return embed

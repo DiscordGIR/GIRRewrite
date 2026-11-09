@@ -69,9 +69,9 @@ def format_cases_page(ctx, entries, current_page, all_pages):
     user = ctx.case_user
     u = ctx.case_profile
 
-    for page in all_pages:
-        for case in page:
-            page_count = page_count + 1
+    page_count = getattr(ctx, "case_count", None)
+    if page_count is None:
+        page_count = sum(len(page) for page in all_pages)
     embed = discord.Embed(
         title=f'Cases - {u.warn_points} warn points', color=discord.Color.blurple())
     embed.set_author(name=user, icon_url=user.display_avatar)
@@ -240,21 +240,18 @@ class UserInfo(commands.Cog):
             raise PermissionsFailure(
                 f"You don't have permissions to check others' cases.")
 
-        # fetch user's cases from our database
-        results = await user_service.get_cases(user.id)
-        if len(results.cases) == 0:
+        count = await user_service.case_count(user.id)
+        if count == 0:
             return await ctx.send_warning(f'{user.mention} has no cases.', delete_after=5)
-
-        # filter out unmute cases because they are irrelevant
-        cases = [case for case in results.cases if case._type != "UNMUTE"]
-        # reverse so newest cases are first
-        cases.reverse()
-
         ctx.case_user = user
         ctx.case_profile = await user_service.get_user(user.id)
+        ctx.case_count = count
 
-        menu = Menu(ctx, cases, per_page=10,
-                    page_formatter=format_cases_page, whisper=ctx.whisper)
+        async def load_page(page, per_page):
+            return await user_service.case_page(user.id, page, per_page)
+
+        menu = Menu(ctx, [], per_page=10, page_formatter=format_cases_page,
+                    whisper=ctx.whisper, page_loader=load_page, total_entries=count)
         await menu.start()
 
 
